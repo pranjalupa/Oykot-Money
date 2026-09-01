@@ -13,6 +13,8 @@ export function AuthForm({ mode }: { mode: "signin" | "signup" }) {
   const isSignUp = mode === "signup";
   const searchParams = useSearchParams();
   const next = searchParams.get("next") ?? "/";
+  // Set by /auth/callback when a confirmation link fails or has expired.
+  const linkFailed = searchParams.get("error") === "confirm";
 
   const [state, action, pending] = useActionState<AuthResult | null, FormData>(
     isSignUp ? signUp : signIn,
@@ -60,6 +62,17 @@ export function AuthForm({ mode }: { mode: "signin" | "signup" }) {
             placeholder={isSignUp ? "At least 8 characters" : "••••••••"}
           />
         </div>
+
+        {linkFailed && !state && (
+          <p
+            role="alert"
+            className="flex items-start gap-2 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          >
+            <Warning size={16} weight="fill" className="mt-0.5 shrink-0" />
+            That confirmation link didn&rsquo;t work — it may have expired or
+            already been used. Sign in below, or create the account again.
+          </p>
+        )}
 
         {state && !state.ok && (
           <p
