@@ -44,9 +44,18 @@ set `user.email` before the first commit.
 - **Database: Supabase Postgres via Drizzle** (`postgres-js`, pooled). Provisioned through
   the Vercel Marketplace, so env vars are managed by Vercel — `vercel env pull .env.local`
   to refresh. Migrated off local SQLite when the project went multi-user.
-- **Auth: Supabase Auth**, email + password, open signup. `@supabase/ssr` with a middleware
-  session refresh (`src/middleware.ts`). Supabase is used ONLY for auth; all data access is
-  Drizzle.
+- **Auth: Supabase Auth** — email + password *and* Google OAuth, open signup. `@supabase/ssr`
+  with a middleware session refresh (`src/middleware.ts`). Supabase is used ONLY for auth; all
+  data access is Drizzle.
+  - Social buttons render only when the provider is actually enabled, read from
+    `/auth/v1/settings` (`lib/supabase/providers.ts`, 60s cache). Don't hardcode a provider
+    button: with the provider off, Supabase answers the authorize call with a raw JSON
+    "provider is not enabled" page.
+  - OAuth runs as a **server action**, never from the browser client — the PKCE code verifier
+    has to be a server cookie for `/auth/callback` to exchange the code.
+  - Confirmation and OAuth redirects use the request-derived origin, so localhost and
+    production both work with no per-environment config. Supabase only honours those URLs if
+    they're in the project's redirect allow-list.
 - **Money is integer paise everywhere** — stored as `bigint`. Never floats, never rupees,
   until `lib/money.ts` formats at the UI edge.
 - **Hosting: Vercel** (project `oykot-money`, connected to this repo).
@@ -129,7 +138,8 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
 - 2026-09-01 — Repo created (private). AGENTS.md established as the persistent context file.
 
 ## Status
-Fully workable and deployed. Month / Daily / Year / group pages / category detail / accounts /
+Fully workable and deployed at https://oykot-money.vercel.app. Google sign-in is live
+alongside email/password. Month / Daily / Year / group pages / category detail / accounts /
 settings all read and write against Supabase, with auth and per-user isolation.
 **Not built yet:** editing an existing transaction (only add + delete), reordering categories,
 statement import or any automated entry, and recurring transactions.
