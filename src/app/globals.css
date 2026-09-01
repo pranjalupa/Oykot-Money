@@ -1,0 +1,236 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ---------------------------------------------------------------------------
+   Oykot design tokens.
+   Raw scales + semantic mapping. See docs/design-tokens.html for the visual
+   reference (light/dark, web/mobile). Rules that matter:
+     - Surfaces (background/card/border/muted) always come from Stone, both
+       themes. Forest and Lemon are for actions and emphasis only — that is
+       what keeps dark mode from reading as a green room.
+     - Primary swaps Forest -> Lemon in dark mode; dark green has no contrast
+       on a near-black ground.
+--------------------------------------------------------------------------- */
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-inter);
+  --font-heading: var(--font-archivo);
+  --font-accent: var(--font-instrument-serif);
+  --font-mono: var(--font-geist-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+
+  /* Semantic money/state colors — separate from the accent hue on purpose. */
+  --color-positive: var(--positive);
+  --color-negative: var(--negative);
+
+  /* Category group colors, used by charts, pills and progress bars. */
+  --color-needs: var(--needs);
+  --color-wants: var(--wants);
+  --color-investments: var(--investments);
+  --color-income: var(--income);
+
+  /* Raw scales, exposed so components can reach for a specific step. */
+  --color-forest-50: #eff8f2;
+  --color-forest-100: #e1f3e5;
+  --color-forest-200: #c3e3d6;
+  --color-forest-300: #98cdb9;
+  --color-forest-400: #6bb39b;
+  --color-forest-500: #439a80;
+  --color-forest-600: #1f7d64;
+  --color-forest-700: #0e6350;
+  --color-forest-800: #054e3f;
+  --color-forest-900: #004437;
+  --color-forest-950: #013026;
+
+  --color-lemon-50: #fbfeee;
+  --color-lemon-100: #f6fcd2;
+  --color-lemon-200: #ecfaa8;
+  --color-lemon-300: #e4f877;
+  --color-lemon-400: #daf546;
+  --color-lemon-500: #c3db2e;
+  --color-lemon-600: #a3b822;
+  --color-lemon-700: #7e8f1a;
+  --color-lemon-800: #5e6913;
+
+  --color-stone-50: #f7f7f7;
+  --color-stone-100: #efefed;
+  --color-stone-200: #e1e0dc;
+  --color-stone-300: #cbc9c2;
+  --color-stone-400: #adaaa0;
+  --color-stone-500: #8c897e;
+  --color-stone-600: #6d6a5f;
+  --color-stone-700: #524f45;
+  --color-stone-800: #38362e;
+  --color-stone-900: #272727;
+  --color-stone-950: #171716;
+
+  --color-clay-50: #fbeeec;
+  --color-clay-100: #f4d4ce;
+  --color-clay-300: #e2988a;
+  --color-clay-500: #c1543f;
+  --color-clay-700: #8f3b2c;
+  --color-clay-900: #5e271d;
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  --radius: 0.5rem;
+
+  --background: #f7f7f7;
+  --foreground: #272727;
+  --card: #ffffff;
+  --card-foreground: #272727;
+  --popover: #ffffff;
+  --popover-foreground: #272727;
+
+  --primary: #004437;
+  --primary-foreground: #f7f7f7;
+  --secondary: #e1f3e5;
+  --secondary-foreground: #004437;
+  --muted: #efefed;
+  --muted-foreground: #6d6a5f;
+  --accent: #daf546;
+  --accent-foreground: #004437;
+  --destructive: #c1543f;
+  --destructive-foreground: #fbeeec;
+
+  --border: #e1e0dc;
+  --input: #e1e0dc;
+  --ring: #1f7d64;
+
+  --positive: #1f7d64;
+  --negative: #c1543f;
+
+  --needs: #1f7d64;
+  --wants: #a3b822;
+  --investments: #054e3f;
+  --income: #439a80;
+
+  --chart-1: #1f7d64;
+  --chart-2: #daf546;
+  --chart-3: #c1543f;
+  --chart-4: #98cdb9;
+  --chart-5: #8c897e;
+
+  --sidebar: #ffffff;
+  --sidebar-foreground: #272727;
+  --sidebar-primary: #004437;
+  --sidebar-primary-foreground: #f7f7f7;
+  --sidebar-accent: #efefed;
+  --sidebar-accent-foreground: #004437;
+  --sidebar-border: #e1e0dc;
+  --sidebar-ring: #1f7d64;
+}
+
+.dark {
+  --background: #171716;
+  --foreground: #f7f7f7;
+  --card: #272727;
+  --card-foreground: #f7f7f7;
+  --popover: #272727;
+  --popover-foreground: #f7f7f7;
+
+  --primary: #daf546;
+  --primary-foreground: #171716;
+  --secondary: #38362e;
+  --secondary-foreground: #f7f7f7;
+  --muted: #38362e;
+  --muted-foreground: #adaaa0;
+  --accent: #daf546;
+  --accent-foreground: #171716;
+  --destructive: #e2988a;
+  --destructive-foreground: #2a0d08;
+
+  --border: #38362e;
+  --input: #38362e;
+  --ring: #daf546;
+
+  --positive: #6bb39b;
+  --negative: #e2988a;
+
+  --needs: #6bb39b;
+  --wants: #daf546;
+  --investments: #98cdb9;
+  --income: #439a80;
+
+  --chart-1: #daf546;
+  --chart-2: #98cdb9;
+  --chart-3: #e2988a;
+  --chart-4: #adaaa0;
+  --chart-5: #f7f7f7;
+
+  --sidebar: #272727;
+  --sidebar-foreground: #f7f7f7;
+  --sidebar-primary: #daf546;
+  --sidebar-primary-foreground: #171716;
+  --sidebar-accent: #38362e;
+  --sidebar-accent-foreground: #f7f7f7;
+  --sidebar-border: #38362e;
+  --sidebar-ring: #daf546;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-heading;
+    text-wrap: balance;
+  }
+  /* Amounts line up in columns everywhere in this app. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@utility accent-note {
+  font-family: var(--font-accent);
+  font-style: italic;
+}
