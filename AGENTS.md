@@ -32,12 +32,13 @@ working here should treat it as source of truth for decisions, trajectory, and s
     - **Stone** (neutral) — anchors `#F7F7F7` (White) and `#272727` (Black), the only two
       genuinely hueless colors in the original swatch. Backgrounds, cards, borders and muted
       surfaces come from Stone in *both* themes — Forest/Lemon are reserved for actions and
-      emphasis only. (Earlier draft pulled dark-mode surfaces from Forest's dark end instead —
-      read as "too green"; fixed by moving surfaces to Stone.)
+      emphasis only.
     - **Clay** (destructive, proposed) — anchor `#C1543F`, not in the original swatch, swap
       freely
-    - Full scale + semantic token mapping (light & dark) drafted here, pending confirmation
-      before it lands in `globals.css`: https://claude.ai/code/artifact/dbed95ef-b818-4332-ad6e-60a02c65f915
+    - Full scale + semantic token mapping (light & dark), as an interactive reference (toggle
+      light/dark, web/mobile): [`docs/design-tokens.html`](docs/design-tokens.html) — open it
+      directly in a browser. Still needs translating into actual `globals.css` /
+      Tailwind config once the framework is chosen.
   - Dark mode swaps primary/accent emphasis: Forest loses contrast on a near-black ground, so
     Lemon carries primary actions in dark mode instead of Forest.
   - Type scale has separate Web/Mobile sizes; body text holds at 16px on both (accessibility floor).
@@ -51,6 +52,11 @@ working here should treat it as source of truth for decisions, trajectory, and s
   prematurely — Phase 1 decisions should stay simple and not pre-optimize for multi-tenancy.
 
 ## Decisions & Updates (newest first — add new entries at top)
+- 2026-09-01 — Saved the design token reference into the repo at `docs/design-tokens.html`
+  ("Oykot Money Design Tokens") — a self-contained, open-in-browser page with the full
+  Forest/Lemon/Stone/Clay scales, semantic token table, and type scale, with live light/dark
+  and web/mobile toggles. This is the working reference until it's translated into real
+  `globals.css` / Tailwind config alongside the framework choice.
 - 2026-09-01 — Fixed two issues in the token draft: (1) dark mode read "too green" because
   background/card/border/muted were pulled from Forest's dark steps — moved all surface tokens
   to the new true-neutral Stone scale instead, anchored by the given White/Black. Also
@@ -59,13 +65,11 @@ working here should treat it as source of truth for decisions, trajectory, and s
   original ask) — a deliberate single serif italic accent against an otherwise all-sans system.
 - 2026-09-01 — Replaced the shadcn stock-preset approach with a custom color/type token system
   built from a 5-color swatch (Dark Green/Gray/Lemon Yellow/White/Black) + Archivo/Inter/
-  Instrument Serif Italic. Drafted as an interactive artifact (light/dark, web/mobile toggles)
-  for review before committing exact values to code. Superseded the earlier `b2BX1ejq4` preset
-  font choice (was Inter/Inter).
+  Instrument Serif Italic. Superseded the earlier `b2BX1ejq4` preset font choice (was Inter/Inter).
 - 2026-09-01 — Repo created (private, github.com/pranjalupa/Oykot-Money). Chose shadcn/ui
   preset `b2BX1ejq4` for UI consistency. This AGENTS.md created as the persistent context file.
   Project is in brainstorming phase — no code written yet.
 
 ## Status
-- No code yet. Color/type token system (v2: Forest/Lemon/Stone/Clay + Instrument Serif),
-  awaiting final review. Brainstorming/planning phase.
+- No code yet. Design tokens (Forest/Lemon/Stone/Clay + Archivo/Inter/Instrument Serif) saved
+  to `docs/design-tokens.html`. Brainstorming/planning phase.
