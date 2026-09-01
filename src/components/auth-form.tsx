@@ -5,11 +5,19 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Warning, CheckCircle } from "@phosphor-icons/react";
 import { signIn, signUp, type AuthResult } from "@/app/auth/actions";
+import { GoogleButton } from "@/components/google-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
-export function AuthForm({ mode }: { mode: "signin" | "signup" }) {
+export function AuthForm({
+  mode,
+  googleEnabled = false,
+}: {
+  mode: "signin" | "signup";
+  googleEnabled?: boolean;
+}) {
   const isSignUp = mode === "signup";
   const searchParams = useSearchParams();
   const next = searchParams.get("next") ?? "/";
@@ -35,7 +43,12 @@ export function AuthForm({ mode }: { mode: "signin" | "signup" }) {
         </p>
       </div>
 
-      <form action={action} className="flex flex-col gap-4">
+      {googleEnabled && <GoogleButton next={next} />}
+
+      <form
+        action={action}
+        className={cn("flex flex-col gap-4", googleEnabled && "mt-4")}
+      >
         <input type="hidden" name="next" value={next} />
 
         <div className="flex flex-col gap-1.5">

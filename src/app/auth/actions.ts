@@ -97,6 +97,35 @@ export async function signUp(
   redirect("/");
 }
 
+/**
+ * Google OAuth. Run as a server action rather than from the browser so the
+ * PKCE code verifier is written as a server cookie — the same cookie
+ * /auth/callback needs to exchange the code. Doing it client-side with the
+ * browser client puts the verifier somewhere the callback can't read.
+ */
+export async function signInWithGoogle(
+  _prev: AuthResult | null,
+  formData: FormData,
+): Promise<AuthResult> {
+  const rawNext = String(formData.get("next") ?? "/");
+  const next = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/";
+
+  const supabase = await createClient();
+  const origin = await siteOrigin();
+
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}`,
+    },
+  });
+
+  if (error) return { ok: false, error: error.message };
+  if (!data.url) return { ok: false, error: "Google sign-in is not available." };
+
+  redirect(data.url);
+}
+
 export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();
