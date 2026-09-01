@@ -16,6 +16,16 @@ working here should treat it as source of truth for decisions, trajectory, and s
   bottom of this file; leave it alone and keep it committed. A `create-next-app` run will
   clobber this whole file — recover with `git show HEAD:AGENTS.md` if it happens.
 
+## Deploying — read this before you debug a stuck build
+Vercel **blocks** any deployment whose commit author it can't match to the account
+(`blockCode: COMMIT_AUTHOR_REQUIRED`). It surfaces as deployments sitting at status `UNKNOWN`
+with no build logs and a 0ms build — it looks like a queue problem and is not one. The CLI
+doesn't show the reason; the API does:
+`GET /v6/deployments?projectId=…` → `state`, `seatBlock.blockCode`, `errorMessage`.
+This repo's git identity is set locally to `pranjalupa@gmail.com` (the Vercel account email).
+There is no global git identity on this machine, so **any new repo will hit this again** —
+set `user.email` before the first commit.
+
 ## What this is
 - Pranjal's personal budgeting tool. Personal/single-user for now.
 - Possible future: turn into a SaaS or public app. Not committed to — see trajectory below.
