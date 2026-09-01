@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
+import { buttonVariants } from "@/components/ui/button";
 import { Money, BudgetBar } from "@/components/money";
 import { MonthSwitcher } from "@/components/month-switcher";
 import { TransactionDialog } from "@/components/transaction-dialog";
@@ -69,9 +70,11 @@ export default async function MonthPage({
             starts working.
           </p>
           <div className="mt-4 flex flex-wrap justify-center gap-2">
+            {/* buttonVariants, not hand-rolled padding — a raw link next to a
+                real Button is how the two ended up different heights. */}
             <Link
               href={`/needs?month=${month}`}
-              className="rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground"
+              className={buttonVariants({ size: "sm" })}
             >
               Set your plan
             </Link>
