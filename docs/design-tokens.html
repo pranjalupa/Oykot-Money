@@ -1,0 +1,576 @@
+<meta charset="utf-8">
+<title>Oykot Design Tokens</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+
+<style>
+  /* ============ TOKENS ============ */
+  :root {
+    /* Forest — primary. E1F3E5 (the "Gray" swatch) reads as a pale green wash,
+       so it lives here as the lightest tint rather than in the neutral scale. */
+    --forest-50:  #EFF8F2;
+    --forest-100: #E1F3E5;
+    --forest-200: #C3E3D6;
+    --forest-300: #98CDB9;
+    --forest-400: #6BB39B;
+    --forest-500: #439A80;
+    --forest-600: #1F7D64;
+    --forest-700: #0E6350;
+    --forest-800: #054E3F;
+    --forest-900: #004437;
+    --forest-950: #013026;
+
+    /* Lemon — accent, one hue in both themes on purpose */
+    --lemon-50:  #FBFEEE;
+    --lemon-100: #F6FCD2;
+    --lemon-200: #ECFAA8;
+    --lemon-300: #E4F877;
+    --lemon-400: #DAF546;
+    --lemon-500: #C3DB2E;
+    --lemon-600: #A3B822;
+    --lemon-700: #7E8F1A;
+    --lemon-800: #5E6913;
+
+    /* Stone — true neutral, zero green lean. Anchored by White and Black from the
+       original swatch, which are genuinely neutral (no hue) — this is what keeps
+       surfaces from reading as tinted green in either theme, and is what dark mode
+       backgrounds are built from instead of a dark step of Forest. */
+    --stone-50:  #F7F7F7;
+    --stone-100: #EFEFED;
+    --stone-200: #E1E0DC;
+    --stone-300: #CBC9C2;
+    --stone-400: #ADAAA0;
+    --stone-500: #8C897E;
+    --stone-600: #6D6A5F;
+    --stone-700: #524F45;
+    --stone-800: #38362E;
+    --stone-900: #272727;
+    --stone-950: #171716;
+
+    /* Clay — destructive/expense-negative. Not in the source swatch — proposed. */
+    --clay-50:  #FBEEEC;
+    --clay-100: #F4D4CE;
+    --clay-300: #E2988A;
+    --clay-500: #C1543F;
+    --clay-700: #8F3B2C;
+    --clay-900: #5E271D;
+
+    /* Semantic — light */
+    --background: var(--stone-50);
+    --foreground: var(--stone-900);
+    --card: #FFFFFF;
+    --card-foreground: var(--stone-900);
+    --popover: #FFFFFF;
+    --popover-foreground: var(--stone-900);
+    --primary: var(--forest-900);
+    --primary-foreground: var(--stone-50);
+    --secondary: var(--forest-100);
+    --secondary-foreground: var(--forest-900);
+    --muted: var(--stone-100);
+    --muted-foreground: var(--stone-600);
+    --accent: var(--lemon-400);
+    --accent-foreground: var(--forest-900);
+    --destructive: var(--clay-500);
+    --destructive-foreground: var(--clay-50);
+    --border: var(--stone-200);
+    --input: var(--stone-200);
+    --ring: var(--forest-600);
+    --chart-1: var(--forest-600);
+    --chart-2: var(--lemon-400);
+    --chart-3: var(--clay-500);
+    --chart-4: var(--forest-300);
+    --chart-5: var(--stone-500);
+    --positive: var(--forest-600);
+
+    --radius: 0.5rem;
+    --font-display: "Archivo", ui-sans-serif, system-ui, sans-serif;
+    --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
+    --font-accent: "Instrument Serif", Georgia, "Times New Roman", serif;
+    --font-mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --background: var(--stone-950);
+      --foreground: var(--stone-50);
+      --card: var(--stone-900);
+      --card-foreground: var(--stone-50);
+      --popover: var(--stone-900);
+      --popover-foreground: var(--stone-50);
+      --primary: var(--lemon-400);
+      --primary-foreground: var(--stone-950);
+      --secondary: var(--stone-800);
+      --secondary-foreground: var(--stone-50);
+      --muted: var(--stone-800);
+      --muted-foreground: var(--stone-400);
+      --accent: var(--lemon-400);
+      --accent-foreground: var(--stone-950);
+      --destructive: var(--clay-300);
+      --destructive-foreground: #2A0D08;
+      --border: var(--stone-800);
+      --input: var(--stone-800);
+      --ring: var(--lemon-400);
+      --chart-1: var(--lemon-400);
+      --chart-2: var(--forest-400);
+      --chart-3: var(--clay-300);
+      --chart-4: var(--stone-400);
+      --chart-5: var(--stone-50);
+      --positive: var(--forest-400);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --background: var(--stone-950);
+    --foreground: var(--stone-50);
+    --card: var(--stone-900);
+    --card-foreground: var(--stone-50);
+    --popover: var(--stone-900);
+    --popover-foreground: var(--stone-50);
+    --primary: var(--lemon-400);
+    --primary-foreground: var(--stone-950);
+    --secondary: var(--stone-800);
+    --secondary-foreground: var(--stone-50);
+    --muted: var(--stone-800);
+    --muted-foreground: var(--stone-400);
+    --accent: var(--lemon-400);
+    --accent-foreground: var(--stone-950);
+    --destructive: var(--clay-300);
+    --destructive-foreground: #2A0D08;
+    --border: var(--stone-800);
+    --input: var(--stone-800);
+    --ring: var(--lemon-400);
+    --chart-1: var(--lemon-400);
+    --chart-2: var(--forest-400);
+    --chart-3: var(--clay-300);
+    --chart-4: var(--stone-400);
+    --chart-5: var(--stone-50);
+    --positive: var(--forest-400);
+  }
+
+  /* Type scale — Web is the default; Mobile applies under the breakpoint
+     or when the preview toggle forces it. */
+  :root {
+    --size-display: 3.5rem;  --lh-display: 1.05; --w-display: 700;
+    --size-h1: 2.5rem;       --lh-h1: 1.1;  --w-h1: 700;
+    --size-h2: 2rem;         --lh-h2: 1.15; --w-h2: 700;
+    --size-h3: 1.5rem;       --lh-h3: 1.25; --w-h3: 600;
+    --size-h4: 1.25rem;      --lh-h4: 1.3;  --w-h4: 600;
+    --size-body-lg: 1.125rem; --lh-body-lg: 1.6;
+    --size-body: 1rem;        --lh-body: 1.6;
+    --size-body-sm: 0.875rem; --lh-body-sm: 1.5;
+    --size-caption: 0.75rem;  --lh-caption: 1.4;
+    --size-accent: 1.125rem;  --lh-accent: 1.5;
+  }
+  @media (max-width: 767px) {
+    :root:not([data-viewport="web"]) {
+      --size-display: 2.25rem; --lh-display: 1.1;
+      --size-h1: 1.75rem;      --lh-h1: 1.2;
+      --size-h2: 1.375rem;     --lh-h2: 1.25;
+      --size-h3: 1.1875rem;    --lh-h3: 1.3;
+      --size-h4: 1.0625rem;    --lh-h4: 1.35;
+      --size-body-lg: 1.0625rem;
+      --size-body-sm: 0.8125rem;
+      --size-caption: 0.6875rem;
+      --size-accent: 1rem;
+    }
+  }
+  :root[data-viewport="mobile"] {
+    --size-display: 2.25rem; --lh-display: 1.1;
+    --size-h1: 1.75rem;      --lh-h1: 1.2;
+    --size-h2: 1.375rem;     --lh-h2: 1.25;
+    --size-h3: 1.1875rem;    --lh-h3: 1.3;
+    --size-h4: 1.0625rem;    --lh-h4: 1.35;
+    --size-body-lg: 1.0625rem;
+    --size-body-sm: 0.8125rem;
+    --size-caption: 0.6875rem;
+    --size-accent: 1rem;
+  }
+
+  /* ============ BASE ============ */
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+  h1, h2, h3, h4 { font-family: var(--font-display); text-wrap: balance; margin: 0; }
+  p { margin: 0; }
+  .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  ::selection { background: var(--accent); color: var(--accent-foreground); }
+
+  a { color: inherit; }
+  button { font-family: inherit; cursor: pointer; }
+  button:focus-visible, a:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+  .shell { max-width: 1120px; margin: 0 auto; padding: 0 1.5rem 6rem; }
+
+  /* ---- Toolbar ---- */
+  .toolbar {
+    position: sticky; top: 0; z-index: 10;
+    background: color-mix(in oklab, var(--background) 88%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+  }
+  .toolbar-inner {
+    max-width: 1120px; margin: 0 auto; padding: 0 1.5rem;
+    height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .wordmark { display: flex; align-items: baseline; gap: 0.5rem; font-family: var(--font-display); font-weight: 800; font-size: 1.125rem; }
+  .wordmark span { font-family: var(--font-body); font-weight: 500; font-size: 0.8125rem; color: var(--muted-foreground); }
+  .toggles { display: flex; gap: 0.5rem; }
+  .toggle-group { display: inline-flex; background: var(--muted); border-radius: var(--radius); padding: 3px; gap: 2px; }
+  .toggle-group button {
+    border: none; background: transparent; color: var(--muted-foreground);
+    font-size: 0.8125rem; font-weight: 600; padding: 0.375rem 0.75rem; border-radius: calc(var(--radius) - 3px);
+  }
+  .toggle-group button[aria-pressed="true"] { background: var(--card); color: var(--foreground); box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+
+  /* ---- Section scaffolding ---- */
+  .section { padding-top: 4rem; }
+  .section-head { margin-bottom: 2rem; max-width: 42rem; }
+  .section-head .eyebrow { display: block; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted-foreground); margin-bottom: 0.5rem; }
+  .section-head h2 { font-size: 1.75rem; margin-bottom: 0.5rem; }
+  .section-head p { color: var(--muted-foreground); font-size: 0.9375rem; line-height: 1.6; }
+
+  /* ---- Ramps ---- */
+  .ramp-label { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 0.75rem; gap: 1rem; flex-wrap: wrap; }
+  .ramp-label h3 { font-size: 1rem; font-weight: 600; }
+  .ramp-label .note { font-size: 0.75rem; color: var(--muted-foreground); }
+  .ramp { display: grid; grid-template-columns: repeat(11, 1fr); gap: 4px; margin-bottom: 2.5rem; }
+  .swatch { border-radius: calc(var(--radius) - 2px); overflow: hidden; border: 1px solid var(--border); }
+  .swatch-fill { height: 56px; position: relative; }
+  .swatch-fill .given { position: absolute; bottom: 4px; left: 4px; font-size: 0.625rem; font-weight: 700; padding: 1px 5px; border-radius: 999px; background: rgba(0,0,0,0.55); color: #fff; }
+  .swatch-meta { padding: 0.375rem 0.5rem; background: var(--card); }
+  .swatch-meta .step { font-size: 0.6875rem; font-weight: 600; color: var(--muted-foreground); }
+  .swatch-meta .hex { font-size: 0.6875rem; }
+  @media (max-width: 900px) { .ramp { grid-template-columns: repeat(6, 1fr); } }
+  @media (max-width: 560px) { .ramp { grid-template-columns: repeat(4, 1fr); } }
+
+  /* ---- Semantic token table ---- */
+  .token-table { width: 100%; border-collapse: collapse; }
+  .token-table th { text-align: left; font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted-foreground); font-weight: 600; padding: 0 0.75rem 0.5rem; }
+  .token-table td { padding: 0.625rem 0.75rem; border-top: 1px solid var(--border); vertical-align: middle; }
+  .token-table tr:first-child td { border-top: none; }
+  .token-table .name { font-weight: 600; font-size: 0.875rem; }
+  .token-table .use { font-size: 0.8125rem; color: var(--muted-foreground); }
+  .pair { display: flex; align-items: center; gap: 0.5rem; }
+  .dot { width: 20px; height: 20px; border-radius: 6px; border: 1px solid var(--border); flex-shrink: 0; }
+  .table-scroll { overflow-x: auto; }
+  .token-table .hex { font-size: 0.75rem; color: var(--muted-foreground); }
+
+  /* ---- Typography ---- */
+  .type-row { display: grid; grid-template-columns: 9rem 1fr; gap: 1.5rem; padding: 1.75rem 0; border-top: 1px solid var(--border); align-items: baseline; }
+  .type-row:first-of-type { border-top: none; }
+  .type-meta { }
+  .type-meta .role { font-size: 0.8125rem; font-weight: 700; margin-bottom: 0.25rem; }
+  .type-meta .spec { font-size: 0.6875rem; color: var(--muted-foreground); line-height: 1.5; }
+  .type-sample { min-width: 0; }
+  .t-display { font-family: var(--font-display); font-weight: var(--w-display); font-size: var(--size-display); line-height: var(--lh-display); font-variant-numeric: tabular-nums; }
+  .t-h1 { font-family: var(--font-display); font-weight: var(--w-h1); font-size: var(--size-h1); line-height: var(--lh-h1); }
+  .t-h2 { font-family: var(--font-display); font-weight: var(--w-h2); font-size: var(--size-h2); line-height: var(--lh-h2); }
+  .t-h3 { font-family: var(--font-display); font-weight: var(--w-h3); font-size: var(--size-h3); line-height: var(--lh-h3); }
+  .t-h4 { font-family: var(--font-display); font-weight: var(--w-h4); font-size: var(--size-h4); line-height: var(--lh-h4); }
+  .t-body-lg { font-family: var(--font-body); font-size: var(--size-body-lg); line-height: var(--lh-body-lg); max-width: 34em; }
+  .t-body { font-family: var(--font-body); font-size: var(--size-body); line-height: var(--lh-body); max-width: 34em; color: var(--foreground); }
+  .t-body-sm { font-family: var(--font-body); font-size: var(--size-body-sm); line-height: var(--lh-body-sm); color: var(--muted-foreground); max-width: 34em; }
+  .t-caption { font-family: var(--font-body); font-size: var(--size-caption); line-height: var(--lh-caption); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted-foreground); }
+  .t-accent { font-family: var(--font-accent); font-style: italic; font-weight: 400; font-size: calc(var(--size-accent) * 1.15); line-height: var(--lh-accent); color: var(--foreground); max-width: 30em; }
+  .accent-rule { display: flex; gap: 0.5rem; margin-top: 0.75rem; font-size: 0.75rem; color: var(--muted-foreground); }
+  .accent-rule .no { color: var(--clay-500); font-weight: 700; }
+  .accent-rule .yes { color: var(--forest-500); font-weight: 700; }
+
+  .font-compare { margin-top: 1.25rem; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .font-compare-row { display: grid; grid-template-columns: 8rem 1fr; gap: 1rem; padding: 0.875rem 1rem; align-items: center; }
+  .font-compare-row + .font-compare-row { border-top: 1px solid var(--border); }
+  .font-compare-row .tag { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted-foreground); }
+  .font-compare-row .sample { font-size: 1.125rem; font-style: italic; }
+  .font-compare-row.is-instrument .sample { font-family: "Instrument Serif", Georgia, serif; font-weight: 400; font-size: 1.375rem; }
+  .font-compare-row.is-inter .sample { font-family: "Inter", ui-sans-serif, sans-serif; font-weight: 400; }
+
+  /* ---- Applied preview ---- */
+  .applied-wrap { display: flex; justify-content: center; padding-top: 1rem; }
+  .frame { width: 100%; max-width: 640px; transition: max-width 0.25s ease; }
+  .frame[data-mobile="true"] { max-width: 380px; }
+  .app-card {
+    background: var(--card); color: var(--card-foreground);
+    border: 1px solid var(--border); border-radius: calc(var(--radius) * 2);
+    padding: 1.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .app-card .cap { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted-foreground); }
+  .balance-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; margin: 0.5rem 0 0.25rem; flex-wrap: wrap; }
+  .balance { font-family: var(--font-display); font-weight: 700; font-size: clamp(1.75rem, 5vw, 2.5rem); font-variant-numeric: tabular-nums; }
+  .delta { background: var(--accent); color: var(--accent-foreground); font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.6rem; border-radius: 999px; white-space: nowrap; }
+  .insight { font-family: var(--font-accent); font-style: italic; font-weight: 400; font-size: 1.0625rem; color: var(--muted-foreground); margin: 0.75rem 0 1.5rem; }
+  .tx-list { display: flex; flex-direction: column; border-top: 1px solid var(--border); }
+  .tx { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid var(--border); gap: 1rem; }
+  .tx-left .merchant { font-size: 0.9375rem; font-weight: 500; }
+  .tx-left .cat { font-size: 0.75rem; color: var(--muted-foreground); }
+  .tx-amt { font-variant-numeric: tabular-nums; font-weight: 600; font-size: 0.9375rem; white-space: nowrap; }
+  .tx-amt.pos { color: var(--positive); }
+  .actions { display: flex; gap: 0.625rem; margin-top: 1.5rem; flex-wrap: wrap; }
+  .btn { border: none; border-radius: var(--radius); padding: 0.625rem 1.125rem; font-size: 0.875rem; font-weight: 600; }
+  .btn-primary { background: var(--primary); color: var(--primary-foreground); }
+  .btn-secondary { background: var(--secondary); color: var(--secondary-foreground); }
+  .btn-ghost-destructive { background: transparent; color: var(--destructive); padding: 0.625rem 0.5rem; }
+
+  footer { padding-top: 5rem; border-top: 1px solid var(--border); margin-top: 5rem; }
+  footer p { font-size: 0.8125rem; color: var(--muted-foreground); max-width: 34em; line-height: 1.6; }
+</style>
+
+<div class="toolbar">
+  <div class="toolbar-inner">
+    <div class="wordmark">Oykot <span>Design Tokens</span></div>
+    <div class="toggles">
+      <div class="toggle-group" role="group" aria-label="Theme">
+        <button id="btn-light" aria-pressed="true" onclick="setTheme('light')">Light</button>
+        <button id="btn-dark" aria-pressed="false" onclick="setTheme('dark')">Dark</button>
+      </div>
+      <div class="toggle-group" role="group" aria-label="Viewport">
+        <button id="btn-web" aria-pressed="true" onclick="setViewport('web')">Web</button>
+        <button id="btn-mobile" aria-pressed="false" onclick="setViewport('mobile')">Mobile</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="shell">
+
+  <section class="section" style="padding-top:3rem;">
+    <div class="section-head">
+      <span class="eyebrow">Source</span>
+      <h2>Five colors, three scales</h2>
+      <p>Dark Green and the pale "Gray" both read as green — so they anchor one Forest scale
+      together, with Gray as its lightest tint rather than a neutral. White and Black have no
+      hue at all, so they anchor a true neutral Stone scale instead — that's what backgrounds,
+      borders and dark mode are built from now, which is why dark mode no longer reads as a
+      dark green room. Lemon Yellow stays its own accent. Steps marked <span class="mono">given</span>
+      are your exact hex values.</p>
+    </div>
+
+    <div class="ramp-label"><h3>Forest — primary</h3><span class="note">anchors 004437 · E1F3E5</span></div>
+    <div class="ramp" id="ramp-forest"></div>
+
+    <div class="ramp-label"><h3>Lemon — accent</h3><span class="note">anchor DAF546 · same hue in both themes, on purpose</span></div>
+    <div class="ramp" id="ramp-lemon"></div>
+
+    <div class="ramp-label"><h3>Stone — neutral</h3><span class="note">anchors F7F7F7 · 272727 · zero hue, sits quietly under Forest and Lemon</span></div>
+    <div class="ramp" id="ramp-stone"></div>
+
+    <div class="ramp-label"><h3>Clay — destructive</h3><span class="note">not in your swatch — proposed for expense/error states, swap freely</span></div>
+    <div class="ramp" id="ramp-clay"></div>
+  </section>
+
+  <section class="section">
+    <div class="section-head">
+      <span class="eyebrow">Semantic tokens</span>
+      <h2>What each color is for</h2>
+      <p>Named the way shadcn/ui expects them, so this maps straight into
+      <span class="mono">globals.css</span> later. Background, card, border and muted all come
+      from Stone now, in both themes — Forest and Lemon are reserved for actions and emphasis,
+      never the base surface. Primary swaps from Forest to Lemon in dark mode, since dark green
+      loses contrast on a near-black ground.</p>
+    </div>
+    <div class="table-scroll">
+      <table class="token-table" id="token-table">
+        <thead><tr><th>Token</th><th>Light</th><th>Dark</th><th>Used for</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-head">
+      <span class="eyebrow">Type scale</span>
+      <h2>Archivo, Inter, Instrument Serif</h2>
+      <p>Archivo carries headings and the big numbers — it has the confidence a balance figure
+      needs. Inter runs the UI and body copy, set with tabular figures wherever amounts line up.
+      Instrument Serif Italic — a serif, not a sans, which is why it needed to actually look
+      different up close — is rationed to one job: a single insight line, never a control.
+      Toggle Web/Mobile above to preview both breakpoints — body text holds at 16px on mobile
+      by design, everything around it compresses.</p>
+    </div>
+
+    <div class="type-row">
+      <div class="type-meta"><div class="role">Display</div><div class="spec mono">Web 56/59 · Mobile 36/40<br>Archivo 700</div></div>
+      <div class="type-sample t-display">$4,218.60</div>
+    </div>
+    <div class="type-row">
+      <div class="type-meta"><div class="role">H1</div><div class="spec mono">Web 40/44 · Mobile 28/34<br>Archivo 700</div></div>
+      <div class="type-sample t-h1">Your spending, clarified.</div>
+    </div>
+    <div class="type-row">
+      <div class="type-meta"><div class="role">H2</div><div class="spec mono">Web 32/37 · Mobile 22/28<br>Archivo 700</div></div>
+      <div class="type-sample t-h2">This month's overview</div>
+    </div>
+    <div class="type-row">
+      <div class="type-meta"><div class="role">H3</div><div class="spec mono">Web 24/30 · Mobile 19/25<br>Archivo 600</div></div>
+      <div class="type-sample t-h3">Recurring subscriptions</div>
+    </div>
+    <div class="type-row">
+      <div class="type-meta"><div class="role">H4</div><div class="spec mono">Web 20/26 · Mobile 17/23<br>Archivo 600</div></div>
+      <div class="type-sample t-h4">Category breakdown</div>
+    </div>
+    <div class="type-row">
+      <div class="type-meta"><div class="role">Body Large</div><div class="spec mono">Web 18/29 · Mobile 17/27<br>Inter 400</div></div>
+      <div class="type-sample t-body-lg">Track every dollar without the spreadsheet gymnastics.</div>
+    </div>
+    <div class="type-row">
+      <div class="type-meta"><div class="role">Body</div><div class="spec mono">16/26 both sizes<br>Inter 400</div></div>
+      <div class="type-sample t-body">Oykot keeps a running balance across every account you connect, updated the moment a transaction posts. Never below 16px — it's the accessibility floor for primary reading text.</div>
+    </div>
+    <div class="type-row">
+      <div class="type-meta"><div class="role">Body Small</div><div class="spec mono">Web 14/21 · Mobile 13/20<br>Inter 400</div></div>
+      <div class="type-sample t-body-sm">Transactions typically post within 1–2 business days.</div>
+    </div>
+    <div class="type-row">
+      <div class="type-meta"><div class="role">Caption</div><div class="spec mono">Web 12/17 · Mobile 11/16<br>Inter 600, upper</div></div>
+      <div class="type-sample t-caption">Last updated 2 min ago</div>
+    </div>
+    <div class="type-row">
+      <div class="type-meta"><div class="role">Accent Italic</div><div class="spec mono">Web 21/27 · Mobile 18/24<br>Instrument Serif 400i</div></div>
+      <div>
+        <div class="type-sample t-accent">You spent 12% less on dining this month.</div>
+        <div class="accent-rule"><span class="yes">Use</span> pull quotes &amp; insight callouts <span class="no">— never</span> buttons, nav, or dense body copy.</div>
+        <div class="font-compare">
+          <div class="font-compare-row is-instrument">
+            <div class="tag">Instrument Serif</div>
+            <div class="sample">Twelve percent less than last month.</div>
+          </div>
+          <div class="font-compare-row is-inter">
+            <div class="tag">Inter Italic</div>
+            <div class="sample">Twelve percent less than last month.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-head">
+      <span class="eyebrow">Applied</span>
+      <h2>Tokens in a real screen</h2>
+      <p>The same toggles above drive this card, so the theory checks out against something you'd
+      actually ship.</p>
+    </div>
+    <div class="applied-wrap">
+      <div class="frame" id="applied-frame">
+        <div class="app-card">
+          <div class="cap">Available balance</div>
+          <div class="balance-row">
+            <div class="balance mono">$4,218.60</div>
+            <div class="delta">+2.4% this month</div>
+          </div>
+          <p class="insight">You're saving 12% more than last month — mostly groceries.</p>
+          <div class="tx-list">
+            <div class="tx">
+              <div class="tx-left"><div class="merchant">Whole Foods Market</div><div class="cat">Groceries</div></div>
+              <div class="tx-amt mono">-$86.42</div>
+            </div>
+            <div class="tx">
+              <div class="tx-left"><div class="merchant">Payroll Deposit</div><div class="cat">Income</div></div>
+              <div class="tx-amt mono pos">+$3,200.00</div>
+            </div>
+            <div class="tx">
+              <div class="tx-left"><div class="merchant">Con Edison</div><div class="cat">Utilities</div></div>
+              <div class="tx-amt mono">-$142.18</div>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn btn-primary">Add transaction</button>
+            <button class="btn btn-secondary">View all</button>
+            <button class="btn btn-ghost-destructive">Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p>Once you've flagged anything to change, I'll fold the final hex values and semantic
+    mapping into <span class="mono">AGENTS.md</span> and a proper <span class="mono">globals.css</span>
+    / Tailwind config for the shadcn/ui setup.</p>
+  </footer>
+</div>
+
+<script>
+  const scales = {
+    forest: ['50','100','200','300','400','500','600','700','800','900','950'],
+    lemon:  ['50','100','200','300','400','500','600','700','800'],
+    stone:  ['50','100','200','300','400','500','600','700','800','900','950'],
+    clay:   ['50','100','300','500','700','900'],
+  };
+  const given = {
+    'forest-900': '004437', 'forest-100': 'E1F3E5', 'lemon-400': 'DAF546',
+    'stone-50': 'F7F7F7', 'stone-900': '272727',
+  };
+  function hexOf(varName) {
+    return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+  }
+  for (const [name, steps] of Object.entries(scales)) {
+    const el = document.getElementById('ramp-' + name);
+    el.innerHTML = steps.map(step => {
+      const varName = `--${name}-${step}`;
+      const hex = hexOf(varName).replace('#','').toUpperCase();
+      const key = `${name}-${step}`;
+      const isGiven = given[key] === hex;
+      return `<div class="swatch">
+        <div class="swatch-fill" style="background:var(${varName})">${isGiven ? '<span class="given">given</span>' : ''}</div>
+        <div class="swatch-meta"><div class="step">${step}</div><div class="hex mono">#${hex}</div></div>
+      </div>`;
+    }).join('');
+  }
+
+  const tokens = [
+    ['background / foreground', '--background', '--foreground', 'Page canvas & default text'],
+    ['card / card-foreground', '--card', '--card-foreground', 'Elevated surfaces — cards, sheets'],
+    ['primary / primary-foreground', '--primary', '--primary-foreground', 'Main CTAs — Add transaction, Save'],
+    ['secondary / secondary-foreground', '--secondary', '--secondary-foreground', 'Lower-emphasis actions'],
+    ['muted / muted-foreground', '--muted', '--muted-foreground', 'Subtle fills, captions, disabled text'],
+    ['accent / accent-foreground', '--accent', '--accent-foreground', 'Highlights, active states, positive deltas'],
+    ['destructive / destructive-foreground', '--destructive', '--destructive-foreground', 'Delete, remove, error states'],
+    ['border / input / ring', '--border', '--ring', 'Dividers, field borders, focus rings'],
+  ];
+  const lightVals = {}, darkVals = {};
+  function snapshot(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    const cs = getComputedStyle(document.documentElement);
+    const out = {};
+    tokens.forEach(([, a, b]) => { out[a] = cs.getPropertyValue(a).trim(); out[b] = cs.getPropertyValue(b).trim(); });
+    return out;
+  }
+  const savedTheme = document.documentElement.getAttribute('data-theme');
+  Object.assign(lightVals, snapshot('light'));
+  Object.assign(darkVals, snapshot('dark'));
+  if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme); else document.documentElement.removeAttribute('data-theme');
+
+  document.querySelector('#token-table tbody').innerHTML = tokens.map(([name, a, b, use]) => `
+    <tr>
+      <td class="name">${name}</td>
+      <td><div class="pair"><span class="dot" style="background:${lightVals[a]}"></span><span class="hex mono">${lightVals[a]}</span></div></td>
+      <td><div class="pair"><span class="dot" style="background:${darkVals[a]}"></span><span class="hex mono">${darkVals[a]}</span></div></td>
+      <td class="use">${use}</td>
+    </tr>`).join('');
+
+  function setTheme(mode) {
+    document.documentElement.setAttribute('data-theme', mode);
+    document.getElementById('btn-light').setAttribute('aria-pressed', String(mode === 'light'));
+    document.getElementById('btn-dark').setAttribute('aria-pressed', String(mode === 'dark'));
+    try { localStorage.setItem('oykot-theme-preview', mode); } catch (e) {}
+  }
+  function setViewport(mode) {
+    document.documentElement.setAttribute('data-viewport', mode);
+    document.getElementById('btn-web').setAttribute('aria-pressed', String(mode === 'web'));
+    document.getElementById('btn-mobile').setAttribute('aria-pressed', String(mode === 'mobile'));
+    document.getElementById('applied-frame').setAttribute('data-mobile', String(mode === 'mobile'));
+  }
+  setTheme('light');
+  setViewport('web');
+</script>
