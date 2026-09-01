@@ -1,28 +1,39 @@
 import "server-only";
 
-import Database from "better-sqlite3";
-import { drizzle } from "drizzle-orm/better-sqlite3";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 import * as schema from "./schema";
 
 /**
- * Local SQLite. The file lives beside the project and is gitignored — this is
- * personal financial data and has no business in a repo.
+ * Supabase Postgres over the pooled connection.
  *
- * Drizzle keeps the Postgres path open: swapping to Neon later is a driver +
- * dialect change, not a rewrite of every query.
+ * This connects as the table owner, so RLS does NOT constrain these queries —
+ * isolation is enforced in application code, where every query in lib/budget.ts
+ * filters on the session user's id. The RLS policies in drizzle/rls.sql are
+ * defence in depth for anything that reaches the data another way.
  */
-const dbPath = process.env.DATABASE_URL ?? "./oykot.db";
+const connectionString =
+  process.env.DATABASE_URL ?? process.env.POSTGRES_URL ?? "";
+
+if (!connectionString) {
+  throw new Error(
+    "DATABASE_URL (or POSTGRES_URL) is not set. Run `vercel env pull .env.local` after provisioning Supabase.",
+  );
+}
 
 const globalForDb = globalThis as unknown as {
-  sqlite: Database.Database | undefined;
+  pg: ReturnType<typeof postgres> | undefined;
 };
 
-// Reuse across hot reloads in dev, or every edit opens another handle.
-const sqlite = globalForDb.sqlite ?? new Database(dbPath);
-if (process.env.NODE_ENV !== "production") globalForDb.sqlite = sqlite;
+// Reuse across hot reloads in dev, or every edit opens another pool.
+const client =
+  globalForDb.pg ??
+  postgres(connectionString, {
+    prepare: false, // pgbouncer in transaction mode can't do prepared statements
+    max: 10,
+  });
 
-sqlite.pragma("journal_mode = WAL");
-sqlite.pragma("foreign_keys = ON");
+if (process.env.NODE_ENV !== "production") globalForDb.pg = client;
 
-export const db = drizzle(sqlite, { schema });
+export const db = drizzle(client, { schema });
 export { schema };

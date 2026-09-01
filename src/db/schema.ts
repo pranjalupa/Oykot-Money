@@ -1,20 +1,37 @@
 import { sql, relations } from "drizzle-orm";
 import {
-  sqliteTable,
+  pgTable,
+  pgSchema,
   text,
   integer,
+  bigint,
+  boolean,
+  uuid,
+  timestamp,
+  date,
   uniqueIndex,
   index,
-  type AnySQLiteColumn,
-} from "drizzle-orm/sqlite-core";
+  type AnyPgColumn,
+} from "drizzle-orm/pg-core";
 
 /**
- * Money is stored in MINOR UNITS (paise) as integers — never floats.
+ * Money is stored in MINOR UNITS (paise) as bigints — never floats.
  * ₹64,867 is 6486700. Format at the edges with lib/money.ts.
+ * bigint rather than integer so a net worth past ₹2.1 crore doesn't overflow.
  *
- * Dates are ISO strings: transactions use "YYYY-MM-DD", budget periods
- * use "YYYY-MM". SQLite has no date type and ISO strings sort correctly.
+ * Every user-owned row carries `userId`. Two layers guard isolation:
+ *   1. Application code — lib/auth.ts resolves the session user and every
+ *      query in lib/budget.ts filters by it. This is the real enforcement,
+ *      because Drizzle connects with a role that owns the tables.
+ *   2. RLS policies in drizzle/rls.sql — defence in depth, and what protects
+ *      the data if anything ever queries through PostgREST.
  */
+
+/** Supabase's auth.users, declared so we can point foreign keys at it. */
+const authSchema = pgSchema("auth");
+export const authUsers = authSchema.table("users", {
+  id: uuid("id").primaryKey(),
+});
 
 export const GROUP_KEYS = ["needs", "wants", "investments", "income"] as const;
 export type GroupKey = (typeof GROUP_KEYS)[number];
@@ -24,6 +41,8 @@ export type AccountKind = (typeof ACCOUNT_KINDS)[number];
 
 export const DIRECTIONS = ["outflow", "inflow", "transfer"] as const;
 export type Direction = (typeof DIRECTIONS)[number];
+
+const money = (name: string) => bigint(name, { mode: "number" });
 
 /* -------------------------------------------------------------------------- */
 /* Accounts                                                                    */
@@ -40,10 +59,14 @@ export type Direction = (typeof DIRECTIONS)[number];
  *              balance = currentValue, which you punch in when you check
  *              the fund. Deliberately no returns/cost-basis tracking.
  */
-export const accounts = sqliteTable(
+export const accounts = pgTable(
   "accounts",
   {
-    id: integer("id").primaryKey({ autoIncrement: true }),
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => authUsers.id, { onDelete: "cascade" }),
+
     name: text("name").notNull(),
     kind: text("kind", { enum: ACCOUNT_KINDS }).notNull(),
 
@@ -51,32 +74,30 @@ export const accounts = sqliteTable(
     subtype: text("subtype"),
 
     /** kind='spending' only. Anchor for the running balance. */
-    openingBalanceMinor: integer("opening_balance_minor").notNull().default(0),
-    openingBalanceDate: text("opening_balance_date"),
+    openingBalanceMinor: money("opening_balance_minor").notNull().default(0),
+    openingBalanceDate: date("opening_balance_date"),
 
     /** kind='asset' only. Manually maintained current worth. */
-    currentValueMinor: integer("current_value_minor").notNull().default(0),
-    valueUpdatedAt: text("value_updated_at"),
+    currentValueMinor: money("current_value_minor").notNull().default(0),
+    valueUpdatedAt: date("value_updated_at"),
 
     currency: text("currency").notNull().default("INR"),
 
     /** A credit card's balance is a liability: spending makes it more negative. */
-    isLiability: integer("is_liability", { mode: "boolean" })
-      .notNull()
-      .default(false),
-
-    includeInNetWorth: integer("include_in_net_worth", { mode: "boolean" })
-      .notNull()
-      .default(true),
+    isLiability: boolean("is_liability").notNull().default(false),
+    includeInNetWorth: boolean("include_in_net_worth").notNull().default(true),
 
     icon: text("icon"),
-    archived: integer("archived", { mode: "boolean" }).notNull().default(false),
+    archived: boolean("archived").notNull().default(false),
     sortOrder: integer("sort_order").notNull().default(0),
-    createdAt: text("created_at")
+    createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
-      .default(sql`(CURRENT_TIMESTAMP)`),
+      .defaultNow(),
   },
-  (t) => [index("accounts_kind_idx").on(t.kind)],
+  (t) => [
+    index("accounts_user_idx").on(t.userId),
+    index("accounts_user_kind_idx").on(t.userId, t.kind),
+  ],
 );
 
 /* -------------------------------------------------------------------------- */
@@ -88,17 +109,21 @@ export const accounts = sqliteTable(
  * sheet works across all 36 lines. `parentId` allows ONE optional level below
  * that (Subscriptions -> Netflix, Spotify) for the few categories that want
  * the resolution. Two levels maximum; enforced in lib/categories.ts, not by
- * the schema, since SQLite can't express depth constraints.
+ * the schema, since Postgres can't express depth constraints declaratively.
  */
-export const categories = sqliteTable(
+export const categories = pgTable(
   "categories",
   {
-    id: integer("id").primaryKey({ autoIncrement: true }),
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => authUsers.id, { onDelete: "cascade" }),
+
     name: text("name").notNull(),
     groupKey: text("group_key", { enum: GROUP_KEYS }).notNull(),
 
     // Self-reference needs the explicit return type, or TS can't close the loop.
-    parentId: integer("parent_id").references((): AnySQLiteColumn => categories.id, {
+    parentId: uuid("parent_id").references((): AnyPgColumn => categories.id, {
       onDelete: "cascade",
     }),
 
@@ -107,20 +132,19 @@ export const categories = sqliteTable(
      * when false it just rolls up into the parent's. Tracking a subcategory
      * shouldn't force you to budget it separately.
      */
-    budgetsSeparately: integer("budgets_separately", { mode: "boolean" })
-      .notNull()
-      .default(false),
+    budgetsSeparately: boolean("budgets_separately").notNull().default(false),
 
     /** Phosphor icon name, e.g. "House", "ForkKnife". */
     icon: text("icon"),
-    archived: integer("archived", { mode: "boolean" }).notNull().default(false),
+    archived: boolean("archived").notNull().default(false),
     sortOrder: integer("sort_order").notNull().default(0),
-    createdAt: text("created_at")
+    createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
-      .default(sql`(CURRENT_TIMESTAMP)`),
+      .defaultNow(),
   },
   (t) => [
-    index("categories_group_idx").on(t.groupKey),
+    index("categories_user_idx").on(t.userId),
+    index("categories_user_group_idx").on(t.userId, t.groupKey),
     index("categories_parent_idx").on(t.parentId),
   ],
 );
@@ -129,22 +153,40 @@ export const categories = sqliteTable(
 /* Group targets (the 50/30/20 dial)                                           */
 /* -------------------------------------------------------------------------- */
 
+/** The `month` value meaning "the default that prefills every month". */
+export const DEFAULT_MONTH = "default";
+
 /**
- * `month` NULL  = the default split, used to prefill every new month.
- *                 Ships as 50/30/20; Pranjal's is 50/15/35.
- * `month` set   = an override for that month only, so a heavy-expense month
- *                 can dial investments down without touching the default.
+ * `month` = 'default' — the split used to prefill every new month.
+ *                       Ships as 50/30/20; Pranjal's is 50/15/35.
+ * `month` = 'YYYY-MM' — an override for that month only, so a heavy-expense
+ *                       month can dial investments down without touching the
+ *                       default.
+ *
+ * A sentinel rather than NULL so the unique index and ON CONFLICT actually
+ * bite — in Postgres NULLs are distinct, so a nullable month would happily
+ * accumulate duplicate "default" rows on every save.
  */
-export const groupTargets = sqliteTable(
+export const groupTargets = pgTable(
   "group_targets",
   {
-    id: integer("id").primaryKey({ autoIncrement: true }),
-    month: text("month"),
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => authUsers.id, { onDelete: "cascade" }),
+
+    month: text("month").notNull().default(DEFAULT_MONTH),
     groupKey: text("group_key", { enum: GROUP_KEYS }).notNull(),
     /** Whole percent of income. Needs+Wants+Investments should total 100. */
     percent: integer("percent").notNull(),
   },
-  (t) => [uniqueIndex("group_targets_month_group_idx").on(t.month, t.groupKey)],
+  (t) => [
+    uniqueIndex("group_targets_user_month_group_idx").on(
+      t.userId,
+      t.month,
+      t.groupKey,
+    ),
+  ],
 );
 
 /* -------------------------------------------------------------------------- */
@@ -157,21 +199,25 @@ export const groupTargets = sqliteTable(
  * cardinalities, so keeping them apart avoids a flag column and a pile of
  * "WHERE is_planned" filters on every query.
  */
-export const budgetLines = sqliteTable(
+export const budgetLines = pgTable(
   "budget_lines",
   {
-    id: integer("id").primaryKey({ autoIncrement: true }),
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => authUsers.id, { onDelete: "cascade" }),
+
     /** "YYYY-MM" */
     month: text("month").notNull(),
-    categoryId: integer("category_id")
+    categoryId: uuid("category_id")
       .notNull()
       .references(() => categories.id, { onDelete: "cascade" }),
-    plannedMinor: integer("planned_minor").notNull().default(0),
+    plannedMinor: money("planned_minor").notNull().default(0),
     note: text("note"),
   },
   (t) => [
     uniqueIndex("budget_lines_month_category_idx").on(t.month, t.categoryId),
-    index("budget_lines_month_idx").on(t.month),
+    index("budget_lines_user_month_idx").on(t.userId, t.month),
   ],
 );
 
@@ -192,24 +238,27 @@ export const budgetLines = sqliteTable(
  * loan account still carries a category, so it counts against Wants the way
  * the sheet already does, while also moving that person's balance.
  */
-export const transactions = sqliteTable(
+export const transactions = pgTable(
   "transactions",
   {
-    id: integer("id").primaryKey({ autoIncrement: true }),
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => authUsers.id, { onDelete: "cascade" }),
+
     /** "YYYY-MM-DD" */
-    date: text("date").notNull(),
-    amountMinor: integer("amount_minor").notNull(),
+    date: date("date").notNull(),
+    amountMinor: money("amount_minor").notNull(),
     direction: text("direction", { enum: DIRECTIONS }).notNull(),
 
-    accountId: integer("account_id")
+    accountId: uuid("account_id")
       .notNull()
       .references(() => accounts.id, { onDelete: "restrict" }),
-    counterAccountId: integer("counter_account_id").references(
-      () => accounts.id,
-      { onDelete: "restrict" },
-    ),
+    counterAccountId: uuid("counter_account_id").references(() => accounts.id, {
+      onDelete: "restrict",
+    }),
 
-    categoryId: integer("category_id").references(() => categories.id, {
+    categoryId: uuid("category_id").references(() => categories.id, {
       onDelete: "set null",
     }),
 
@@ -217,21 +266,21 @@ export const transactions = sqliteTable(
     merchant: text("merchant"),
     note: text("note"),
 
-    /** Where this came from: manual | import | rule. Useful once entry is automated. */
+    /** Where this came from: manual | import | rule. */
     source: text("source").notNull().default("manual"),
     /** Dedupe key for statement imports, so re-importing is safe. */
     externalId: text("external_id"),
 
-    createdAt: text("created_at")
+    createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
-      .default(sql`(CURRENT_TIMESTAMP)`),
+      .defaultNow(),
   },
   (t) => [
-    index("transactions_date_idx").on(t.date),
+    index("transactions_user_date_idx").on(t.userId, t.date),
     index("transactions_account_idx").on(t.accountId),
     index("transactions_counter_idx").on(t.counterAccountId),
     index("transactions_category_idx").on(t.categoryId),
-    uniqueIndex("transactions_external_id_idx").on(t.externalId),
+    uniqueIndex("transactions_user_external_id_idx").on(t.userId, t.externalId),
   ],
 );
 
@@ -240,19 +289,26 @@ export const transactions = sqliteTable(
 /* -------------------------------------------------------------------------- */
 
 /** "anything whose merchant contains BLINKIT -> Groceries". */
-export const merchantRules = sqliteTable("merchant_rules", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  pattern: text("pattern").notNull(),
-  categoryId: integer("category_id")
-    .notNull()
-    .references(() => categories.id, { onDelete: "cascade" }),
-  accountId: integer("account_id").references(() => accounts.id, {
-    onDelete: "set null",
-  }),
-  createdAt: text("created_at")
-    .notNull()
-    .default(sql`(CURRENT_TIMESTAMP)`),
-});
+export const merchantRules = pgTable(
+  "merchant_rules",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => authUsers.id, { onDelete: "cascade" }),
+    pattern: text("pattern").notNull(),
+    categoryId: uuid("category_id")
+      .notNull()
+      .references(() => categories.id, { onDelete: "cascade" }),
+    accountId: uuid("account_id").references(() => accounts.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("merchant_rules_user_idx").on(t.userId)],
+);
 
 /* -------------------------------------------------------------------------- */
 /* Relations                                                                   */
@@ -302,3 +358,5 @@ export type Category = typeof categories.$inferSelect;
 export type BudgetLine = typeof budgetLines.$inferSelect;
 export type Transaction = typeof transactions.$inferSelect;
 export type GroupTarget = typeof groupTargets.$inferSelect;
+
+export { sql };

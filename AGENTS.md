@@ -31,12 +31,28 @@ working here should treat it as source of truth for decisions, trajectory, and s
   pull quotes and insight lines, never buttons/nav/labels; it's the one serif moment in an
   all-sans system and only reads as intentional if it stays rare). Use the `accent-note`
   utility class, don't reach for the font variable directly.
-- **Database: SQLite via Drizzle**, file at `./oykot.db`, gitignored. Chosen for zero-setup
-  and because personal financial data shouldn't need a cloud round-trip. Drizzle keeps the
-  Postgres/Neon path open if this ever becomes multi-user — dialect swap, not a rewrite.
-- **Money is integer paise everywhere.** Never floats, never rupees, until `lib/money.ts`
-  formats at the UI edge.
-- **Hosting:** undecided. Local-first for now; SQLite means it isn't Vercel-ready as-is.
+- **Database: Supabase Postgres via Drizzle** (`postgres-js`, pooled). Provisioned through
+  the Vercel Marketplace, so env vars are managed by Vercel — `vercel env pull .env.local`
+  to refresh. Migrated off local SQLite when the project went multi-user.
+- **Auth: Supabase Auth**, email + password, open signup. `@supabase/ssr` with a middleware
+  session refresh (`src/middleware.ts`). Supabase is used ONLY for auth; all data access is
+  Drizzle.
+- **Money is integer paise everywhere** — stored as `bigint`. Never floats, never rupees,
+  until `lib/money.ts` formats at the UI edge.
+- **Hosting: Vercel** (project `oykot-money`, connected to this repo).
+
+## Multi-tenancy — read before writing any query
+Every user-owned row carries `userId`. Isolation is enforced in TWO places, and you must
+respect both:
+1. **Application code is the real enforcement.** Drizzle connects as the table owner, so RLS
+   does *not* constrain it. `requireUser()` in `lib/auth.ts` resolves the session user, and
+   every query in `lib/budget.ts` filters on that id. Any mutation taking an id from a form
+   runs an ownership check first (`ownsCategory` / `ownsAccount` in `app/actions.ts`) — an id
+   in a form field is user input.
+2. **RLS policies** (`drizzle/rls.sql`) are defence in depth, for anything reaching the data
+   through PostgREST with a user JWT. Re-run that file after adding a table.
+`ensureUserSetup()` seeds a new account with starter categories and 50/30/20; it's idempotent
+and safe to call on every page load.
 
 ## Data model (the part worth knowing before touching schema)
 Full detail in `src/db/schema.ts` comments. The decisions behind it:
@@ -53,9 +69,10 @@ Full detail in `src/db/schema.ts` comments. The decisions behind it:
   all 36 lines. `parentId` allows ONE optional level below (Subscriptions → Netflix) for
   categories that want the resolution. Two levels max — enforced in app code, not the schema.
   A child's `budgetsSeparately` decides whether it carries its own planned amount or rolls up.
-- **Group targets:** `group_targets.month IS NULL` is the default that prefills new months;
-  a row with a month set overrides just that month. Ships as 50/30/20; Pranjal's default is
-  **50/15/35**.
+- **Group targets:** `group_targets.month = 'default'` (the `DEFAULT_MONTH` sentinel) is the
+  split that prefills new months; a row with a real `YYYY-MM` overrides just that month.
+  A sentinel rather than NULL because Postgres treats NULLs as distinct, so a nullable month
+  would let ON CONFLICT miss and accumulate duplicate default rows. Ships as 50/30/20.
 - **Budget lines are a separate table from transactions** — one planned row per category per
   month vs. many actuals. Different cardinalities; keeping them apart avoids a flag column
   and a `WHERE is_planned` on every query.
@@ -71,11 +88,23 @@ Live in `src/app/globals.css` as the source of truth. Two rules that matter:
 Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
 
 ## Product trajectory
-- **Phase 1 (current):** personal budgeting tool, single user.
-- **Phase 2 (future, unscheduled):** possible SaaS / multi-user. Do not pre-optimize for
-  multi-tenancy — Phase 1 decisions should stay simple.
+- **Phase 1 (done):** personal budgeting tool.
+- **Phase 2 (current):** multi-user with open signup and per-user isolation. Still no billing,
+  teams, or sharing — don't build toward those without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
+- 2026-09-02 — **Made it writable, multi-user, and deployed.** Migrated SQLite → Supabase
+  Postgres (Vercel Marketplace, bom1) and added Supabase Auth with open signup. Everything the
+  earlier build only displayed is now editable: transactions (add/delete), inline planned
+  amounts, category CRUD with the optional nested level, account CRUD across all three kinds,
+  asset values, and the target split (default vs. per-month). Added Daily (safe-to-spend) and
+  Year (month-by-month rollup) views. RLS enabled on all six tables.
+  - Verified end to end against a real Supabase instance, including the loan mechanism:
+    lending ₹2,000 to a person account moved Bank −₹2,000, set "owed to you" +₹2,000, counted
+    against Wants, and correctly left net worth unchanged.
+  - Fixed: active segmented-tab was near-invisible in dark mode (`bg-card` is *darker* than
+    `bg-muted` there). Now carries `ring-1 ring-foreground/15`, which reads in both themes.
+    Watch for this class of bug — light-mode elevation cues invert in dark.
 - 2026-09-02 — **First build.** Scaffolded the app and shipped the monthly view, the three
   group pages, and accounts/net-worth. Seeded from the real Aug-26 sheet: 36 categories,
   5 accounts, planned amounts carried into the current month. Totals reconcile exactly against
@@ -90,10 +119,10 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
 - 2026-09-01 — Repo created (private). AGENTS.md established as the persistent context file.
 
 ## Status
-Monthly view, group pages (Needs/Wants/Investments/Income) and accounts/net-worth are working
-against real seeded data. **Not built yet:** creating/editing transactions (the app is
-read-only so far), daily and yearly views, category CRUD, editing the target split in-app,
-and any import/automation.
+Fully workable and deployed. Month / Daily / Year / group pages / category detail / accounts /
+settings all read and write against Supabase, with auth and per-user isolation.
+**Not built yet:** editing an existing transaction (only add + delete), reordering categories,
+statement import or any automated entry, and recurring transactions.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

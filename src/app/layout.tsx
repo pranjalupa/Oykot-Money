@@ -1,13 +1,12 @@
 import type { Metadata } from "next";
 import { Archivo, Inter, Instrument_Serif } from "next/font/google";
+import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
-import { AppNav } from "@/components/app-nav";
+import { AppShell } from "@/components/app-shell";
+import { getUser } from "@/lib/auth";
 import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-});
+const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 
 const archivo = Archivo({
   variable: "--font-archivo",
@@ -28,9 +27,12 @@ export const metadata: Metadata = {
   description: "Personal budgeting — needs, wants, investments.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  // Nav only makes sense once you're in; the auth pages render bare.
+  const user = await getUser();
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body
@@ -42,12 +44,10 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <div className="min-h-svh">
-            <AppNav />
-            <main className="mx-auto w-full max-w-6xl px-4 pb-24 pt-6 sm:px-6">
-              {children}
-            </main>
-          </div>
+          <AppShell signedIn={!!user} email={user?.email ?? null}>
+            {children}
+          </AppShell>
+          <Toaster position="bottom-center" />
         </ThemeProvider>
       </body>
     </html>

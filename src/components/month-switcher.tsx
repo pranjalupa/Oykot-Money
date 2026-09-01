@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { CaretLeft, CaretRight } from "@phosphor-icons/react/dist/ssr";
-import { currentMonth, monthLabel, shiftMonth } from "@/lib/budget";
+import { currentMonth, monthLabel, shiftMonth } from "@/lib/targets";
 
 export function MonthSwitcher({
   month,

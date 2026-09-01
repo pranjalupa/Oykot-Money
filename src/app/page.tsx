@@ -2,39 +2,45 @@ import Link from "next/link";
 import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
 import { Money, BudgetBar } from "@/components/money";
 import { MonthSwitcher } from "@/components/month-switcher";
+import { TransactionDialog } from "@/components/transaction-dialog";
+import { CopyPlanButton } from "@/components/copy-plan-button";
 import {
   currentMonth,
   getMonthSummary,
   GROUP_META,
   hasMonthOverride,
+  isValidMonth,
+  listAccounts,
+  listCategories,
+  SPEND_GROUPS,
+  today,
 } from "@/lib/budget";
+import { requireUser, ensureUserSetup } from "@/lib/auth";
 import { formatMoney, percentOf } from "@/lib/money";
 import type { GroupKey } from "@/db/schema";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-const SPEND_GROUPS: Exclude<GroupKey, "income">[] = [
-  "needs",
-  "wants",
-  "investments",
-];
-
 export default async function MonthPage({
   searchParams,
 }: {
   searchParams: Promise<{ month?: string }>;
 }) {
+  const user = await requireUser();
+  await ensureUserSetup(user.id);
+
   const { month: monthParam } = await searchParams;
-  const month = /^\d{4}-\d{2}$/.test(monthParam ?? "")
-    ? monthParam!
-    : currentMonth();
+  const month = isValidMonth(monthParam) ? monthParam : currentMonth();
 
-  const summary = await getMonthSummary(month);
-  const overridden = await hasMonthOverride(month);
+  const [summary, overridden, accounts, categories] = await Promise.all([
+    getMonthSummary(user.id, month),
+    hasMonthOverride(user.id, month),
+    listAccounts(user.id),
+    listCategories(user.id),
+  ]);
 
-  const spentSoFar = summary.actualExpense;
-  const noActivity = summary.actualIncome === 0 && spentSoFar === 0;
+  const nothingPlanned = summary.plannedExpense === 0 && summary.plannedIncome === 0;
 
   return (
     <div className="flex flex-col gap-8">
@@ -45,8 +51,34 @@ export default async function MonthPage({
             Planned against actual, the way the sheet does it.
           </p>
         </div>
-        <MonthSwitcher month={month} />
+        <div className="flex items-center gap-2">
+          <MonthSwitcher month={month} />
+          <TransactionDialog
+            accounts={accounts}
+            categories={categories}
+            defaultDate={today()}
+          />
+        </div>
       </header>
+
+      {nothingPlanned && (
+        <div className="rounded-xl border border-dashed border-border p-6 text-center">
+          <p className="font-heading text-base font-bold">Nothing planned yet</p>
+          <p className="accent-note mx-auto mt-1 max-w-md text-sm text-muted-foreground">
+            Set what you expect to spend in each category, and the rest of the app
+            starts working.
+          </p>
+          <div className="mt-4 flex flex-wrap justify-center gap-2">
+            <Link
+              href={`/needs?month=${month}`}
+              className="rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground"
+            >
+              Set your plan
+            </Link>
+            <CopyPlanButton month={month} />
+          </div>
+        </div>
+      )}
 
       {/* Headline numbers ------------------------------------------------- */}
       <section className="grid gap-3 sm:grid-cols-3">
@@ -68,20 +100,16 @@ export default async function MonthPage({
         />
       </section>
 
-      {noActivity && (
-        <p className="accent-note -mt-4 text-sm text-muted-foreground">
-          No transactions logged for {GROUP_META.income.label.toLowerCase()} or
-          spending yet — the plan below is ready and waiting.
-        </p>
-      )}
-
-      {/* The 50/15/35 dial ------------------------------------------------ */}
+      {/* The target dial --------------------------------------------------- */}
       <section>
         <div className="mb-3 flex items-baseline justify-between gap-3">
           <h2 className="font-heading text-lg font-bold">Target split</h2>
-          <span className="text-xs text-muted-foreground">
+          <Link
+            href="/settings"
+            className="text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground"
+          >
             {overridden ? "Custom for this month" : "Your default split"}
-          </span>
+          </Link>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-3">
@@ -164,7 +192,11 @@ export default async function MonthPage({
                   <div className="text-sm font-semibold">
                     <Money minor={g.actualMinor} />
                     <span className="text-muted-foreground"> / </span>
-                    <Money minor={g.plannedMinor} tone="muted" className="text-xs" />
+                    <Money
+                      minor={g.plannedMinor}
+                      tone="muted"
+                      className="text-xs"
+                    />
                   </div>
                   <Link
                     href={`/${GROUP_META[key].slug}?month=${month}`}
@@ -176,19 +208,23 @@ export default async function MonthPage({
                 </div>
               </div>
 
-              <ul className="divide-y divide-border">
-                {top.map((c) => (
-                  <li
-                    key={c.id}
-                    className="flex items-center justify-between gap-3 px-4 py-2 text-sm"
-                  >
-                    <span className="truncate text-muted-foreground">{c.name}</span>
-                    <span className="shrink-0 tabular text-xs text-muted-foreground">
-                      {formatMoney(c.plannedMinor)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              {top.length > 0 && (
+                <ul className="divide-y divide-border">
+                  {top.map((c) => (
+                    <li
+                      key={c.id}
+                      className="flex items-center justify-between gap-3 px-4 py-2 text-sm"
+                    >
+                      <span className="truncate text-muted-foreground">
+                        {c.name}
+                      </span>
+                      <span className="tabular shrink-0 text-xs text-muted-foreground">
+                        {formatMoney(c.actualMinor)} / {formatMoney(c.plannedMinor)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           );
         })}
@@ -211,7 +247,7 @@ function StatCard({
   const pct = percentOf(actualMinor, plannedMinor);
   return (
     <div className="rounded-xl border border-border bg-card p-4">
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+      <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
         {label}
       </p>
       <p className="mt-1.5 font-heading text-2xl font-bold">
@@ -234,6 +270,7 @@ function PlanDelta({
   targetPercent: number;
 }) {
   const delta = plannedPercent - targetPercent;
+  if (plannedPercent === 0) return <span>not planned</span>;
   if (delta === 0) return <span>on target</span>;
   return (
     <span className={cn(delta > 0 && "text-negative")}>

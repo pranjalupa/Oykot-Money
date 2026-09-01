@@ -1,0 +1,103 @@
+"use client";
+
+import { useActionState } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { Warning, CheckCircle } from "@phosphor-icons/react";
+import { signIn, signUp, type AuthResult } from "@/app/auth/actions";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
+export function AuthForm({ mode }: { mode: "signin" | "signup" }) {
+  const isSignUp = mode === "signup";
+  const searchParams = useSearchParams();
+  const next = searchParams.get("next") ?? "/";
+
+  const [state, action, pending] = useActionState<AuthResult | null, FormData>(
+    isSignUp ? signUp : signIn,
+    null,
+  );
+
+  return (
+    <div className="w-full max-w-sm">
+      <div className="mb-7 text-center">
+        <p className="font-heading text-2xl font-extrabold">Oykot</p>
+        <h1 className="mt-4 font-heading text-xl font-bold">
+          {isSignUp ? "Create your account" : "Welcome back"}
+        </h1>
+        <p className="accent-note mt-1 text-sm text-muted-foreground">
+          {isSignUp
+            ? "Your budget, your numbers, nobody else's."
+            : "Pick up where your money left off."}
+        </p>
+      </div>
+
+      <form action={action} className="flex flex-col gap-4">
+        <input type="hidden" name="next" value={next} />
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+            placeholder="you@example.com"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="password">Password</Label>
+          <Input
+            id="password"
+            name="password"
+            type="password"
+            autoComplete={isSignUp ? "new-password" : "current-password"}
+            required
+            minLength={isSignUp ? 8 : undefined}
+            placeholder={isSignUp ? "At least 8 characters" : "••••••••"}
+          />
+        </div>
+
+        {state && !state.ok && (
+          <p
+            role="alert"
+            className="flex items-start gap-2 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          >
+            <Warning size={16} weight="fill" className="mt-0.5 shrink-0" />
+            {state.error}
+          </p>
+        )}
+
+        {state?.ok && state.message && (
+          <p className="flex items-start gap-2 rounded-md bg-secondary px-3 py-2 text-sm text-secondary-foreground">
+            <CheckCircle size={16} weight="fill" className="mt-0.5 shrink-0" />
+            {state.message}
+          </p>
+        )}
+
+        <Button type="submit" disabled={pending} className="mt-1 w-full">
+          {pending
+            ? isSignUp
+              ? "Creating account…"
+              : "Signing in…"
+            : isSignUp
+              ? "Create account"
+              : "Sign in"}
+        </Button>
+      </form>
+
+      <p className="mt-6 text-center text-sm text-muted-foreground">
+        {isSignUp ? "Already have an account? " : "New here? "}
+        <Link
+          href={isSignUp ? "/login" : "/signup"}
+          className="font-medium text-foreground underline underline-offset-4"
+        >
+          {isSignUp ? "Sign in" : "Create one"}
+        </Link>
+      </p>
+    </div>
+  );
+}

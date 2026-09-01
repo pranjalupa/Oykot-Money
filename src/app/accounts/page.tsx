@@ -1,6 +1,8 @@
 import { Money } from "@/components/money";
 import { CategoryIcon } from "@/components/category-icon";
+import { NewAccountDialog, EditAccountDialog } from "@/components/account-dialogs";
 import { getNetWorth, type AccountBalance } from "@/lib/budget";
+import { requireUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +18,7 @@ const KIND_COPY: Record<
   asset: {
     title: "Assets",
     blurb: "What they're worth today. Update the value when you check.",
-    empty: "No assets yet.",
+    empty: "No assets yet. Add your SIP or PF to see net worth fill in.",
   },
   loan: {
     title: "People",
@@ -26,22 +28,25 @@ const KIND_COPY: Record<
 };
 
 export default async function AccountsPage() {
-  const net = await getNetWorth();
+  const user = await requireUser();
+  const net = await getNetWorth(user.id);
   const byKind = (kind: AccountBalance["kind"]) =>
     net.balances.filter((b) => b.kind === kind);
 
   return (
     <div className="flex flex-col gap-6">
-      <header>
-        <h1 className="font-heading text-2xl font-bold">Accounts</h1>
-        <p className="mt-0.5 text-sm text-muted-foreground">
-          Where the money sits, and what it adds up to.
-        </p>
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="font-heading text-2xl font-bold">Accounts</h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            Where the money sits, and what it adds up to.
+          </p>
+        </div>
+        <NewAccountDialog />
       </header>
 
-      {/* Net worth ---------------------------------------------------------- */}
       <section className="rounded-xl border border-border bg-card p-5">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
           Net worth
         </p>
         <p className="mt-1 font-heading text-4xl font-bold">
@@ -55,7 +60,11 @@ export default async function AccountsPage() {
           <Stat label="Cash" minor={net.cash} />
           <Stat label="Assets" minor={net.assets} />
           <Stat label="Owed to you" minor={net.owedToYou} />
-          <Stat label="You owe" minor={net.youOwe} tone={net.youOwe ? "negative" : "muted"} />
+          <Stat
+            label="You owe"
+            minor={net.youOwe}
+            tone={net.youOwe ? "negative" : "muted"}
+          />
         </dl>
       </section>
 
@@ -79,10 +88,7 @@ export default async function AccountsPage() {
             ) : (
               <ul className="divide-y divide-border">
                 {list.map((a) => (
-                  <li
-                    key={a.id}
-                    className="flex items-center gap-3 px-4 py-3"
-                  >
+                  <li key={a.id} className="flex items-center gap-3 px-4 py-3">
                     <CategoryIcon
                       name={a.icon}
                       className="size-8 shrink-0 rounded-md bg-muted text-muted-foreground"
@@ -92,13 +98,14 @@ export default async function AccountsPage() {
                       {a.kind === "asset" && (
                         <p className="text-xs text-muted-foreground">
                           {a.valueUpdatedAt
-                            ? `Updated ${a.valueUpdatedAt}`
+                            ? `Updated ${new Date(a.valueUpdatedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}`
                             : "Value not set yet"}
                         </p>
                       )}
                       {a.kind === "spending" && a.subtype && (
-                        <p className="text-xs capitalize text-muted-foreground">
+                        <p className="text-xs text-muted-foreground capitalize">
                           {a.subtype.replace("_", " ")}
+                          {!a.includeInNetWorth && " · not in net worth"}
                         </p>
                       )}
                     </div>
@@ -107,6 +114,7 @@ export default async function AccountsPage() {
                       tone={a.kind === "loan" ? "auto" : "default"}
                       className="shrink-0 text-sm font-semibold"
                     />
+                    <EditAccountDialog account={a} />
                   </li>
                 ))}
               </ul>
@@ -129,7 +137,7 @@ function Stat({
 }) {
   return (
     <div>
-      <dt className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+      <dt className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
         {label}
       </dt>
       <dd className="mt-0.5 text-base font-semibold">
