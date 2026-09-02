@@ -132,10 +132,18 @@ export async function ensureRecurringForMonth(userId: string, month: string) {
   return created;
 }
 
-/** Both passes, for a page that's about to render a month. */
+/**
+ * Both passes, for a page that's about to render a month.
+ *
+ * Run together rather than in sequence — they touch different tables and
+ * neither depends on the other, so serialising them just adds a round trip to
+ * every page load.
+ */
 export async function prepareMonth(userId: string, month: string) {
-  await ensureMonthPlan(userId, month);
-  await ensureRecurringForMonth(userId, month);
+  await Promise.all([
+    ensureMonthPlan(userId, month),
+    ensureRecurringForMonth(userId, month),
+  ]);
 }
 
 export { ne };

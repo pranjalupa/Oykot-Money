@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { createClient } from "@/lib/supabase/server";
@@ -9,27 +10,30 @@ import { DEFAULT_CATEGORIES, DEFAULT_ACCOUNTS } from "@/lib/defaults";
 import { DEFAULT_TARGETS } from "@/lib/targets";
 
 /**
+ * The session user for this request.
+ *
+ * `cache()` dedupes it across a single render pass: the layout and the page
+ * both need the user, and without this each one pays a separate network
+ * round-trip to Supabase Auth. (The middleware runs in its own invocation and
+ * can't share this, so a request costs two auth calls, not three.)
+ */
+export const getUser = cache(async () => {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user;
+});
+
+/**
  * The session user, or a redirect to /login.
  *
  * Every data query in this app funnels through this — the returned id is the
  * tenant key, and nothing should read or write a user-owned table without it.
  */
 export async function requireUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const user = await getUser();
   if (!user) redirect("/login");
-  return user;
-}
-
-/** Same, but returns null instead of redirecting. For optional-auth surfaces. */
-export async function getUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   return user;
 }
 

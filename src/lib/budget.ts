@@ -435,47 +435,58 @@ export type AccountBalance = {
   archived: boolean;
 };
 
-/** A balance per account, computed three ways depending on kind. */
+/**
+ * A balance per account, computed three ways depending on kind.
+ *
+ * Summed in Postgres rather than by pulling every transaction into the app and
+ * looping — that payload grows without bound and crosses the network. The two
+ * subqueries are the two sides a transaction can touch: the account it's on,
+ * and the counter-account it mirrors onto.
+ */
 export async function getAccountBalances(
   userId: string,
 ): Promise<AccountBalance[]> {
-  const accs = await db
-    .select()
+  const ownEffect = sql<string>`coalesce((
+    select sum(case when t.direction = 'inflow' then t.amount_minor else -t.amount_minor end)
+    from ${transactions} t where t.account_id = ${accounts.id}
+  ), 0)`;
+
+  // Mirror side: a transfer lands here, and lending raises what this person
+  // owes you — so the sign is the opposite of the originating account's.
+  const counterEffect = sql<string>`coalesce((
+    select sum(case when t.direction = 'inflow' then -t.amount_minor else t.amount_minor end)
+    from ${transactions} t where t.counter_account_id = ${accounts.id}
+  ), 0)`;
+
+  const rows = await db
+    .select({
+      id: accounts.id,
+      name: accounts.name,
+      kind: accounts.kind,
+      subtype: accounts.subtype,
+      icon: accounts.icon,
+      isLiability: accounts.isLiability,
+      includeInNetWorth: accounts.includeInNetWorth,
+      openingBalanceMinor: accounts.openingBalanceMinor,
+      currentValueMinor: accounts.currentValueMinor,
+      valueUpdatedAt: accounts.valueUpdatedAt,
+      archived: accounts.archived,
+      ownEffect: ownEffect.as("own_effect"),
+      counterEffect: counterEffect.as("counter_effect"),
+    })
     .from(accounts)
     .where(and(eq(accounts.userId, userId), eq(accounts.archived, false)))
     .orderBy(accounts.sortOrder);
 
-  const txs = await db
-    .select({
-      accountId: transactions.accountId,
-      counterAccountId: transactions.counterAccountId,
-      direction: transactions.direction,
-      amountMinor: transactions.amountMinor,
-    })
-    .from(transactions)
-    .where(eq(transactions.userId, userId));
+  return rows.map((a) => {
+    const opening = Number(a.openingBalanceMinor);
+    const current = Number(a.currentValueMinor);
+    const effects = Number(a.ownEffect) + Number(a.counterEffect);
 
-  return accs.map((a) => {
-    let balance = 0;
-
-    if (a.kind === "asset") {
-      // No history — just what you last said it's worth.
-      balance = Number(a.currentValueMinor);
-    } else {
-      if (a.kind === "spending") balance = Number(a.openingBalanceMinor);
-
-      for (const t of txs) {
-        const amt = Number(t.amountMinor);
-        if (t.accountId === a.id) {
-          balance += t.direction === "inflow" ? amt : -amt;
-        }
-        if (t.counterAccountId === a.id) {
-          // Mirror side: a transfer lands here, and lending raises what this
-          // person owes you.
-          balance += t.direction === "inflow" ? -amt : amt;
-        }
-      }
-    }
+    const balanceMinor =
+      a.kind === "asset"
+        ? current // no history — just what you last said it's worth
+        : (a.kind === "spending" ? opening : 0) + effects;
 
     return {
       id: a.id,
@@ -485,9 +496,9 @@ export async function getAccountBalances(
       icon: a.icon,
       isLiability: a.isLiability,
       includeInNetWorth: a.includeInNetWorth,
-      openingBalanceMinor: Number(a.openingBalanceMinor),
-      currentValueMinor: Number(a.currentValueMinor),
-      balanceMinor: balance,
+      openingBalanceMinor: opening,
+      currentValueMinor: current,
+      balanceMinor,
       valueUpdatedAt: a.valueUpdatedAt,
       archived: a.archived,
     };
