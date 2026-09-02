@@ -104,6 +104,9 @@ Full detail in `src/db/schema.ts` comments. The decisions behind it:
   and a `WHERE is_planned` on every query.
 - Credit-card support (liability balances, bill payment as transfer) is **modelled but unused**
   — Pranjal has no credit card yet. It's a config flip, not a rebuild, when that changes.
+- **`merchant_rules` is groundwork, not a feature.** Table exists (pattern → category, optional
+  account) with RLS on, and nothing reads or writes it yet. It's the intended hook for statement
+  import — extend it rather than inventing a second mapping mechanism.
 
 ## Design tokens
 Forest (primary/green) · Lemon (accent) · Stone (neutral) · Clay (destructive).
@@ -122,8 +125,9 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
 - 2026-09-02 — **Recurring, auto-carry, reordering, and the last missing nav link.**
   Added monthly repeats (toggle in the add dialog, managed in Settings), plan carry-over
   to the next month, category reordering, and transaction editing — `updateTransaction`
-  and `setAccountArchived` had been written but left with no UI. `/income` existed via
-  the `[group]` route but had no sidebar entry; it does now.
+  had been written but left with no UI. (`setAccountArchived` was in the same state and is
+  *still* uncalled — see Status.) `/income` existed via the `[group]` route but had no
+  sidebar entry; it does now.
   - Default categories for NEW accounts trimmed from 36 (a copy of Pranjal's sheet) to
     13 generic lines. Pranjal's real budget lives only in `pranjalupa@gmail.com`, loaded
     by `scripts/import-my-budget.ts` (idempotent; reconciles to
@@ -132,31 +136,7 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   - Watch this: `drizzle/rls.sql` does NOT auto-discover tables. `recurring_rules`
     shipped with RLS off until it was added there by hand. **Add every new table to
     that file.**
-- 2026-09-02 — **Made it writable, multi-user, and deployed.** Migrated SQLite → Supabase
-  Postgres (Vercel Marketplace, bom1) and added Supabase Auth with open signup. Everything the
-  earlier build only displayed is now editable: transactions (add/delete), inline planned
-  amounts, category CRUD with the optional nested level, account CRUD across all three kinds,
-  asset values, and the target split (default vs. per-month). Added Daily (safe-to-spend) and
-  Year (month-by-month rollup) views. RLS enabled on all six tables.
-  - Verified end to end against a real Supabase instance, including the loan mechanism:
-    lending ₹2,000 to a person account moved Bank −₹2,000, set "owed to you" +₹2,000, counted
-    against Wants, and correctly left net worth unchanged.
-  - Fixed: active segmented-tab was near-invisible in dark mode (`bg-card` is *darker* than
-    `bg-muted` there). Now carries `ring-1 ring-foreground/15`, which reads in both themes.
-    Watch for this class of bug — light-mode elevation cues invert in dark.
-- 2026-09-02 — **First build.** Scaffolded the app and shipped the monthly view, the three
-  group pages, and accounts/net-worth. Seeded from the real Aug-26 sheet: 36 categories,
-  5 accounts, planned amounts carried into the current month. Totals reconcile exactly against
-  the spreadsheet (Needs ₹31,600 / Wants ₹11,000 / Investments ₹22,267 / Income ₹64,867, and
-  49%/17%/34% against the 50/15/35 target). Stack + data-model decisions recorded above.
-- 2026-09-01 — Design tokens saved to `docs/design-tokens.html` as the working reference.
-- 2026-09-01 — Fixed dark mode reading "too green" (surfaces moved to a true-neutral Stone
-  scale; the given "Gray" `E1F3E5` reclassified as Forest's lightest tint since it isn't
-  neutral). Accent font corrected to **Instrument Serif**.
-- 2026-09-01 — Replaced the shadcn stock-preset approach with a custom color/type token system
-  built from the 5-color swatch + Archivo/Inter/Instrument Serif. Superseded preset `b2BX1ejq4`.
-- 2026-09-01 — Repo created (private). AGENTS.md established as the persistent context file.
-
+- Earlier entries (2026-09-01 → 2026-09-02, first build through multi-user launch) archived to `docs/decisions/2026-09.md`.
 ## Status
 Fully workable and deployed at https://oykot-money.vercel.app. Google sign-in is live
 alongside email/password. Month / Daily / Year / group pages / category detail / accounts /
