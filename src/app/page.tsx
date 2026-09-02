@@ -1,62 +1,94 @@
 import Link from "next/link";
-import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
-import { buttonVariants } from "@/components/ui/button";
-import { Money, BudgetBar } from "@/components/money";
+import { CaretLeft, CaretRight } from "@phosphor-icons/react/dist/ssr";
+import { IconLink } from "@/components/icon-link";
 import { MonthSwitcher } from "@/components/month-switcher";
 import { TransactionDialog } from "@/components/transaction-dialog";
-import { CopyPlanButton } from "@/components/copy-plan-button";
+import { DailyView } from "@/components/views/daily-view";
+import { MonthView } from "@/components/views/month-view";
+import { YearView } from "@/components/views/year-view";
 import {
   currentMonth,
-  getMonthSummary,
-  GROUP_META,
-  hasMonthOverride,
   isValidMonth,
   listAccounts,
   listCategories,
-  SPEND_GROUPS,
+  monthLabel,
   today,
 } from "@/lib/budget";
 import { requireUser, ensureUserSetup } from "@/lib/auth";
-import { prepareMonth } from "@/lib/month-setup";
-import { formatMoney, percentOf } from "@/lib/money";
-import type { GroupKey } from "@/db/schema";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-export default async function MonthPage({
+const VIEWS = ["daily", "month", "year"] as const;
+type View = (typeof VIEWS)[number];
+
+const TAB_LABEL: Record<View, string> = {
+  daily: "Daily",
+  month: "Monthly",
+  year: "Yearly",
+};
+
+/**
+ * One home, three time horizons.
+ *
+ * The view lives in the URL rather than in client state so each tab stays a
+ * server render with no data fetching in the browser, and a tab you're looking
+ * at is a link you can share or reload. Daily is the default because it's the
+ * one that answers "can I spend this?", which is the daily question.
+ */
+export default async function HomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ month?: string }>;
+  searchParams: Promise<{ view?: string; month?: string; year?: string }>;
 }) {
   const user = await requireUser();
   await ensureUserSetup(user.id);
 
-  const { month: monthParam } = await searchParams;
-  const month = isValidMonth(monthParam) ? monthParam : currentMonth();
+  const params = await searchParams;
+  const view: View = (VIEWS as readonly string[]).includes(params.view ?? "")
+    ? (params.view as View)
+    : "daily";
 
-  await prepareMonth(user.id, month);
+  const month = isValidMonth(params.month) ? params.month : currentMonth();
 
-  const [summary, overridden, accounts, categories] = await Promise.all([
-    getMonthSummary(user.id, month),
-    hasMonthOverride(user.id, month),
+  const parsedYear = Number(params.year);
+  const year =
+    Number.isInteger(parsedYear) && parsedYear > 2000 && parsedYear < 2200
+      ? parsedYear
+      : Number(month.slice(0, 4));
+
+  const [accounts, categories] = await Promise.all([
     listAccounts(user.id),
     listCategories(user.id),
   ]);
 
-  const nothingPlanned = summary.plannedExpense === 0 && summary.plannedIncome === 0;
+  // Each tab keeps the period you were looking at, so switching Daily → Monthly
+  // doesn't silently throw you back to today.
+  const href = (v: View) =>
+    v === "year"
+      ? `/?view=year&year=${year}`
+      : `/?view=${v}&month=${month}&year=${year}`;
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="font-heading text-2xl font-bold">This month</h1>
+          <h1 className="font-heading text-2xl font-bold">
+            {view === "year" ? year : monthLabel(month)}
+          </h1>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            Planned against actual, the way the sheet does it.
+            {view === "daily" && "Day by day, and what's safe to spend from here."}
+            {view === "month" && "Planned against actual, the way the sheet does it."}
+            {view === "year" && "Month by month, across the whole year."}
           </p>
         </div>
+
         <div className="flex items-center gap-2">
-          <MonthSwitcher month={month} />
+          {view === "year" ? (
+            <YearSwitcher year={year} />
+          ) : (
+            <MonthSwitcher month={month} basePath={`/?view=${view}`} />
+          )}
           <TransactionDialog
             accounts={accounts}
             categories={categories}
@@ -65,223 +97,49 @@ export default async function MonthPage({
         </div>
       </header>
 
-      {nothingPlanned && (
-        <div className="rounded-xl border border-dashed border-border p-6 text-center">
-          <p className="font-heading text-base font-bold">Nothing planned yet</p>
-          <p className="accent-note mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-            Set what you expect to spend in each category, and the rest of the app
-            starts working.
-          </p>
-          <div className="mt-4 flex flex-wrap justify-center gap-2">
-            {/* buttonVariants, not hand-rolled padding — a raw link next to a
-                real Button is how the two ended up different heights. */}
-            <Link
-              href={`/needs?month=${month}`}
-              className={buttonVariants({ size: "sm" })}
-            >
-              Set your plan
-            </Link>
-            <CopyPlanButton month={month} />
-          </div>
-        </div>
-      )}
-
-      {/* Headline numbers ------------------------------------------------- */}
-      <section className="grid gap-3 sm:grid-cols-3">
-        <StatCard
-          label="Income"
-          actualMinor={summary.actualIncome}
-          plannedMinor={summary.plannedIncome}
-        />
-        <StatCard
-          label="Expenses"
-          actualMinor={summary.actualExpense}
-          plannedMinor={summary.plannedExpense}
-        />
-        <StatCard
-          label="Saved this month"
-          actualMinor={summary.actualSaved}
-          plannedMinor={summary.plannedSaved}
-          tone="auto"
-        />
-      </section>
-
-      {/* The target dial --------------------------------------------------- */}
-      <section>
-        <div className="mb-3 flex items-baseline justify-between gap-3">
-          <h2 className="font-heading text-lg font-bold">Target split</h2>
+      <nav
+        aria-label="Time range"
+        className="flex gap-1 rounded-lg bg-muted p-1"
+      >
+        {VIEWS.map((v) => (
           <Link
-            href="/settings"
-            className="text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground"
+            key={v}
+            href={href(v)}
+            aria-current={v === view ? "page" : undefined}
+            className={cn(
+              "flex-1 rounded-md px-3 py-1.5 text-center text-sm font-medium transition-colors",
+              v === view
+                ? // bg-card is *darker* than bg-muted in dark mode, so elevation
+                  // alone doesn't read there — the ring is what makes the active
+                  // tab visible in both themes.
+                  "bg-card text-foreground ring-1 ring-foreground/15"
+                : "text-muted-foreground hover:text-foreground",
+            )}
           >
-            {overridden ? "Custom for this month" : "Your default split"}
+            {TAB_LABEL[v]}
           </Link>
-        </div>
+        ))}
+      </nav>
 
-        <div className="grid gap-3 sm:grid-cols-3">
-          {SPEND_GROUPS.map((key) => {
-            const g = summary.groups[key];
-            return (
-              <Link
-                key={key}
-                href={`/${GROUP_META[key].slug}?month=${month}`}
-                className="group rounded-xl border border-border bg-card p-4 transition-colors hover:border-foreground/20"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="flex items-center gap-2 text-sm font-semibold">
-                    <span
-                      aria-hidden
-                      className="size-2.5 rounded-full"
-                      style={{ backgroundColor: `var(--${key})` }}
-                    />
-                    {GROUP_META[key].label}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    target {g.targetPercent}%
-                  </span>
-                </div>
-
-                <div className="mt-3 flex items-baseline gap-1.5">
-                  <Money
-                    minor={g.plannedMinor}
-                    className="font-heading text-xl font-bold"
-                  />
-                  <span className="text-xs text-muted-foreground">planned</span>
-                </div>
-
-                <div className="mt-3 space-y-1.5">
-                  <BudgetBar
-                    actualMinor={g.actualMinor}
-                    plannedMinor={g.plannedMinor}
-                    groupKey={key}
-                  />
-                  <div className="flex justify-between text-[11px] text-muted-foreground">
-                    <span>
-                      <Money minor={g.actualMinor} /> spent
-                    </span>
-                    <PlanDelta
-                      plannedPercent={g.plannedPercent}
-                      targetPercent={g.targetPercent}
-                    />
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* Per-group breakdown ---------------------------------------------- */}
-      <section className="flex flex-col gap-4">
-        {(["needs", "wants", "investments", "income"] as GroupKey[]).map((key) => {
-          const g = summary.groups[key];
-          const top = [...g.categories]
-            .filter((c) => c.plannedMinor > 0 || c.actualMinor > 0)
-            .sort((a, b) => b.plannedMinor - a.plannedMinor)
-            .slice(0, 4);
-
-          return (
-            <div
-              key={key}
-              className="overflow-hidden rounded-xl border border-border bg-card"
-            >
-              <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
-                <div className="min-w-0">
-                  <h3 className="font-heading text-base font-bold">
-                    {GROUP_META[key].label}
-                  </h3>
-                  <p className="truncate text-xs text-muted-foreground">
-                    {GROUP_META[key].blurb}
-                  </p>
-                </div>
-                <div className="shrink-0 text-right">
-                  <div className="text-sm font-semibold">
-                    <Money minor={g.actualMinor} />
-                    <span className="text-muted-foreground"> / </span>
-                    <Money
-                      minor={g.plannedMinor}
-                      tone="muted"
-                      className="text-xs"
-                    />
-                  </div>
-                  <Link
-                    href={`/${GROUP_META[key].slug}?month=${month}`}
-                    className="mt-0.5 inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground"
-                  >
-                    {g.categories.length} categories
-                    <ArrowRight size={11} weight="bold" />
-                  </Link>
-                </div>
-              </div>
-
-              {top.length > 0 && (
-                <ul className="divide-y divide-border">
-                  {top.map((c) => (
-                    <li
-                      key={c.id}
-                      className="flex items-center justify-between gap-3 px-4 py-2 text-sm"
-                    >
-                      <span className="truncate text-muted-foreground">
-                        {c.name}
-                      </span>
-                      <span className="tabular shrink-0 text-xs text-muted-foreground">
-                        {formatMoney(c.actualMinor)} / {formatMoney(c.plannedMinor)}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          );
-        })}
-      </section>
+      {view === "daily" && <DailyView month={month} />}
+      {view === "month" && <MonthView month={month} />}
+      {view === "year" && <YearView year={year} />}
     </div>
   );
 }
 
-function StatCard({
-  label,
-  actualMinor,
-  plannedMinor,
-  tone = "default",
-}: {
-  label: string;
-  actualMinor: number;
-  plannedMinor: number;
-  tone?: "default" | "auto";
-}) {
-  const pct = percentOf(actualMinor, plannedMinor);
+function YearSwitcher({ year }: { year: number }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
-      <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
-        {label}
-      </p>
-      <p className="mt-1.5 font-heading text-2xl font-bold">
-        <Money minor={actualMinor} tone={tone} />
-      </p>
-      <p className="mt-1 text-xs text-muted-foreground">
-        of <Money minor={plannedMinor} tone="muted" /> planned
-        {plannedMinor > 0 && <span className="tabular"> · {pct}%</span>}
-      </p>
+    <div className="flex items-center gap-1">
+      <IconLink href={`/?view=year&year=${year - 1}`} label={`Go to ${year - 1}`}>
+        <CaretLeft size={16} weight="bold" />
+      </IconLink>
+      <span className="tabular min-w-14 text-center text-sm font-medium">
+        {year}
+      </span>
+      <IconLink href={`/?view=year&year=${year + 1}`} label={`Go to ${year + 1}`}>
+        <CaretRight size={16} weight="bold" />
+      </IconLink>
     </div>
-  );
-}
-
-/** How the plan compares to the target — the sheet's "Ideal vs Planned" gap. */
-function PlanDelta({
-  plannedPercent,
-  targetPercent,
-}: {
-  plannedPercent: number;
-  targetPercent: number;
-}) {
-  const delta = plannedPercent - targetPercent;
-  if (plannedPercent === 0) return <span>not planned</span>;
-  if (delta === 0) return <span>on target</span>;
-  return (
-    <span className={cn(delta > 0 && "text-negative")}>
-      plan {plannedPercent}% ({delta > 0 ? "+" : ""}
-      {delta})
-    </span>
   );
 }

@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useState } from "react";
 import { Plus, PencilSimple, Warning } from "@phosphor-icons/react";
 import { toast } from "sonner";
+import { IconButton } from "@/components/icon-button";
 import {
   createAccount,
   updateAccount,
@@ -20,7 +21,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { ICON_CHOICES } from "@/lib/defaults";
+import { IconPicker } from "@/components/icon-picker";
 import { toMajor } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
@@ -159,21 +160,10 @@ export function NewAccountDialog() {
             </div>
           )}
 
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="acc-icon">Icon</Label>
-            <select
-              id="acc-icon"
-              name="icon"
-              defaultValue={kind === "loan" ? "HandCoins" : "Bank"}
-              className="h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
-            >
-              {ICON_CHOICES.map((i) => (
-                <option key={i} value={i}>
-                  {i}
-                </option>
-              ))}
-            </select>
-          </div>
+          <IconPicker
+            id="acc-icon"
+            defaultValue={kind === "loan" ? "HandCoins" : "Bank"}
+          />
 
           {state && !state.ok && <ErrorNote error={state.error} />}
 
@@ -217,11 +207,12 @@ export function EditAccountDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
-        aria-label={`Edit ${account.name}`}
-        className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-      >
-        <PencilSimple size={14} weight="bold" />
-      </DialogTrigger>
+        render={
+          <IconButton label={`Edit ${account.name}`}>
+            <PencilSimple size={14} weight="bold" />
+          </IconButton>
+        }
+      />
 
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
@@ -277,21 +268,10 @@ export function EditAccountDialog({
                 </div>
               )}
 
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor={`ic-${account.id}`}>Icon</Label>
-                <select
-                  id={`ic-${account.id}`}
-                  name="icon"
-                  defaultValue={account.icon ?? "Bank"}
-                  className="h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
-                >
-                  {ICON_CHOICES.map((i) => (
-                    <option key={i} value={i}>
-                      {i}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <IconPicker
+                id={`ic-${account.id}`}
+                defaultValue={account.icon ?? "Bank"}
+              />
 
               <label className="flex items-center gap-2.5 text-sm">
                 <input

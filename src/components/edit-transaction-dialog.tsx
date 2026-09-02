@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useState } from "react";
 import { PencilSimple, Warning } from "@phosphor-icons/react";
 import { toast } from "sonner";
+import { IconButton } from "@/components/icon-button";
 import { updateTransaction, type ActionResult } from "@/app/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,11 +57,14 @@ export function EditTransactionDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
-        aria-label={`Edit ${transaction.merchant || transaction.categoryName || "transaction"}`}
-        className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground/50 transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-      >
-        <PencilSimple size={14} weight="bold" />
-      </DialogTrigger>
+        render={
+          <IconButton
+            label={`Edit ${transaction.merchant || transaction.categoryName || "transaction"}`}
+          >
+            <PencilSimple size={14} weight="bold" />
+          </IconButton>
+        }
+      />
 
       <DialogContent className="sm:max-w-md">
         <DialogHeader>

@@ -42,7 +42,51 @@ export type AccountKind = (typeof ACCOUNT_KINDS)[number];
 export const DIRECTIONS = ["outflow", "inflow", "transfer"] as const;
 export type Direction = (typeof DIRECTIONS)[number];
 
+export const PERSON_KINDS = ["person", "institution"] as const;
+export type PersonKind = (typeof PERSON_KINDS)[number];
+
 const money = (name: string) => bigint(name, { mode: "number" });
+
+/* -------------------------------------------------------------------------- */
+/* People                                                                      */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Anyone on the other side of a loan — a friend you lent to, or a bank you
+ * borrowed from. Split out of `accounts` because "account" was doing three
+ * jobs at once (your bank account, Rahul, your login) and the word had stopped
+ * meaning anything.
+ *
+ * A person is an identity, not a balance. The balance lives on the `loan`
+ * account that points here, so all the existing balance arithmetic keeps
+ * working untouched. Direction is just the sign: positive means they owe you.
+ */
+export const people = pgTable(
+  "people",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => authUsers.id, { onDelete: "cascade" }),
+
+    name: text("name").notNull(),
+
+    /** Optional handle — "@rahul", a phone number — to tell two Rahuls apart. */
+    handle: text("handle"),
+
+    /** person: a human. institution: a bank or NBFC you borrowed from. */
+    kind: text("kind", { enum: PERSON_KINDS }).notNull().default("person"),
+
+    icon: text("icon"),
+    note: text("note"),
+    archived: boolean("archived").notNull().default(false),
+    sortOrder: integer("sort_order").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("people_user_idx").on(t.userId)],
+);
 
 /* -------------------------------------------------------------------------- */
 /* Accounts                                                                    */
@@ -72,6 +116,19 @@ export const accounts = pgTable(
 
     /** Only meaningful for kind='spending': bank | cash | wallet | credit_card */
     subtype: text("subtype"),
+
+    /**
+     * kind='loan' only — whose ledger this is.
+     *
+     * Cascade is deliberate and does the right thing on its own: deleting a
+     * person tries to take their ledger with it, but `transactions.accountId`
+     * is ON DELETE RESTRICT, so Postgres refuses the whole thing the moment
+     * there is any history. A person you've actually transacted with cannot be
+     * deleted; one added by mistake disappears cleanly.
+     */
+    personId: uuid("person_id").references(() => people.id, {
+      onDelete: "cascade",
+    }),
 
     /** kind='spending' only. Anchor for the running balance. */
     openingBalanceMinor: money("opening_balance_minor").notNull().default(0),

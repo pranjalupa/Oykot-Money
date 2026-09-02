@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { and, eq, sql, max, isNull } from "drizzle-orm";
+import { and, eq, sql, max, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import {
   accounts,
@@ -10,10 +10,13 @@ import {
   groupTargets,
   transactions,
   recurringRules,
+  people,
   GROUP_KEYS,
   ACCOUNT_KINDS,
+  PERSON_KINDS,
   DEFAULT_MONTH,
   type GroupKey,
+  type PersonKind,
 } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
 import { toMinor } from "@/lib/money";
@@ -470,72 +473,6 @@ export async function setCategoryAssumeSpent(
   return { ok: true };
 }
 
-/* -------------------------------------------------------------------------- */
-/* Category ordering                                                           */
-/* -------------------------------------------------------------------------- */
-
-/**
- * Swap a category with its neighbour inside the same group.
- *
- * Swapping two rows rather than renumbering the whole list keeps this to one
- * pair of writes and can't drift, even if sortOrder values aren't contiguous.
- */
-export async function moveCategory(formData: FormData): Promise<ActionResult> {
-  const user = await requireUser();
-  const id = String(formData.get("id") ?? "");
-  const dir = String(formData.get("direction") ?? "");
-  if (dir !== "up" && dir !== "down") return fail("Bad direction.");
-
-  const [me] = await db
-    .select()
-    .from(categories)
-    .where(and(eq(categories.id, id), eq(categories.userId, user.id)))
-    .limit(1);
-  if (!me) return fail("Category not found.");
-
-  // Only reorder among siblings: same group, same parent, same archived state.
-  const siblings = await db
-    .select({ id: categories.id, sortOrder: categories.sortOrder })
-    .from(categories)
-    .where(
-      and(
-        eq(categories.userId, user.id),
-        eq(categories.groupKey, me.groupKey),
-        eq(categories.archived, me.archived),
-        me.parentId
-          ? eq(categories.parentId, me.parentId)
-          : isNull(categories.parentId),
-      ),
-    )
-    .orderBy(categories.sortOrder, categories.id);
-
-  const i = siblings.findIndex((s) => s.id === id);
-  const j = dir === "up" ? i - 1 : i + 1;
-  if (i === -1 || j < 0 || j >= siblings.length) return { ok: true }; // already at the end
-
-  const a = siblings[i];
-  const b = siblings[j];
-
-  // Equal sortOrders would make a swap a no-op; nudge them apart first.
-  const aOrder = a.sortOrder === b.sortOrder ? a.sortOrder + (dir === "up" ? 1 : -1) : a.sortOrder;
-
-  await db
-    .update(categories)
-    .set({ sortOrder: b.sortOrder })
-    .where(and(eq(categories.id, a.id), eq(categories.userId, user.id)));
-  await db
-    .update(categories)
-    .set({ sortOrder: aOrder })
-    .where(and(eq(categories.id, b.id), eq(categories.userId, user.id)));
-
-  refresh();
-  return { ok: true };
-}
-
-/* -------------------------------------------------------------------------- */
-/* Recurring rules                                                             */
-/* -------------------------------------------------------------------------- */
-
 export async function setRecurringActive(formData: FormData) {
   const user = await requireUser();
   const id = String(formData.get("id") ?? "");
@@ -669,3 +606,338 @@ export async function setAccountArchived(formData: FormData) {
 
   refresh();
 }
+
+/* -------------------------------------------------------------------------- */
+/* People                                                                      */
+/* -------------------------------------------------------------------------- */
+
+async function ownsPerson(userId: string, id: string) {
+  const [row] = await db
+    .select({ id: people.id })
+    .from(people)
+    .where(and(eq(people.id, id), eq(people.userId, userId)))
+    .limit(1);
+  return !!row;
+}
+
+/**
+ * Add someone you lend to or borrow from.
+ *
+ * Their loan ledger is created in the same transaction — a person without one
+ * can't hold a balance, and making it lazily would mean every read path has to
+ * cope with a person who is half-created.
+ */
+export async function createPerson(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const user = await requireUser();
+  const name = String(formData.get("name") ?? "").trim();
+  const handle = String(formData.get("handle") ?? "").trim();
+  const kindRaw = String(formData.get("kind") ?? "person");
+  const icon = String(formData.get("icon") ?? "").trim();
+
+  if (!name) return fail("Give them a name.");
+  const kind = (PERSON_KINDS as readonly string[]).includes(kindRaw)
+    ? (kindRaw as PersonKind)
+    : "person";
+
+  await db.transaction(async (tx) => {
+    const [{ next }] = await tx
+      .select({ next: sql<number>`coalesce(max(${people.sortOrder}), 0) + 1` })
+      .from(people)
+      .where(eq(people.userId, user.id));
+
+    const [person] = await tx
+      .insert(people)
+      .values({
+        userId: user.id,
+        name,
+        handle: handle || null,
+        kind,
+        icon: icon || null,
+        sortOrder: next,
+      })
+      .returning({ id: people.id });
+
+    await tx.insert(accounts).values({
+      userId: user.id,
+      name,
+      kind: "loan",
+      personId: person.id,
+      icon: icon || null,
+      sortOrder: next,
+    });
+  });
+
+  refresh();
+  return { ok: true };
+}
+
+export async function updatePerson(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const user = await requireUser();
+  const id = String(formData.get("id") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+  const handle = String(formData.get("handle") ?? "").trim();
+  const kindRaw = String(formData.get("kind") ?? "person");
+  const icon = String(formData.get("icon") ?? "").trim();
+  const note = String(formData.get("note") ?? "").trim();
+
+  if (!name) return fail("Give them a name.");
+  if (!(await ownsPerson(user.id, id))) return fail("Person not found.");
+
+  const kind = (PERSON_KINDS as readonly string[]).includes(kindRaw)
+    ? (kindRaw as PersonKind)
+    : "person";
+
+  await db.transaction(async (tx) => {
+    await tx
+      .update(people)
+      .set({ name, handle: handle || null, kind, icon: icon || null, note: note || null })
+      .where(and(eq(people.id, id), eq(people.userId, user.id)));
+
+    // The ledger's name is shown wherever a transaction is listed, so it has to
+    // follow the person or the two views disagree.
+    await tx
+      .update(accounts)
+      .set({ name, icon: icon || null })
+      .where(and(eq(accounts.personId, id), eq(accounts.userId, user.id)));
+  });
+
+  refresh();
+  return { ok: true };
+}
+
+/**
+ * Delete a person and their (empty) ledger.
+ *
+ * The balance check here is a courtesy so the message is human. The real
+ * guarantee is in the schema: `transactions.account_id` is ON DELETE RESTRICT,
+ * so Postgres refuses to drop a ledger with history no matter what this says.
+ */
+export async function deletePerson(formData: FormData): Promise<ActionResult> {
+  const user = await requireUser();
+  const id = String(formData.get("id") ?? "");
+  if (!(await ownsPerson(user.id, id))) return fail("Person not found.");
+
+  try {
+    await db.delete(people).where(and(eq(people.id, id), eq(people.userId, user.id)));
+  } catch {
+    return fail(
+      "They have transactions, so deleting would rewrite your history. Archive them instead.",
+    );
+  }
+
+  refresh();
+  return { ok: true };
+}
+
+export async function setPersonArchived(formData: FormData) {
+  const user = await requireUser();
+  const id = String(formData.get("id") ?? "");
+  const archived = formData.get("archived") === "true";
+  if (!(await ownsPerson(user.id, id))) return;
+
+  await db.transaction(async (tx) => {
+    await tx
+      .update(people)
+      .set({ archived })
+      .where(and(eq(people.id, id), eq(people.userId, user.id)));
+    await tx
+      .update(accounts)
+      .set({ archived })
+      .where(and(eq(accounts.personId, id), eq(accounts.userId, user.id)));
+  });
+
+  refresh();
+}
+
+/* -------------------------------------------------------------------------- */
+/* Deletes                                                                     */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Count what a category delete would touch, so the confirm can say it out loud
+ * rather than making you find out afterwards.
+ */
+export async function categoryImpact(id: string) {
+  const user = await requireUser();
+  if (!(await ownsCategory(user.id, id))) return null;
+
+  const [tx] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(transactions)
+    .where(and(eq(transactions.userId, user.id), eq(transactions.categoryId, id)));
+  const [kids] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(categories)
+    .where(and(eq(categories.userId, user.id), eq(categories.parentId, id)));
+
+  return { transactions: tx?.n ?? 0, children: kids?.n ?? 0 };
+}
+
+/**
+ * Delete a category.
+ *
+ * `transactions.category_id` is ON DELETE SET NULL, so the money survives and
+ * only the label goes — the spend stays in your totals as uncategorised. Child
+ * categories cascade, which is why the confirm counts them first. Archiving
+ * remains the better move in almost every case; this is for the ones added by
+ * mistake.
+ */
+export async function deleteCategory(formData: FormData): Promise<ActionResult> {
+  const user = await requireUser();
+  const id = String(formData.get("id") ?? "");
+  if (!(await ownsCategory(user.id, id))) return fail("Category not found.");
+
+  await db.delete(categories).where(and(eq(categories.id, id), eq(categories.userId, user.id)));
+  refresh();
+  return { ok: true };
+}
+
+export async function accountImpact(id: string) {
+  const user = await requireUser();
+  if (!(await ownsAccount(user.id, id))) return null;
+
+  const [row] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(transactions)
+    .where(
+      and(
+        eq(transactions.userId, user.id),
+        sql`(${transactions.accountId} = ${id} or ${transactions.counterAccountId} = ${id})`,
+      ),
+    );
+  return { transactions: row?.n ?? 0 };
+}
+
+/**
+ * Delete an account. Only possible while it has no transactions — the schema
+ * enforces that with ON DELETE RESTRICT, and this turns the resulting error
+ * into a sentence worth reading.
+ */
+export async function deleteAccount(formData: FormData): Promise<ActionResult> {
+  const user = await requireUser();
+  const id = String(formData.get("id") ?? "");
+  if (!(await ownsAccount(user.id, id))) return fail("Account not found.");
+
+  try {
+    await db.delete(accounts).where(and(eq(accounts.id, id), eq(accounts.userId, user.id)));
+  } catch {
+    return fail(
+      "This account has transactions. Deleting it would rewrite your history — archive it instead.",
+    );
+  }
+
+  refresh();
+  return { ok: true };
+}
+
+/* -------------------------------------------------------------------------- */
+/* Drag reordering                                                             */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Persist a whole ordering at once, which is what a drag produces — you can't
+ * express "moved from 7th to 2nd" as a swap.
+ *
+ * Every id is checked against the caller before anything is written, and the
+ * writes go in one transaction, so a crafted list can't renumber another
+ * account's rows and a failure can't leave the order half-applied.
+ */
+export async function reorderCategories(formData: FormData): Promise<ActionResult> {
+  const user = await requireUser();
+  const ids = parseIds(formData.get("ids"));
+  if (!ids) return fail("Bad ordering.");
+  if (!ids.length) return { ok: true };
+
+  const owned = await db
+    .select({ id: categories.id })
+    .from(categories)
+    .where(and(eq(categories.userId, user.id), inArray(categories.id, ids)));
+  if (owned.length !== ids.length) return fail("Some of those aren't yours.");
+
+  await db.transaction(async (tx) => {
+    for (const [i, id] of ids.entries()) {
+      await tx
+        .update(categories)
+        .set({ sortOrder: i })
+        .where(and(eq(categories.id, id), eq(categories.userId, user.id)));
+    }
+  });
+
+  refresh();
+  return { ok: true };
+}
+
+export async function reorderPeople(formData: FormData): Promise<ActionResult> {
+  const user = await requireUser();
+  const ids = parseIds(formData.get("ids"));
+  if (!ids) return fail("Bad ordering.");
+  if (!ids.length) return { ok: true };
+
+  const owned = await db
+    .select({ id: people.id })
+    .from(people)
+    .where(and(eq(people.userId, user.id), inArray(people.id, ids)));
+  if (owned.length !== ids.length) return fail("Some of those aren't yours.");
+
+  await db.transaction(async (tx) => {
+    for (const [i, id] of ids.entries()) {
+      await tx
+        .update(people)
+        .set({ sortOrder: i })
+        .where(and(eq(people.id, id), eq(people.userId, user.id)));
+    }
+  });
+
+  refresh();
+  return { ok: true };
+}
+
+export async function reorderAccounts(formData: FormData): Promise<ActionResult> {
+  const user = await requireUser();
+  const ids = parseIds(formData.get("ids"));
+  if (!ids) return fail("Bad ordering.");
+  if (!ids.length) return { ok: true };
+
+  const owned = await db
+    .select({ id: accounts.id })
+    .from(accounts)
+    .where(and(eq(accounts.userId, user.id), inArray(accounts.id, ids)));
+  if (owned.length !== ids.length) return fail("Some of those aren't yours.");
+
+  await db.transaction(async (tx) => {
+    for (const [i, id] of ids.entries()) {
+      await tx
+        .update(accounts)
+        .set({ sortOrder: i })
+        .where(and(eq(accounts.id, id), eq(accounts.userId, user.id)));
+    }
+  });
+
+  refresh();
+  return { ok: true };
+}
+
+/** Reject anything that isn't a flat list of unique uuid-shaped strings. */
+function parseIds(raw: FormDataEntryValue | null): string[] | null {
+  if (typeof raw !== "string") return null;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  if (!Array.isArray(parsed)) return null;
+  if (parsed.length > 500) return null;
+  if (!parsed.every((v) => typeof v === "string" && UUID.test(v))) return null;
+  const ids = parsed as string[];
+  return new Set(ids).size === ids.length ? ids : null;
+}
+
+const UUID =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

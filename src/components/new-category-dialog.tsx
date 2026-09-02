@@ -15,7 +15,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { ICON_CHOICES } from "@/lib/defaults";
+import { IconPicker } from "@/components/icon-picker";
 import type { GroupKey } from "@/db/schema";
 
 export function NewCategoryDialog({
@@ -98,21 +98,7 @@ export function NewCategoryDialog({
             </label>
           )}
 
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="icon">Icon</Label>
-            <select
-              id="icon"
-              name="icon"
-              defaultValue="Tag"
-              className="h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
-            >
-              {ICON_CHOICES.map((i) => (
-                <option key={i} value={i}>
-                  {i}
-                </option>
-              ))}
-            </select>
-          </div>
+          <IconPicker id="icon" defaultValue="Tag" />
 
           {state && !state.ok && (
             <p

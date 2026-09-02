@@ -16,6 +16,7 @@ alter table public.budget_lines   enable row level security;
 alter table public.transactions    enable row level security;
 alter table public.merchant_rules  enable row level security;
 alter table public.recurring_rules enable row level security;
+alter table public.people          enable row level security;
 
 -- One policy per table: you touch your rows, nobody else's.
 do $$
@@ -24,7 +25,8 @@ declare
 begin
   foreach t in array array[
     'accounts', 'categories', 'group_targets',
-    'budget_lines', 'transactions', 'merchant_rules', 'recurring_rules'
+    'budget_lines', 'transactions', 'merchant_rules', 'recurring_rules',
+    'people'
   ]
   loop
     execute format('drop policy if exists %I on public.%I', t || '_owner', t);
@@ -42,5 +44,5 @@ end $$;
 -- Anonymous callers get nothing at all.
 revoke all on public.accounts, public.categories, public.group_targets,
               public.budget_lines, public.transactions, public.merchant_rules,
-              public.recurring_rules
+              public.recurring_rules, public.people
   from anon;

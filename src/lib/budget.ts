@@ -9,8 +9,10 @@ import {
   groupTargets,
   transactions,
   recurringRules,
+  people,
   DEFAULT_MONTH,
   type GroupKey,
+  type PersonKind,
 } from "@/db/schema";
 import { DEFAULT_TARGETS, monthBounds } from "@/lib/targets";
 
@@ -526,6 +528,10 @@ export type AccountBalance = {
   balanceMinor: number;
   valueUpdatedAt: string | null;
   archived: boolean;
+  /** kind='loan' only — the person or institution this ledger belongs to. */
+  personId: string | null;
+  personKind: PersonKind | null;
+  personHandle: string | null;
 };
 
 /**
@@ -564,10 +570,14 @@ export async function getAccountBalances(
       currentValueMinor: accounts.currentValueMinor,
       valueUpdatedAt: accounts.valueUpdatedAt,
       archived: accounts.archived,
+      personId: accounts.personId,
+      personKind: people.kind,
+      personHandle: people.handle,
       ownEffect: ownEffect.as("own_effect"),
       counterEffect: counterEffect.as("counter_effect"),
     })
     .from(accounts)
+    .leftJoin(people, eq(people.id, accounts.personId))
     .where(and(eq(accounts.userId, userId), eq(accounts.archived, false)))
     .orderBy(accounts.sortOrder);
 
@@ -594,6 +604,9 @@ export async function getAccountBalances(
       balanceMinor,
       valueUpdatedAt: a.valueUpdatedAt,
       archived: a.archived,
+      personId: a.personId,
+      personKind: a.personKind,
+      personHandle: a.personHandle,
     };
   });
 }
@@ -676,5 +689,80 @@ export async function listAccounts(userId: string) {
     ...r,
     openingBalanceMinor: Number(r.openingBalanceMinor),
     currentValueMinor: Number(r.currentValueMinor),
+  }));
+}
+
+/* -------------------------------------------------------------------------- */
+/* People                                                                      */
+/* -------------------------------------------------------------------------- */
+
+export type PersonRow = {
+  id: string;
+  name: string;
+  handle: string | null;
+  kind: PersonKind;
+  icon: string | null;
+  note: string | null;
+  archived: boolean;
+  /** The loan ledger that carries their balance, if one exists yet. */
+  accountId: string | null;
+  balanceMinor: number;
+  /** True once they have history, which is what makes deleting them refuse. */
+  hasHistory: boolean;
+};
+
+/**
+ * Everyone you lend to or borrow from, with the balance from their ledger.
+ *
+ * `hasHistory` is read here rather than discovered at delete time so the UI can
+ * say *why* a person can't be removed before you click, instead of surfacing a
+ * foreign-key error afterwards.
+ */
+export async function listPeople(userId: string): Promise<PersonRow[]> {
+  const rows = await db
+    .select({
+      id: people.id,
+      name: people.name,
+      handle: people.handle,
+      kind: people.kind,
+      icon: people.icon,
+      note: people.note,
+      archived: people.archived,
+      sortOrder: people.sortOrder,
+      accountId: accounts.id,
+    })
+    .from(people)
+    .leftJoin(accounts, eq(accounts.personId, people.id))
+    .where(eq(people.userId, userId))
+    .orderBy(people.sortOrder);
+
+  const balances = await getAccountBalances(userId);
+  const byAccount = new Map(balances.map((b) => [b.id, b.balanceMinor]));
+
+  const accountIds = rows.map((r) => r.accountId).filter((x): x is string => !!x);
+  const used = accountIds.length
+    ? await db
+        .selectDistinct({ accountId: transactions.counterAccountId })
+        .from(transactions)
+        .where(
+          and(
+            eq(transactions.userId, userId),
+            inArray(transactions.counterAccountId, accountIds),
+          ),
+        )
+    : [];
+  const withHistory = new Set(used.map((u) => u.accountId));
+
+  return rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    handle: r.handle,
+    kind: r.kind,
+    icon: r.icon,
+    note: r.note,
+    archived: r.archived,
+    accountId: r.accountId,
+    balanceMinor: r.accountId ? (byAccount.get(r.accountId) ?? 0) : 0,
+    hasHistory: !!r.accountId && withHistory.has(r.accountId),
   }));
 }

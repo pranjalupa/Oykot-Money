@@ -70,18 +70,27 @@ export default async function SettingsPage({
       </section>
 
       <section className="rounded-xl border border-border bg-card p-5">
-        <h2 className="font-heading text-lg font-bold">Accounts</h2>
+        <h2 className="font-heading text-lg font-bold">Money and people</h2>
         <p className="mt-0.5 text-sm text-muted-foreground">
-          Bank accounts, people you&rsquo;ve lent to, and assets live on their
-          own page.
+          Accounts and assets live on Money; anyone you lend to or borrow from
+          lives on People.
         </p>
-        <Link
-          href="/accounts"
-          className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium underline underline-offset-4"
-        >
-          Manage accounts
-          <ArrowSquareOut size={14} weight="bold" />
-        </Link>
+        <div className="mt-3 flex flex-wrap gap-4">
+          <Link
+            href="/money"
+            className="inline-flex items-center gap-1.5 text-sm font-medium underline underline-offset-4"
+          >
+            Money
+            <ArrowSquareOut size={14} weight="bold" />
+          </Link>
+          <Link
+            href="/people"
+            className="inline-flex items-center gap-1.5 text-sm font-medium underline underline-offset-4"
+          >
+            People
+            <ArrowSquareOut size={14} weight="bold" />
+          </Link>
+        </div>
       </section>
     </div>
   );

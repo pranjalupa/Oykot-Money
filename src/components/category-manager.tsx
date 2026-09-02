@@ -3,10 +3,9 @@
 import { useActionState, useEffect, useState, useTransition } from "react";
 import {
   ArrowCounterClockwise,
-  CaretDown,
-  CaretUp,
   PencilSimple,
   Repeat,
+  Trash,
   Warning,
 } from "@phosphor-icons/react";
 import { toast } from "sonner";
@@ -14,9 +13,13 @@ import {
   updateCategory,
   setCategoryArchived,
   setCategoryAssumeSpent,
-  moveCategory,
+  reorderCategories,
+  deleteCategory,
+  categoryImpact,
   type ActionResult,
 } from "@/app/actions";
+import { IconButton } from "@/components/icon-button";
+import { SortableList, SortableRow } from "@/components/sortable-list";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,7 +31,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { CategoryIcon } from "@/components/category-icon";
-import { ICON_CHOICES } from "@/lib/defaults";
+import { IconPicker } from "@/components/icon-picker";
 import { GROUP_META } from "@/lib/targets";
 import { GROUP_KEYS, type GroupKey } from "@/db/schema";
 import { cn } from "@/lib/utils";
@@ -65,16 +68,7 @@ export function CategoryManager({ categories }: { categories: Cat[] }) {
               />
               {GROUP_META[g].label}
             </p>
-            <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border">
-              {inGroup.map((c, idx) => (
-                <CategoryRow
-                  key={c.id}
-                  cat={c}
-                  isFirst={idx === 0}
-                  isLast={idx === inGroup.length - 1}
-                />
-              ))}
-            </ul>
+            <SortableGroup cats={inGroup} />
           </div>
         );
       })}
@@ -94,26 +88,39 @@ export function CategoryManager({ categories }: { categories: Cat[] }) {
   );
 }
 
-function CategoryRow({
-  cat,
-  isFirst,
-  isLast,
-}: {
-  cat: Cat;
-  isFirst: boolean;
-  isLast: boolean;
-}) {
-  const [pending, start] = useTransition();
+/**
+ * One group's rows, reorderable by drag.
+ *
+ * Only ever sends this group's ids: reordering Needs must not renumber Wants,
+ * and `sortOrder` is a single sequence across all of them.
+ */
+function SortableGroup({ cats }: { cats: Cat[] }) {
+  const byId = new Map(cats.map((c) => [c.id, c]));
 
-  function move(direction: "up" | "down") {
-    start(async () => {
-      const fd = new FormData();
-      fd.set("id", cat.id);
-      fd.set("direction", direction);
-      const res = await moveCategory(fd);
-      if (!res.ok) toast.error(res.error);
-    });
+  async function save(ids: string[]) {
+    const fd = new FormData();
+    fd.set("ids", JSON.stringify(ids));
+    const res = await reorderCategories(fd);
+    if (!res.ok) toast.error(res.error);
+    return res.ok;
   }
+
+  return (
+    <SortableList
+      ids={cats.map((c) => c.id)}
+      onReorder={save}
+      className="divide-y divide-border overflow-hidden rounded-lg border border-border"
+    >
+      {(id) => {
+        const cat = byId.get(id);
+        return cat ? <CategoryRow key={id} cat={cat} /> : null;
+      }}
+    </SortableList>
+  );
+}
+
+function CategoryRow({ cat }: { cat: Cat }) {
+  const [pending, start] = useTransition();
 
   function toggleArchive() {
     start(async () => {
@@ -154,9 +161,12 @@ function CategoryRow({
     (!cat.parentId || cat.budgetsSeparately);
 
   return (
-    <li
+    <SortableRow
+      id={cat.id}
+      handleLabel={`Reorder ${cat.name}`}
+      disabled={cat.archived}
       className={cn(
-        "flex items-center gap-3 bg-card px-3 py-2.5",
+        "gap-3 px-3 py-2.5",
         cat.archived && "opacity-55",
         pending && "opacity-40",
       )}
@@ -179,67 +189,33 @@ function CategoryRow({
       </span>
 
       {canAssume && (
-        <button
-          type="button"
-          onClick={toggleAssumeSpent}
-          disabled={pending}
-          aria-pressed={cat.assumeSpent}
-          title={
-            cat.assumeSpent
-              ? `${cat.name} counts as spent each month without a transaction. Click to stop.`
-              : `Count ${cat.name} as spent each month without logging it.`
-          }
-          aria-label={
+        <IconButton
+          label={
             cat.assumeSpent
               ? `Stop assuming ${cat.name} is spent each month`
               : `Assume ${cat.name} is spent each month`
           }
-          className={cn(
-            "flex size-7 shrink-0 items-center justify-center rounded-md transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
-            cat.assumeSpent
-              ? "bg-primary/15 text-primary hover:bg-primary/25"
-              : "text-muted-foreground hover:bg-muted hover:text-foreground",
-          )}
+          tone={cat.assumeSpent ? "active" : "default"}
+          onClick={toggleAssumeSpent}
+          disabled={pending}
+          aria-pressed={cat.assumeSpent}
         >
           <Repeat size={14} weight="bold" />
-        </button>
+        </IconButton>
       )}
-
-      {/* Arrows rather than drag-and-drop: reordering happens rarely, and a
-          keyboard-reachable button beats a pointer-only gesture. */}
-      <div className="flex shrink-0 flex-col">
-        <button
-          type="button"
-          onClick={() => move("up")}
-          disabled={pending || isFirst}
-          aria-label={`Move ${cat.name} up`}
-          className="flex h-3.5 w-6 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-25 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-        >
-          <CaretUp size={11} weight="bold" />
-        </button>
-        <button
-          type="button"
-          onClick={() => move("down")}
-          disabled={pending || isLast}
-          aria-label={`Move ${cat.name} down`}
-          className="flex h-3.5 w-6 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-25 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-        >
-          <CaretDown size={11} weight="bold" />
-        </button>
-      </div>
 
       <EditCategoryDialog cat={cat} />
 
-      <button
-        type="button"
+      <IconButton
+        label={cat.archived ? `Restore ${cat.name}` : `Retire ${cat.name}`}
         onClick={toggleArchive}
         disabled={pending}
-        aria-label={cat.archived ? `Restore ${cat.name}` : `Retire ${cat.name}`}
-        className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
       >
         <ArrowCounterClockwise size={14} weight="bold" />
-      </button>
-    </li>
+      </IconButton>
+
+      <DeleteCategoryButton cat={cat} disabled={pending} />
+    </SortableRow>
   );
 }
 
@@ -260,11 +236,12 @@ function EditCategoryDialog({ cat }: { cat: Cat }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
-        aria-label={`Edit ${cat.name}`}
-        className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-      >
-        <PencilSimple size={14} weight="bold" />
-      </DialogTrigger>
+        render={
+          <IconButton label={`Edit ${cat.name}`}>
+            <PencilSimple size={14} weight="bold" />
+          </IconButton>
+        }
+      />
 
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
@@ -300,21 +277,7 @@ function EditCategoryDialog({ cat }: { cat: Cat }) {
             </select>
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor={`icon-${cat.id}`}>Icon</Label>
-            <select
-              id={`icon-${cat.id}`}
-              name="icon"
-              defaultValue={cat.icon ?? "Tag"}
-              className="h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
-            >
-              {ICON_CHOICES.map((i) => (
-                <option key={i} value={i}>
-                  {i}
-                </option>
-              ))}
-            </select>
-          </div>
+          <IconPicker id={`icon-${cat.id}`} defaultValue={cat.icon} />
 
           {cat.parentId && (
             <label className="flex items-start gap-2.5 rounded-md bg-muted/60 p-3 text-sm">
@@ -349,5 +312,120 @@ function EditCategoryDialog({ cat }: { cat: Cat }) {
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/**
+ * Delete, with the consequences read out first.
+ *
+ * `transactions.category_id` is ON DELETE SET NULL, so the spend survives and
+ * only the label goes — that is a very different promise from "this deletes
+ * your data", and the count is fetched on open so the confirm can be specific
+ * instead of hedging.
+ */
+function DeleteCategoryButton({
+  cat,
+  disabled,
+}: {
+  cat: Cat;
+  disabled: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [impact, setImpact] = useState<{
+    transactions: number;
+    children: number;
+  } | null>(null);
+  const [pending, start] = useTransition();
+
+  function openConfirm() {
+    setOpen(true);
+    setImpact(null);
+    categoryImpact(cat.id).then(setImpact);
+  }
+
+  function confirm() {
+    start(async () => {
+      const fd = new FormData();
+      fd.set("id", cat.id);
+      const res = await deleteCategory(fd);
+      if (!res.ok) {
+        toast.error(res.error);
+        return;
+      }
+      toast.success(`${cat.name} deleted`);
+      setOpen(false);
+    });
+  }
+
+  return (
+    <>
+      <IconButton
+        label={`Delete ${cat.name}`}
+        tone="danger"
+        onClick={openConfirm}
+        disabled={disabled}
+      >
+        <Trash size={14} weight="bold" />
+      </IconButton>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Delete {cat.name}?</DialogTitle>
+          </DialogHeader>
+
+          <div className="flex flex-col gap-3 text-sm">
+            {impact === null ? (
+              <p className="text-muted-foreground">Checking what this affects…</p>
+            ) : (
+              <>
+                {impact.transactions > 0 && (
+                  <p className="rounded-md bg-muted p-3">
+                    {impact.transactions} transaction
+                    {impact.transactions === 1 ? "" : "s"} will stay in your
+                    history and keep counting towards your totals, but lose this
+                    label and show as uncategorised.
+                  </p>
+                )}
+                {impact.children > 0 && (
+                  <p className="rounded-md bg-destructive/10 p-3 text-destructive">
+                    {impact.children} sub-categor
+                    {impact.children === 1 ? "y" : "ies"} will be deleted too.
+                  </p>
+                )}
+                {impact.transactions === 0 && impact.children === 0 && (
+                  <p className="text-muted-foreground">
+                    Nothing else uses it. Safe to remove.
+                  </p>
+                )}
+                <p className="text-muted-foreground">
+                  Retiring it instead keeps everything and just hides it from
+                  new transactions.
+                </p>
+              </>
+            )}
+          </div>
+
+          <div className="mt-2 flex gap-2">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => setOpen(false)}
+              disabled={pending}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              className="flex-1"
+              onClick={confirm}
+              disabled={pending || impact === null}
+            >
+              Delete
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

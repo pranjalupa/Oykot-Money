@@ -1,6 +1,9 @@
+"use client";
+
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import { CaretRight, Repeat } from "@phosphor-icons/react/dist/ssr";
-import { Money, BudgetBar } from "@/components/money";
+import { CaretRight, Repeat } from "@phosphor-icons/react";
+import { Money } from "@/components/money";
 import { CategoryIcon } from "@/components/category-icon";
 import { PlannedInput } from "@/components/planned-input";
 import type { CategoryRow } from "@/lib/budget";
@@ -8,9 +11,15 @@ import type { GroupKey } from "@/db/schema";
 import { cn } from "@/lib/utils";
 
 /**
- * The plan-vs-actual table, same three columns as the sheet.
- * Planned amounts edit in place; the row itself links to the category's
- * transaction history.
+ * The plan-vs-actual table.
+ *
+ * Three named columns — Budgeted, Spent, Remaining — rather than the old
+ * `12,000 / 15,000` slash, which made you remember which side was which. The
+ * headers carry the meaning so the numbers don't have to.
+ *
+ * Untouched rows collapse behind a toggle by default: a month starts with every
+ * category at zero, and a screen of zeroes hides the handful of lines that
+ * actually moved.
  */
 export function CategoryList({
   categories,
@@ -23,6 +32,25 @@ export function CategoryList({
   month: string;
   emptyNote?: string;
 }) {
+  const [showIdle, setShowIdle] = useState(false);
+
+  const { shown, idleCount, totals } = useMemo(() => {
+    const isIdle = (c: CategoryRow) =>
+      c.plannedMinor === 0 && c.actualMinor === 0;
+    const idle = categories.filter(isIdle);
+    return {
+      shown: showIdle ? categories : categories.filter((c) => !isIdle(c)),
+      idleCount: idle.length,
+      totals: categories.reduce(
+        (acc, c) => ({
+          planned: acc.planned + c.plannedMinor,
+          actual: acc.actual + c.actualMinor,
+        }),
+        { planned: 0, actual: 0 },
+      ),
+    };
+  }, [categories, showIdle]);
+
   if (!categories.length) {
     return (
       <p className="px-4 py-8 text-center text-sm text-muted-foreground">
@@ -31,23 +59,80 @@ export function CategoryList({
     );
   }
 
+  const isIncome = groupKey === "income";
+
   return (
-    <ul className="divide-y divide-border">
-      {categories.map((cat) => (
-        <li key={cat.id}>
-          <Row cat={cat} groupKey={groupKey} month={month} />
-          {cat.children.length > 0 && (
-            <ul className="divide-y divide-border border-t border-border bg-muted/40">
-              {cat.children.map((child) => (
-                <li key={child.id}>
-                  <Row cat={child} groupKey={groupKey} month={month} nested />
-                </li>
-              ))}
-            </ul>
-          )}
-        </li>
-      ))}
-    </ul>
+    <div>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[34rem] border-collapse text-sm">
+          <thead>
+            <tr className="border-b border-border text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+              <th scope="col" className="px-4 py-2 text-left font-semibold">
+                Category
+              </th>
+              <th scope="col" className="w-28 px-3 py-2 text-right font-semibold">
+                Budgeted
+              </th>
+              <th scope="col" className="w-28 px-3 py-2 text-right font-semibold">
+                {isIncome ? "Received" : "Spent"}
+              </th>
+              <th scope="col" className="w-28 px-3 py-2 text-right font-semibold">
+                Remaining
+              </th>
+              <th scope="col" className="w-9 px-2 py-2">
+                <span className="sr-only">Open</span>
+              </th>
+            </tr>
+          </thead>
+
+          <tbody className="divide-y divide-border">
+            {shown.map((cat) => (
+              <Row
+                key={cat.id}
+                cat={cat}
+                groupKey={groupKey}
+                month={month}
+                depth={0}
+              />
+            ))}
+          </tbody>
+
+          <tfoot>
+            <tr className="border-t-2 border-border bg-muted/40 font-semibold">
+              <td className="px-4 py-2.5">Total</td>
+              <td className="px-3 py-2.5 text-right">
+                <Money minor={totals.planned} />
+              </td>
+              <td className="px-3 py-2.5 text-right">
+                <Money minor={totals.actual} />
+              </td>
+              <td className="px-3 py-2.5 text-right">
+                <Remaining
+                  planned={totals.planned}
+                  actual={totals.actual}
+                  isIncome={isIncome}
+                />
+              </td>
+              <td />
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      {idleCount > 0 && (
+        <div className="border-t border-border px-4 py-2.5">
+          <button
+            type="button"
+            onClick={() => setShowIdle((v) => !v)}
+            className="text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground"
+          >
+            {showIdle
+              ? `Hide ${idleCount} untouched`
+              : `Show ${idleCount} untouched categor${idleCount === 1 ? "y" : "ies"}`}
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -55,107 +140,134 @@ function Row({
   cat,
   groupKey,
   month,
-  nested = false,
+  depth,
 }: {
   cat: CategoryRow;
   groupKey: GroupKey;
   month: string;
-  nested?: boolean;
+  depth: number;
 }) {
-  const diff = cat.plannedMinor - cat.actualMinor;
   const isIncome = groupKey === "income";
-  // For income, beating the plan is good; for spending it's the opposite.
-  const overPlan = !isIncome && cat.actualMinor > cat.plannedMinor && cat.plannedMinor > 0;
+  const nested = depth > 0;
   const idle = cat.plannedMinor === 0 && cat.actualMinor === 0;
-  // Every rupee in this row came from the assumption, not the ledger. Shown
-  // muted with a repeat mark so it never reads as a logged transaction.
-  const assumed = cat.assumedMinor > 0 && cat.assumedMinor === cat.actualMinor;
   // A rolled-up child's plan lives on the parent, so don't offer to edit it.
   const editablePlan = !nested || cat.budgetsSeparately;
+  // Every rupee here came from the assumption rather than the ledger.
+  const assumed = cat.assumedMinor > 0 && cat.assumedMinor === cat.actualMinor;
 
   return (
-    <div
-      className={cn(
-        "group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/60",
-        nested && "pl-11",
-      )}
-    >
-      {!nested && (
-        <CategoryIcon
-          name={cat.icon}
-          className="size-8 shrink-0 rounded-md bg-muted text-muted-foreground"
-        />
-      )}
-
-      <div className="min-w-0 flex-1">
-        <div className="flex items-baseline justify-between gap-3">
-          <Link
-            href={`/category/${cat.id}?month=${month}`}
-            className={cn(
-              "truncate text-sm hover:underline",
-              idle ? "text-muted-foreground" : "font-medium",
-              nested && "text-[13px]",
-            )}
+    <>
+      <tr className={cn("group hover:bg-muted/60", nested && "bg-muted/20")}>
+        <td className="px-4 py-2.5">
+          <div
+            className="flex items-center gap-2.5"
+            style={{ paddingLeft: depth * 20 }}
           >
-            {cat.name}
-          </Link>
-
-          <span className="flex shrink-0 items-baseline gap-1 text-sm">
+            {!nested && (
+              <CategoryIcon
+                name={cat.icon}
+                className="size-7 shrink-0 rounded-md bg-muted text-muted-foreground"
+              />
+            )}
+            <Link
+              href={`/category/${cat.id}?month=${month}`}
+              className={cn(
+                "truncate hover:underline",
+                idle ? "text-muted-foreground" : "font-medium",
+                nested && "text-[13px]",
+              )}
+            >
+              {cat.name}
+            </Link>
             {assumed && (
               <Repeat
                 size={11}
                 weight="bold"
                 aria-label="Assumed spent — no transaction logged"
-                className="self-center text-muted-foreground"
+                className="shrink-0 text-muted-foreground"
               />
             )}
-            <Money
-              minor={cat.actualMinor}
-              tone={overPlan ? "negative" : cat.actualMinor ? "default" : "muted"}
-              className={cn("font-semibold", assumed && "text-muted-foreground")}
-            />
-            <span className="text-muted-foreground">/</span>
-            {editablePlan ? (
-              <PlannedInput
-                categoryId={cat.id}
-                month={month}
-                plannedMinor={cat.plannedMinor}
-              />
-            ) : (
-              <Money minor={cat.plannedMinor} tone="muted" className="text-xs" />
-            )}
-          </span>
-        </div>
-
-        {cat.plannedMinor > 0 && (
-          <div className="mt-2 flex items-center gap-3">
-            <BudgetBar
-              actualMinor={cat.actualMinor}
-              plannedMinor={cat.plannedMinor}
-              groupKey={groupKey}
-            />
-            <span className="w-24 shrink-0 text-right text-[11px] text-muted-foreground">
-              {overPlan ? (
-                <>
-                  <Money minor={Math.abs(diff)} tone="negative" /> over
-                </>
-              ) : (
-                <>
-                  <Money minor={diff} tone="muted" /> left
-                </>
-              )}
-            </span>
           </div>
-        )}
-      </div>
+        </td>
 
-      <Link
-        href={`/category/${cat.id}?month=${month}`}
-        aria-label={`Open ${cat.name}`}
-        className="shrink-0 text-muted-foreground/50 transition-transform group-hover:translate-x-0.5"
-      >
-        <CaretRight size={14} />
-      </Link>
-    </div>
+        <td className="px-3 py-2.5 text-right">
+          {editablePlan ? (
+            <PlannedInput
+              categoryId={cat.id}
+              month={month}
+              plannedMinor={cat.plannedMinor}
+            />
+          ) : (
+            <Money minor={cat.plannedMinor} tone="muted" />
+          )}
+        </td>
+
+        <td className="px-3 py-2.5 text-right">
+          <Money
+            minor={cat.actualMinor}
+            tone={cat.actualMinor ? "default" : "muted"}
+            className={cn(assumed && "text-muted-foreground")}
+          />
+        </td>
+
+        <td className="px-3 py-2.5 text-right">
+          <Remaining
+            planned={cat.plannedMinor}
+            actual={cat.actualMinor}
+            isIncome={isIncome}
+          />
+        </td>
+
+        <td className="px-2 py-2.5">
+          <Link
+            href={`/category/${cat.id}?month=${month}`}
+            aria-label={`Open ${cat.name}`}
+            className="flex justify-center text-muted-foreground/50 transition-transform group-hover:translate-x-0.5"
+          >
+            <CaretRight size={14} />
+          </Link>
+        </td>
+      </tr>
+
+      {cat.children.map((child) => (
+        <Row
+          key={child.id}
+          cat={child}
+          groupKey={groupKey}
+          month={month}
+          depth={depth + 1}
+        />
+      ))}
+    </>
+  );
+}
+
+/**
+ * Budget minus spend. For income the sign flips meaning — earning more than
+ * planned is good — so the tone is decided per group rather than by the number.
+ */
+function Remaining({
+  planned,
+  actual,
+  isIncome,
+}: {
+  planned: number;
+  actual: number;
+  isIncome: boolean;
+}) {
+  if (planned === 0 && actual === 0) {
+    return <span className="text-muted-foreground">—</span>;
+  }
+
+  const diff = planned - actual;
+  const over = diff < 0;
+
+  return (
+    <Money
+      minor={diff}
+      signed={over}
+      tone={over ? (isIncome ? "positive" : "negative") : "muted"}
+      className={over ? "font-semibold" : undefined}
+    />
   );
 }

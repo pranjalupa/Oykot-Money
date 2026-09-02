@@ -34,9 +34,10 @@ set `user.email` before the first commit.
 ## Stack (decisions, not an inventory — see package.json for versions)
 - **Next.js App Router + TypeScript + Tailwind v4 + shadcn/ui.** Matches the setup in the
   sibling `oykot-product-ds` project, so conventions carry across Pranjal's repos.
-- **Icons: Phosphor.** Stored on categories/accounts as a string name; resolved through an
-  explicit map in `src/components/category-icon.tsx` (not a namespace import — keeps the
-  bundle honest and degrades to a Tag icon on an unknown name).
+- **Icons: Phosphor.** Stored on categories/accounts/people as a string name; resolved
+  through an explicit map in `src/components/category-icon.tsx` (not a namespace import —
+  keeps the bundle honest and degrades to a Tag icon on an unknown name). Picked from a
+  grouped, searchable grid (`icon-picker.tsx`), never a list of raw icon names.
 - **Fonts:** Archivo (headings) · Inter (body/UI) · Instrument Serif *italic* (accent only —
   pull quotes and insight lines, never buttons/nav/labels; it's the one serif moment in an
   all-sans system and only reads as intentional if it stays rare). Use the `accent-note`
@@ -77,7 +78,8 @@ and safe to call on every page load.
 Full detail in `src/db/schema.ts` comments. The decisions behind it:
 - **Accounts have three kinds**, one net-worth sum, three ways to get a balance:
   - `spending` — bank/cash/wallet/credit card. Balance = opening + transaction effects.
-  - `loan` — one per person ("Rahul"). Balance = transaction effects. Positive: they owe you.
+  - `loan` — the ledger for one `people` row (a friend, or a bank you borrowed from),
+    linked by `accounts.person_id`. Balance = transaction effects. Positive: they owe you.
   - `asset` — SIP, PF, Emergency Fund. **No transaction history**; balance is a manually
     entered `currentValueMinor`. Deliberately no returns or cost-basis tracking.
 - **A transaction skips categorization only when both ends are `spending` accounts.** Moving
@@ -122,6 +124,34 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   teams, or sharing — don't build toward those without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
+- 2026-09-03 — **Naming split, tabbed home, real tables, drag, delete, icon grid.**
+  - **`people` is its own table.** *Account* had meant three things (your bank account,
+    Rahul, your login); it now means only "a place your money sits". A `loan` account is
+    just the ledger, pointing at a `people` row via `accounts.person_id` — balance
+    arithmetic untouched, sign still carries direction. `people.kind` is
+    `person | institution`, so borrowing FROM a bank is finally expressible.
+    Migrated one person per existing loan account (2 rows). Added to `rls.sql`; 8/8 tables
+    now covered.
+  - Cascade `people` → `accounts` is load-bearing: deleting a person tries to take their
+    ledger, `transactions.account_id` is RESTRICT, so Postgres refuses if history exists.
+  - **`/` is a tabbed home** (Daily · Monthly · Yearly, Daily default). View is a URL param,
+    not client state — every tab stays a server render and stays linkable. `/daily`,
+    `/year`, `/accounts` are redirects.
+  - **`Budgeted · Spent · Remaining`** as real columns, replacing `12,000 / 15,000`.
+    Untouched rows collapse behind a toggle — a fresh month is otherwise all zeroes.
+  - **Drag reordering** (dnd-kit) replaced the arrow buttons; the handle stays a real
+    button so keyboard reorder survives. `reorder*` actions take a whole ordering, verify
+    every id belongs to the caller, write in one transaction.
+  - **Delete** for categories / accounts / people, with the schema's real behaviour in the
+    confirm: category delete keeps the money and drops the label (SET NULL); account and
+    person delete are refused when history exists (RESTRICT).
+  - **Icons 33 → 137**, grouped and searchable in a grid. Group labels are searchable
+    because nobody knows a fork is called `ForkKnife`.
+  - **Every icon-only control carries its name.** `IconButton` / `IconLink` take a
+    *required* `label` → tooltip + `aria-label`, so a nameless icon button can't be written
+    by accident. Nav shows tooltips only when collapsed.
+  - Fixed: `MonthSwitcher` appended `?month=` unconditionally, so `/?view=daily` became
+    `/?view=daily?month=…` and silently dropped the view.
 - 2026-09-03 — **Assume-spent for fixed Needs.** `categories.assume_spent`: the budgeted
   amount counts as spent with no transaction. A real transaction **replaces** the assumption
   for that month rather than topping it up — 15,000 budgeted, 15,400 actual reads 15,400.
@@ -134,27 +164,17 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
     in `app/actions.ts`, re-reading the group from the DB rather than trusting the form.
   - `CategoryRow.assumedMinor` carries how much of the actual was assumed, so the UI can
     mark it. Assumed money must never render identically to logged money.
-- 2026-09-02 — **Recurring, auto-carry, reordering, and the last missing nav link.**
-  Added monthly repeats (toggle in the add dialog, managed in Settings), plan carry-over
-  to the next month, category reordering, and transaction editing — `updateTransaction`
-  had been written but left with no UI. (`setAccountArchived` was in the same state and is
-  *still* uncalled — see Status.) `/income` existed via the `[group]` route but had no
-  sidebar entry; it does now.
-  - Default categories for NEW accounts trimmed from 36 (a copy of Pranjal's sheet) to
-    13 generic lines. Pranjal's real budget lives only in `pranjalupa@gmail.com`, loaded
-    by `scripts/import-my-budget.ts` (idempotent; reconciles to
-    31,600 / 11,000 / 22,267 / 64,867).
-  - `pranjal.upadhyay@elivaas.com` is a test account, not a second identity.
-  - Watch this: `drizzle/rls.sql` does NOT auto-discover tables. `recurring_rules`
-    shipped with RLS off until it was added there by hand. **Add every new table to
-    that file.**
 - Earlier entries (2026-09-01 → 2026-09-02, first build through multi-user launch) archived to `docs/decisions/2026-09.md`.
 ## Status
-Fully workable and deployed at https://oykot-money.vercel.app. Google sign-in is live
-alongside email/password. Month / Daily / Year / group pages / category detail / accounts /
-settings all read and write against Supabase, with auth and per-user isolation.
-**Not built yet:** statement import or any automated entry (deliberately deferred), and
-archiving an account from the UI (`setAccountArchived` exists, nothing calls it).
+Fully workable and deployed at https://oykot-money.vercel.app. Home (Daily/Monthly/Yearly
+tabs) / group pages / category detail / Money / People / Settings all read and write against
+Supabase, with auth and per-user isolation. Archiving, deleting, drag reordering and the
+icon grid are wired everywhere they apply.
+**Not built yet:** statement import or any automated entry (deliberately deferred; see the
+`merchant_rules` note above).
+**Known lint debt:** ~11 `react-hooks/set-state-in-effect` errors, all the same
+close-the-dialog-on-success pattern shared by every action dialog. Worth fixing as one
+sweep rather than one file at a time.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

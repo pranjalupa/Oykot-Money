@@ -5,9 +5,7 @@ import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import {
-  CalendarBlank,
   ChartPieSlice,
-  CalendarDots,
   Gear,
   House,
   List,
@@ -17,6 +15,7 @@ import {
   SignOut,
   Sun,
   TrendUp,
+  Users,
   Wallet,
   type Icon,
 } from "@phosphor-icons/react";
@@ -27,7 +26,37 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+
+/**
+ * The sidebar collapses to icons on wide screens and shows labels in the mobile
+ * drawer. A tooltip is only worth showing in the first case — repeating a label
+ * that's already on screen is noise, so this wraps conditionally.
+ */
+function MaybeTooltip({
+  show,
+  label,
+  children,
+}: {
+  show: boolean;
+  label: string;
+  children: React.ReactElement;
+}) {
+  if (!show) return children;
+  return (
+    <Tooltip>
+      <TooltipTrigger render={children} />
+      <TooltipContent side="right" className="max-[640px]:hidden">
+        {label}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
 
 type NavItem = { href: string; label: string; icon: Icon };
 
@@ -39,11 +68,9 @@ type NavItem = { href: string; label: string; icon: Icon };
 const SECTIONS: { heading: string | null; items: NavItem[] }[] = [
   {
     heading: null,
-    items: [
-      { href: "/", label: "This month", icon: House },
-      { href: "/daily", label: "Daily", icon: CalendarBlank },
-      { href: "/year", label: "Year", icon: CalendarDots },
-    ],
+    // Daily / Monthly / Yearly are tabs on the home page now, not three
+    // separate destinations — one entry, not three.
+    items: [{ href: "/", label: "Home", icon: House }],
   },
   {
     heading: "Groups",
@@ -57,7 +84,8 @@ const SECTIONS: { heading: string | null; items: NavItem[] }[] = [
   {
     heading: null,
     items: [
-      { href: "/accounts", label: "Accounts", icon: Wallet },
+      { href: "/money", label: "Money", icon: Wallet },
+      { href: "/people", label: "People", icon: Users },
       { href: "/settings", label: "Settings", icon: Gear },
     ],
   },
@@ -78,19 +106,24 @@ function ThemeToggle({ expanded = false }: { expanded?: boolean }) {
   const label = isDark ? "Switch to light theme" : "Switch to dark theme";
 
   return (
-    <button
-      type="button"
-      onClick={() => setTheme(isDark ? "light" : "dark")}
-      aria-label={label}
-      title={label}
-      className={cn(
-        "flex items-center gap-2.5 rounded-md text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
-        expanded ? "w-full px-2.5 py-2" : "size-9 justify-center",
-      )}
-    >
-      {isDark ? <Sun size={17} weight="bold" /> : <Moon size={17} weight="bold" />}
-      {expanded && <span>{isDark ? "Light mode" : "Dark mode"}</span>}
-    </button>
+    <MaybeTooltip show={!expanded} label={label}>
+      <button
+        type="button"
+        onClick={() => setTheme(isDark ? "light" : "dark")}
+        aria-label={label}
+        className={cn(
+          "flex items-center gap-2.5 rounded-md text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+          expanded ? "w-full px-2.5 py-2" : "size-9 justify-center",
+        )}
+      >
+        {isDark ? (
+          <Sun size={17} weight="bold" />
+        ) : (
+          <Moon size={17} weight="bold" />
+        )}
+        {expanded && <span>{isDark ? "Light mode" : "Dark mode"}</span>}
+      </button>
+    </MaybeTooltip>
   );
 }
 
@@ -135,18 +168,19 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
 function SignOutButton({ expanded = false }: { expanded?: boolean }) {
   return (
     <form action={signOut} className={expanded ? "w-full" : undefined}>
-      <button
-        type="submit"
-        aria-label="Sign out"
-        title="Sign out"
-        className={cn(
-          "flex items-center gap-2.5 rounded-md text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
-          expanded ? "w-full px-2.5 py-2" : "size-9 justify-center",
-        )}
-      >
-        <SignOut size={17} weight="bold" />
-        {expanded && <span>Sign out</span>}
-      </button>
+      <MaybeTooltip show={!expanded} label="Sign out">
+        <button
+          type="submit"
+          aria-label="Sign out"
+          className={cn(
+            "flex items-center gap-2.5 rounded-md text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+            expanded ? "w-full px-2.5 py-2" : "size-9 justify-center",
+          )}
+        >
+          <SignOut size={17} weight="bold" />
+          {expanded && <span>Sign out</span>}
+        </button>
+      </MaybeTooltip>
     </form>
   );
 }
@@ -188,6 +222,7 @@ export function AppNav({ email }: { email: string | null }) {
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger
               aria-label="Open menu"
+              title="Open menu"
               className="flex size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
             >
               <List size={19} weight="bold" />

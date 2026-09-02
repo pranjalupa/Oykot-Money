@@ -3,6 +3,7 @@
 import { useTransition } from "react";
 import { Repeat, Trash } from "@phosphor-icons/react";
 import { toast } from "sonner";
+import { IconButton } from "@/components/icon-button";
 import { setRecurringActive, deleteRecurringRule } from "@/app/actions";
 import { CategoryIcon } from "@/components/category-icon";
 import { formatMoney } from "@/lib/money";
@@ -99,27 +100,22 @@ function Row({ rule }: { rule: RecurringRow }) {
         {formatMoney(rule.direction === "inflow" ? rule.amountMinor : -rule.amountMinor)}
       </span>
 
-      <button
-        type="button"
+      <IconButton
+        label={rule.active ? `Pause ${label}` : `Resume ${label}`}
         onClick={toggle}
         disabled={pending}
-        aria-label={rule.active ? `Pause ${label}` : `Resume ${label}`}
-        title={rule.active ? "Pause" : "Resume"}
-        className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
       >
         <Repeat size={14} weight={rule.active ? "fill" : "regular"} />
-      </button>
+      </IconButton>
 
-      <button
-        type="button"
+      <IconButton
+        label={`Remove repeat for ${label} — past transactions stay`}
+        tone="danger"
         onClick={remove}
         disabled={pending}
-        aria-label={`Remove repeat for ${label}`}
-        title="Remove — past transactions stay"
-        className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground/50 transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
       >
         <Trash size={14} weight="bold" />
-      </button>
+      </IconButton>
     </li>
   );
 }

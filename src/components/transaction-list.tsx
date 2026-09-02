@@ -2,6 +2,7 @@ import { ArrowsLeftRight, Repeat, Trash } from "@phosphor-icons/react/dist/ssr";
 import { Money } from "@/components/money";
 import { CategoryIcon } from "@/components/category-icon";
 import { EditTransactionDialog } from "@/components/edit-transaction-dialog";
+import { IconButton } from "@/components/icon-button";
 import { deleteTransaction } from "@/app/actions";
 import type { PickerCategory } from "@/components/transaction-dialog";
 import type { TransactionRow } from "@/lib/budget";
@@ -85,13 +86,9 @@ export function TransactionList({
 
             <form action={deleteTransaction} className="shrink-0">
               <input type="hidden" name="id" value={t.id} />
-              <button
-                type="submit"
-                aria-label={`Delete ${label}`}
-                className="flex size-7 items-center justify-center rounded-md text-muted-foreground/40 transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-              >
+              <IconButton label={`Delete ${label}`} tone="danger" type="submit">
                 <Trash size={14} weight="bold" />
-              </button>
+              </IconButton>
             </form>
           </li>
         );

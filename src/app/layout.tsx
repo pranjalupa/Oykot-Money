@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Archivo, Inter, Instrument_Serif } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AppShell } from "@/components/app-shell";
 import { getUser } from "@/lib/auth";
@@ -44,9 +45,13 @@ export default async function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <AppShell signedIn={!!user} email={user?.email ?? null}>
-            {children}
-          </AppShell>
+          {/* Short delay, not zero: tooltips that fire the instant the pointer
+              crosses a toolbar are noise. Long enough to mean "I paused here". */}
+          <TooltipProvider delay={350}>
+            <AppShell signedIn={!!user} email={user?.email ?? null}>
+              {children}
+            </AppShell>
+          </TooltipProvider>
           <Toaster position="bottom-center" />
         </ThemeProvider>
       </body>
