@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CaretRight } from "@phosphor-icons/react/dist/ssr";
+import { CaretRight, Repeat } from "@phosphor-icons/react/dist/ssr";
 import { Money, BudgetBar } from "@/components/money";
 import { CategoryIcon } from "@/components/category-icon";
 import { PlannedInput } from "@/components/planned-input";
@@ -67,6 +67,9 @@ function Row({
   // For income, beating the plan is good; for spending it's the opposite.
   const overPlan = !isIncome && cat.actualMinor > cat.plannedMinor && cat.plannedMinor > 0;
   const idle = cat.plannedMinor === 0 && cat.actualMinor === 0;
+  // Every rupee in this row came from the assumption, not the ledger. Shown
+  // muted with a repeat mark so it never reads as a logged transaction.
+  const assumed = cat.assumedMinor > 0 && cat.assumedMinor === cat.actualMinor;
   // A rolled-up child's plan lives on the parent, so don't offer to edit it.
   const editablePlan = !nested || cat.budgetsSeparately;
 
@@ -98,10 +101,18 @@ function Row({
           </Link>
 
           <span className="flex shrink-0 items-baseline gap-1 text-sm">
+            {assumed && (
+              <Repeat
+                size={11}
+                weight="bold"
+                aria-label="Assumed spent — no transaction logged"
+                className="self-center text-muted-foreground"
+              />
+            )}
             <Money
               minor={cat.actualMinor}
               tone={overPlan ? "negative" : cat.actualMinor ? "default" : "muted"}
-              className="font-semibold"
+              className={cn("font-semibold", assumed && "text-muted-foreground")}
             />
             <span className="text-muted-foreground">/</span>
             {editablePlan ? (

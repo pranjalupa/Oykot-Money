@@ -34,6 +34,14 @@ export type CategoryRow = {
   budgetsSeparately: boolean;
   plannedMinor: number;
   actualMinor: number;
+  /**
+   * How much of `actualMinor` is assumed rather than transacted (see
+   * `categories.assumeSpent`). Non-zero means "nobody logged this, we took the
+   * budgeted figure" — the UI marks those so an assumption never passes for a
+   * real receipt.
+   */
+  assumedMinor: number;
+  assumeSpent: boolean;
   children: CategoryRow[];
 };
 
@@ -41,6 +49,8 @@ export type GroupSummary = {
   groupKey: GroupKey;
   plannedMinor: number;
   actualMinor: number;
+  /** Part of `actualMinor` that came from assumptions, not transactions. */
+  assumedMinor: number;
   targetPercent: number;
   plannedPercent: number;
   actualPercent: number;
@@ -84,6 +94,7 @@ export async function getMonthSummary(userId: string, month: string) {
       icon: categories.icon,
       parentId: categories.parentId,
       budgetsSeparately: categories.budgetsSeparately,
+      assumeSpent: categories.assumeSpent,
       plannedMinor: budgetLines.plannedMinor,
     })
     .from(categories)
@@ -101,6 +112,15 @@ export async function getMonthSummary(userId: string, month: string) {
   // planned up only when they don't budget separately.
   const byId = new Map<string, CategoryRow>();
   for (const c of cats) {
+    const plannedMinor = Number(c.plannedMinor ?? 0);
+    const transacted = actuals.get(c.id) ?? 0;
+    // The assumption is a fallback, never a top-up: one real transaction this
+    // month and the ledger speaks for itself. Applied against the category's
+    // OWN budget line, before children roll up, so a parent can't assume an
+    // amount that includes its children's plans.
+    const assumedMinor =
+      c.assumeSpent && transacted === 0 && plannedMinor > 0 ? plannedMinor : 0;
+
     byId.set(c.id, {
       id: c.id,
       name: c.name,
@@ -108,8 +128,10 @@ export async function getMonthSummary(userId: string, month: string) {
       icon: c.icon,
       parentId: c.parentId,
       budgetsSeparately: c.budgetsSeparately,
-      plannedMinor: Number(c.plannedMinor ?? 0),
-      actualMinor: actuals.get(c.id) ?? 0,
+      assumeSpent: c.assumeSpent,
+      plannedMinor,
+      actualMinor: transacted + assumedMinor,
+      assumedMinor,
       children: [],
     });
   }
@@ -126,6 +148,7 @@ export async function getMonthSummary(userId: string, month: string) {
   for (const parent of roots) {
     for (const child of parent.children) {
       parent.actualMinor += child.actualMinor;
+      parent.assumedMinor += child.assumedMinor;
       if (!child.budgetsSeparately) parent.plannedMinor += child.plannedMinor;
     }
   }
@@ -139,6 +162,7 @@ export async function getMonthSummary(userId: string, month: string) {
       groupKey: key,
       plannedMinor: inGroup.reduce((s, r) => s + r.plannedMinor, 0),
       actualMinor: inGroup.reduce((s, r) => s + r.actualMinor, 0),
+      assumedMinor: inGroup.reduce((s, r) => s + r.assumedMinor, 0),
       targetPercent: targets[key] ?? 0,
       plannedPercent: 0,
       actualPercent: 0,
@@ -358,6 +382,70 @@ export async function getDailyView(userId: string, month: string) {
 /* Yearly view                                                                 */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * Total assumed-spent Needs per month for a year — the budgeted amount of every
+ * `assumeSpent` category that saw no transaction that month.
+ *
+ * Two queries rather than a join: the budget lines, then the (month, category)
+ * pairs that actually have transactions, subtracted in memory. A left join with
+ * a date-truncated ON clause reads worse and buys nothing at twelve months.
+ */
+async function assumedNeedsByMonth(
+  userId: string,
+  year: number,
+  months: string[],
+) {
+  const lines = await db
+    .select({
+      month: budgetLines.month,
+      categoryId: budgetLines.categoryId,
+      plannedMinor: budgetLines.plannedMinor,
+    })
+    .from(budgetLines)
+    .innerJoin(categories, eq(categories.id, budgetLines.categoryId))
+    .where(
+      and(
+        eq(budgetLines.userId, userId),
+        eq(categories.assumeSpent, true),
+        eq(categories.archived, false),
+        eq(categories.groupKey, "needs"),
+        inArray(budgetLines.month, months),
+      ),
+    );
+
+  if (!lines.length) return new Map<string, number>();
+
+  const transacted = await db
+    .select({
+      month: sql<string>`to_char(${transactions.date}, 'YYYY-MM')`.as("month"),
+      categoryId: transactions.categoryId,
+    })
+    .from(transactions)
+    .where(
+      and(
+        eq(transactions.userId, userId),
+        gte(transactions.date, `${year}-01-01`),
+        lte(transactions.date, `${year}-12-31`),
+        inArray(
+          transactions.categoryId,
+          lines.map((l) => l.categoryId),
+        ),
+      ),
+    )
+    .groupBy(sql`to_char(${transactions.date}, 'YYYY-MM')`, transactions.categoryId);
+
+  const hasReal = new Set(transacted.map((t) => `${t.month}:${t.categoryId}`));
+
+  const out = new Map<string, number>();
+  for (const line of lines) {
+    if (hasReal.has(`${line.month}:${line.categoryId}`)) continue;
+    const planned = Number(line.plannedMinor ?? 0);
+    if (planned <= 0) continue;
+    out.set(line.month, (out.get(line.month) ?? 0) + planned);
+  }
+  return out;
+}
+
 export async function getYearSummary(userId: string, year: number) {
   const rows = await db
     .select({
@@ -381,10 +469,15 @@ export async function getYearSummary(userId: string, year: number) {
     (_, i) => `${year}-${String(i + 1).padStart(2, "0")}`,
   );
 
+  // Assumed fixed costs, month by month, so the year agrees with what the month
+  // view shows. Same rule as `getMonthSummary`: a real transaction in that month
+  // wins, and the assumption only fills the silence.
+  const assumedByMonth = await assumedNeedsByMonth(userId, year, months);
+
   const byMonth = months.map((month) => {
     const pick = (g: GroupKey) =>
       Number(rows.find((r) => r.month === month && r.groupKey === g)?.total ?? 0);
-    const needs = pick("needs");
+    const needs = pick("needs") + (assumedByMonth.get(month) ?? 0);
     const wants = pick("wants");
     const investments = pick("investments");
     const income = pick("income");

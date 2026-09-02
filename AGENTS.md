@@ -122,6 +122,18 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   teams, or sharing — don't build toward those without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
+- 2026-09-03 — **Assume-spent for fixed Needs.** `categories.assume_spent`: the budgeted
+  amount counts as spent with no transaction. A real transaction **replaces** the assumption
+  for that month rather than topping it up — 15,000 budgeted, 15,400 actual reads 15,400.
+  - **Nothing is written to `transactions`.** The assumption lives only in the read path
+    (`getMonthSummary`, and `assumedNeedsByMonth` for the year view), so turning the flag
+    off restores the true ledger with no cleanup. This is the whole reason it isn't built
+    on `recurring_rules`, which materialises real rows.
+  - Needs-group only, and not for children that roll their plan up into a parent — they
+    have no plan of their own, so assuming would spend against a budget of zero. Enforced
+    in `app/actions.ts`, re-reading the group from the DB rather than trusting the form.
+  - `CategoryRow.assumedMinor` carries how much of the actual was assumed, so the UI can
+    mark it. Assumed money must never render identically to logged money.
 - 2026-09-02 — **Recurring, auto-carry, reordering, and the last missing nav link.**
   Added monthly repeats (toggle in the add dialog, managed in Settings), plan carry-over
   to the next month, category reordering, and transaction editing — `updateTransaction`

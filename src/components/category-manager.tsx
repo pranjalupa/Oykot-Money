@@ -6,12 +6,14 @@ import {
   CaretDown,
   CaretUp,
   PencilSimple,
+  Repeat,
   Warning,
 } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import {
   updateCategory,
   setCategoryArchived,
+  setCategoryAssumeSpent,
   moveCategory,
   type ActionResult,
 } from "@/app/actions";
@@ -39,6 +41,7 @@ type Cat = {
   parentId: string | null;
   archived: boolean;
   budgetsSeparately: boolean;
+  assumeSpent: boolean;
 };
 
 export function CategoryManager({ categories }: { categories: Cat[] }) {
@@ -122,6 +125,34 @@ function CategoryRow({
     });
   }
 
+  function toggleAssumeSpent() {
+    start(async () => {
+      const fd = new FormData();
+      fd.set("id", cat.id);
+      fd.set("assumeSpent", String(!cat.assumeSpent));
+      const res = await setCategoryAssumeSpent(fd);
+      if (!res.ok) {
+        toast.error(res.error);
+        return;
+      }
+      toast.success(
+        cat.assumeSpent
+          ? `${cat.name} counts only what you log`
+          : `${cat.name} counts as spent every month`,
+      );
+    });
+  }
+
+  // Needs only: assuming a Want was spent would quietly inflate discretionary
+  // spending, and assuming income arrived is just wrong. A child that rolls its
+  // plan up into its parent is excluded too — it has no plan of its own to
+  // assume, so it would add spending against a budget of zero and read as
+  // permanently overspent.
+  const canAssume =
+    cat.groupKey === "needs" &&
+    !cat.archived &&
+    (!cat.parentId || cat.budgetsSeparately);
+
   return (
     <li
       className={cn(
@@ -140,7 +171,39 @@ function CategoryRow({
         {cat.archived && (
           <span className="ml-2 text-xs text-muted-foreground">retired</span>
         )}
+        {cat.assumeSpent && !cat.archived && (
+          <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+            assumed
+          </span>
+        )}
       </span>
+
+      {canAssume && (
+        <button
+          type="button"
+          onClick={toggleAssumeSpent}
+          disabled={pending}
+          aria-pressed={cat.assumeSpent}
+          title={
+            cat.assumeSpent
+              ? `${cat.name} counts as spent each month without a transaction. Click to stop.`
+              : `Count ${cat.name} as spent each month without logging it.`
+          }
+          aria-label={
+            cat.assumeSpent
+              ? `Stop assuming ${cat.name} is spent each month`
+              : `Assume ${cat.name} is spent each month`
+          }
+          className={cn(
+            "flex size-7 shrink-0 items-center justify-center rounded-md transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+            cat.assumeSpent
+              ? "bg-primary/15 text-primary hover:bg-primary/25"
+              : "text-muted-foreground hover:bg-muted hover:text-foreground",
+          )}
+        >
+          <Repeat size={14} weight="bold" />
+        </button>
+      )}
 
       {/* Arrows rather than drag-and-drop: reordering happens rarely, and a
           keyboard-reachable button beats a pointer-only gesture. */}

@@ -427,6 +427,49 @@ export async function setCategoryArchived(formData: FormData) {
   refresh();
 }
 
+/**
+ * Turn "assume this is spent" on or off for a fixed cost.
+ *
+ * Needs-only, and the group is re-read from the database rather than trusted
+ * from the form — the client decides which toggles to *draw*, never which are
+ * allowed. Nothing is written to `transactions`, so switching this off puts the
+ * real ledger straight back with no cleanup.
+ */
+export async function setCategoryAssumeSpent(
+  formData: FormData,
+): Promise<ActionResult> {
+  const user = await requireUser();
+  const id = String(formData.get("id") ?? "");
+  const assumeSpent = formData.get("assumeSpent") === "true";
+
+  const [row] = await db
+    .select({
+      groupKey: categories.groupKey,
+      parentId: categories.parentId,
+      budgetsSeparately: categories.budgetsSeparately,
+    })
+    .from(categories)
+    .where(and(eq(categories.id, id), eq(categories.userId, user.id)))
+    .limit(1);
+
+  if (!row) return fail("Category not found.");
+  if (assumeSpent && row.groupKey !== "needs") {
+    return fail("Only Needs categories can be assumed spent.");
+  }
+  // No plan of its own to assume — it would spend against a budget of zero.
+  if (assumeSpent && row.parentId && !row.budgetsSeparately) {
+    return fail("This category rolls up into its parent, so it has no plan of its own.");
+  }
+
+  await db
+    .update(categories)
+    .set({ assumeSpent })
+    .where(and(eq(categories.id, id), eq(categories.userId, user.id)));
+
+  refresh();
+  return { ok: true };
+}
+
 /* -------------------------------------------------------------------------- */
 /* Category ordering                                                           */
 /* -------------------------------------------------------------------------- */

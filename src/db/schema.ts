@@ -134,6 +134,21 @@ export const categories = pgTable(
      */
     budgetsSeparately: boolean("budgets_separately").notNull().default(false),
 
+    /**
+     * "Assume this is spent." For fixed costs — rent, EMI, a fixed SIP — where
+     * the amount is known and logging it every month is busywork. When true the
+     * budgeted amount counts as spent on its own, with no transaction.
+     *
+     * A real transaction REPLACES the assumption for that month rather than
+     * adding to it, so rent budgeted at 15,000 that actually goes out at 15,400
+     * reads 15,400 — never 30,400. Applied in `getMonthSummary` /
+     * `getYearSummary`; nothing is written to `transactions`, so turning the
+     * flag off restores the true ledger with no cleanup.
+     *
+     * Needs-group only — enforced in `app/actions.ts`, not by the schema.
+     */
+    assumeSpent: boolean("assume_spent").notNull().default(false),
+
     /** Phosphor icon name, e.g. "House", "ForkKnife". */
     icon: text("icon"),
     archived: boolean("archived").notNull().default(false),

@@ -20,6 +20,7 @@ import {
   today,
 } from "@/lib/budget";
 import { monthBounds } from "@/lib/targets";
+import { formatMoney } from "@/lib/money";
 import { requireUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
@@ -61,6 +62,7 @@ export default async function CategoryPage({
 
   const planned = row?.plannedMinor ?? 0;
   const actual = row?.actualMinor ?? 0;
+  const assumed = (row?.assumedMinor ?? 0) > 0;
   const diff = planned - actual;
   const isIncome = cat.groupKey === "income";
 
@@ -144,7 +146,11 @@ export default async function CategoryPage({
         <TransactionList
           transactions={txs}
           categories={allCategories}
-          emptyNote="Nothing in this category this month."
+          emptyNote={
+            assumed
+              ? `Nothing logged. The ${formatMoney(actual)} above is the budgeted amount, counted automatically. Add a transaction and the real figure replaces it.`
+              : "Nothing in this category this month."
+          }
         />
       </section>
     </div>
