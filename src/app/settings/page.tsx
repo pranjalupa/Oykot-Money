@@ -2,12 +2,14 @@ import Link from "next/link";
 import { ArrowSquareOut } from "@phosphor-icons/react/dist/ssr";
 import { TargetEditor } from "@/components/target-editor";
 import { CategoryManager } from "@/components/category-manager";
+import { RecurringList } from "@/components/recurring-list";
 import {
   currentMonth,
   getTargets,
   hasMonthOverride,
   isValidMonth,
   listCategories,
+  listRecurring,
   monthLabel,
 } from "@/lib/budget";
 import { requireUser } from "@/lib/auth";
@@ -23,10 +25,11 @@ export default async function SettingsPage({
   const { month: monthParam } = await searchParams;
   const month = isValidMonth(monthParam) ? monthParam : currentMonth();
 
-  const [targets, override, categories] = await Promise.all([
+  const [targets, override, categories, recurring] = await Promise.all([
     getTargets(user.id, month),
     hasMonthOverride(user.id, month),
     listCategories(user.id),
+    listRecurring(user.id),
   ]);
 
   return (
@@ -46,6 +49,15 @@ export default async function SettingsPage({
           month.
         </p>
         <TargetEditor targets={targets} month={month} hasOverride={override} />
+      </section>
+
+      <section className="rounded-xl border border-border bg-card p-5">
+        <h2 className="font-heading text-lg font-bold">Repeats every month</h2>
+        <p className="mt-0.5 mb-4 text-sm text-muted-foreground">
+          Added automatically when you open the month. Pausing stops future
+          ones; removing a repeat leaves the transactions it already made.
+        </p>
+        <RecurringList rules={recurring} />
       </section>
 
       <section className="rounded-xl border border-border bg-card p-5">

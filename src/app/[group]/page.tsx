@@ -14,6 +14,7 @@ import {
   today,
 } from "@/lib/budget";
 import { requireUser } from "@/lib/auth";
+import { prepareMonth } from "@/lib/month-setup";
 import { GROUP_KEYS, type GroupKey } from "@/db/schema";
 
 export const dynamic = "force-dynamic";
@@ -32,6 +33,8 @@ export default async function GroupPage({
   const user = await requireUser();
   const { month: monthParam } = await searchParams;
   const month = isValidMonth(monthParam) ? monthParam : currentMonth();
+
+  await prepareMonth(user.id, month);
 
   const [summary, accounts, categories] = await Promise.all([
     getMonthSummary(user.id, month),

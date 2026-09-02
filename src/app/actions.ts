@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { and, eq, sql, max } from "drizzle-orm";
+import { and, eq, sql, max, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import {
   accounts,
@@ -9,6 +9,7 @@ import {
   categories,
   groupTargets,
   transactions,
+  recurringRules,
   GROUP_KEYS,
   ACCOUNT_KINDS,
   DEFAULT_MONTH,
@@ -114,6 +115,9 @@ export async function createTransaction(
     return fail("Pick a category.");
   }
 
+  const merchant = String(formData.get("merchant") ?? "").trim() || null;
+  const note = String(formData.get("note") ?? "").trim() || null;
+
   await db.insert(transactions).values({
     userId: user.id,
     date,
@@ -122,9 +126,26 @@ export async function createTransaction(
     accountId,
     counterAccountId,
     categoryId,
-    merchant: String(formData.get("merchant") ?? "").trim() || null,
-    note: String(formData.get("note") ?? "").trim() || null,
+    merchant,
+    note,
   });
+
+  // "Repeat monthly" saves a template alongside the transaction. It's marked
+  // as already run for this month, so today's entry isn't duplicated.
+  if (formData.get("recurring") === "on") {
+    await db.insert(recurringRules).values({
+      userId: user.id,
+      amountMinor,
+      direction: direction as "outflow" | "inflow" | "transfer",
+      accountId,
+      counterAccountId,
+      categoryId,
+      merchant,
+      note,
+      dayOfMonth: Number(date.slice(8, 10)) || 1,
+      lastRunMonth: date.slice(0, 7),
+    });
+  }
 
   refresh();
   return { ok: true };
@@ -402,6 +423,98 @@ export async function setCategoryArchived(formData: FormData) {
     .update(categories)
     .set({ archived })
     .where(and(eq(categories.id, id), eq(categories.userId, user.id)));
+
+  refresh();
+}
+
+/* -------------------------------------------------------------------------- */
+/* Category ordering                                                           */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Swap a category with its neighbour inside the same group.
+ *
+ * Swapping two rows rather than renumbering the whole list keeps this to one
+ * pair of writes and can't drift, even if sortOrder values aren't contiguous.
+ */
+export async function moveCategory(formData: FormData): Promise<ActionResult> {
+  const user = await requireUser();
+  const id = String(formData.get("id") ?? "");
+  const dir = String(formData.get("direction") ?? "");
+  if (dir !== "up" && dir !== "down") return fail("Bad direction.");
+
+  const [me] = await db
+    .select()
+    .from(categories)
+    .where(and(eq(categories.id, id), eq(categories.userId, user.id)))
+    .limit(1);
+  if (!me) return fail("Category not found.");
+
+  // Only reorder among siblings: same group, same parent, same archived state.
+  const siblings = await db
+    .select({ id: categories.id, sortOrder: categories.sortOrder })
+    .from(categories)
+    .where(
+      and(
+        eq(categories.userId, user.id),
+        eq(categories.groupKey, me.groupKey),
+        eq(categories.archived, me.archived),
+        me.parentId
+          ? eq(categories.parentId, me.parentId)
+          : isNull(categories.parentId),
+      ),
+    )
+    .orderBy(categories.sortOrder, categories.id);
+
+  const i = siblings.findIndex((s) => s.id === id);
+  const j = dir === "up" ? i - 1 : i + 1;
+  if (i === -1 || j < 0 || j >= siblings.length) return { ok: true }; // already at the end
+
+  const a = siblings[i];
+  const b = siblings[j];
+
+  // Equal sortOrders would make a swap a no-op; nudge them apart first.
+  const aOrder = a.sortOrder === b.sortOrder ? a.sortOrder + (dir === "up" ? 1 : -1) : a.sortOrder;
+
+  await db
+    .update(categories)
+    .set({ sortOrder: b.sortOrder })
+    .where(and(eq(categories.id, a.id), eq(categories.userId, user.id)));
+  await db
+    .update(categories)
+    .set({ sortOrder: aOrder })
+    .where(and(eq(categories.id, b.id), eq(categories.userId, user.id)));
+
+  refresh();
+  return { ok: true };
+}
+
+/* -------------------------------------------------------------------------- */
+/* Recurring rules                                                             */
+/* -------------------------------------------------------------------------- */
+
+export async function setRecurringActive(formData: FormData) {
+  const user = await requireUser();
+  const id = String(formData.get("id") ?? "");
+  const active = formData.get("active") === "true";
+
+  await db
+    .update(recurringRules)
+    .set({ active })
+    .where(and(eq(recurringRules.id, id), eq(recurringRules.userId, user.id)));
+
+  refresh();
+}
+
+export async function deleteRecurringRule(formData: FormData) {
+  const user = await requireUser();
+  const id = String(formData.get("id") ?? "");
+
+  // Deletes the template only — transactions it already created stay put,
+  // because those actually happened.
+  await db
+    .delete(recurringRules)
+    .where(and(eq(recurringRules.id, id), eq(recurringRules.userId, user.id)));
 
   refresh();
 }

@@ -1,14 +1,18 @@
-import { ArrowsLeftRight, Trash } from "@phosphor-icons/react/dist/ssr";
+import { ArrowsLeftRight, Repeat, Trash } from "@phosphor-icons/react/dist/ssr";
 import { Money } from "@/components/money";
 import { CategoryIcon } from "@/components/category-icon";
+import { EditTransactionDialog } from "@/components/edit-transaction-dialog";
 import { deleteTransaction } from "@/app/actions";
+import type { PickerCategory } from "@/components/transaction-dialog";
 import type { TransactionRow } from "@/lib/budget";
 
 export function TransactionList({
   transactions,
+  categories = [],
   emptyNote,
 }: {
   transactions: TransactionRow[];
+  categories?: PickerCategory[];
   emptyNote?: string;
 }) {
   if (!transactions.length) {
@@ -42,7 +46,17 @@ export function TransactionList({
             )}
 
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium">{label}</p>
+              <p className="flex items-center gap-1.5 truncate text-sm font-medium">
+                {label}
+                {t.source === "recurring" && (
+                  <Repeat
+                    size={12}
+                    weight="bold"
+                    className="shrink-0 text-muted-foreground"
+                    aria-label="Added by a monthly repeat"
+                  />
+                )}
+              </p>
               <p className="truncate text-xs text-muted-foreground">
                 {new Date(t.date).toLocaleDateString("en-IN", {
                   day: "numeric",
@@ -66,6 +80,8 @@ export function TransactionList({
               }
               className="shrink-0 text-sm font-semibold"
             />
+
+            <EditTransactionDialog transaction={t} categories={categories} />
 
             <form action={deleteTransaction} className="shrink-0">
               <input type="hidden" name="id" value={t.id} />

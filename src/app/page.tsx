@@ -17,6 +17,7 @@ import {
   today,
 } from "@/lib/budget";
 import { requireUser, ensureUserSetup } from "@/lib/auth";
+import { prepareMonth } from "@/lib/month-setup";
 import { formatMoney, percentOf } from "@/lib/money";
 import type { GroupKey } from "@/db/schema";
 import { cn } from "@/lib/utils";
@@ -33,6 +34,8 @@ export default async function MonthPage({
 
   const { month: monthParam } = await searchParams;
   const month = isValidMonth(monthParam) ? monthParam : currentMonth();
+
+  await prepareMonth(user.id, month);
 
   const [summary, overridden, accounts, categories] = await Promise.all([
     getMonthSummary(user.id, month),

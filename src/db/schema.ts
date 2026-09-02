@@ -285,6 +285,59 @@ export const transactions = pgTable(
 );
 
 /* -------------------------------------------------------------------------- */
+/* Recurring transactions                                                      */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * A template that drops one transaction into each month — rent, SIP, salary.
+ *
+ * Materialised lazily when you open a month (see lib/month-setup.ts) rather
+ * than by a cron: this app has no scheduler, and a lazy pass is idempotent.
+ * `lastRunMonth` is what makes it idempotent — a month is only ever filled
+ * once, so opening the page twice doesn't double-charge you.
+ *
+ * Only ever generates for the current month. Browsing back to March shouldn't
+ * invent transactions that never happened.
+ */
+export const recurringRules = pgTable(
+  "recurring_rules",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => authUsers.id, { onDelete: "cascade" }),
+
+    amountMinor: money("amount_minor").notNull(),
+    direction: text("direction", { enum: DIRECTIONS }).notNull(),
+
+    accountId: uuid("account_id")
+      .notNull()
+      .references(() => accounts.id, { onDelete: "cascade" }),
+    counterAccountId: uuid("counter_account_id").references(() => accounts.id, {
+      onDelete: "set null",
+    }),
+    categoryId: uuid("category_id").references(() => categories.id, {
+      onDelete: "cascade",
+    }),
+
+    merchant: text("merchant"),
+    note: text("note"),
+
+    /** 1–31, clamped to the month's length so the 31st still works in February. */
+    dayOfMonth: integer("day_of_month").notNull().default(1),
+
+    active: boolean("active").notNull().default(true),
+    /** "YYYY-MM" of the last month this rule was materialised into. */
+    lastRunMonth: text("last_run_month"),
+
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("recurring_rules_user_idx").on(t.userId)],
+);
+
+/* -------------------------------------------------------------------------- */
 /* Merchant rules (groundwork for automated entry)                             */
 /* -------------------------------------------------------------------------- */
 
@@ -360,3 +413,5 @@ export type Transaction = typeof transactions.$inferSelect;
 export type GroupTarget = typeof groupTargets.$inferSelect;
 
 export { sql };
+
+export type RecurringRule = typeof recurringRules.$inferSelect;

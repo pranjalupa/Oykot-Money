@@ -1,11 +1,18 @@
 "use client";
 
 import { useActionState, useEffect, useState, useTransition } from "react";
-import { ArrowCounterClockwise, PencilSimple, Warning } from "@phosphor-icons/react";
+import {
+  ArrowCounterClockwise,
+  CaretDown,
+  CaretUp,
+  PencilSimple,
+  Warning,
+} from "@phosphor-icons/react";
 import { toast } from "sonner";
 import {
   updateCategory,
   setCategoryArchived,
+  moveCategory,
   type ActionResult,
 } from "@/app/actions";
 import { Button } from "@/components/ui/button";
@@ -56,8 +63,13 @@ export function CategoryManager({ categories }: { categories: Cat[] }) {
               {GROUP_META[g].label}
             </p>
             <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border">
-              {inGroup.map((c) => (
-                <CategoryRow key={c.id} cat={c} />
+              {inGroup.map((c, idx) => (
+                <CategoryRow
+                  key={c.id}
+                  cat={c}
+                  isFirst={idx === 0}
+                  isLast={idx === inGroup.length - 1}
+                />
               ))}
             </ul>
           </div>
@@ -79,8 +91,26 @@ export function CategoryManager({ categories }: { categories: Cat[] }) {
   );
 }
 
-function CategoryRow({ cat }: { cat: Cat }) {
+function CategoryRow({
+  cat,
+  isFirst,
+  isLast,
+}: {
+  cat: Cat;
+  isFirst: boolean;
+  isLast: boolean;
+}) {
   const [pending, start] = useTransition();
+
+  function move(direction: "up" | "down") {
+    start(async () => {
+      const fd = new FormData();
+      fd.set("id", cat.id);
+      fd.set("direction", direction);
+      const res = await moveCategory(fd);
+      if (!res.ok) toast.error(res.error);
+    });
+  }
 
   function toggleArchive() {
     start(async () => {
@@ -111,6 +141,29 @@ function CategoryRow({ cat }: { cat: Cat }) {
           <span className="ml-2 text-xs text-muted-foreground">retired</span>
         )}
       </span>
+
+      {/* Arrows rather than drag-and-drop: reordering happens rarely, and a
+          keyboard-reachable button beats a pointer-only gesture. */}
+      <div className="flex shrink-0 flex-col">
+        <button
+          type="button"
+          onClick={() => move("up")}
+          disabled={pending || isFirst}
+          aria-label={`Move ${cat.name} up`}
+          className="flex h-3.5 w-6 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-25 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+        >
+          <CaretUp size={11} weight="bold" />
+        </button>
+        <button
+          type="button"
+          onClick={() => move("down")}
+          disabled={pending || isLast}
+          aria-label={`Move ${cat.name} down`}
+          className="flex h-3.5 w-6 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-25 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+        >
+          <CaretDown size={11} weight="bold" />
+        </button>
+      </div>
 
       <EditCategoryDialog cat={cat} />
 

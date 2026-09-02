@@ -8,6 +8,7 @@ import {
   categories,
   groupTargets,
   transactions,
+  recurringRules,
   DEFAULT_MONTH,
   type GroupKey,
 } from "@/db/schema";
@@ -228,6 +229,8 @@ export type TransactionRow = {
   direction: "outflow" | "inflow" | "transfer";
   note: string | null;
   merchant: string | null;
+  /** manual | recurring | import — lets the UI mark rows it created itself. */
+  source: string;
   categoryId: string | null;
   categoryName: string | null;
   categoryIcon: string | null;
@@ -270,6 +273,7 @@ export async function listTransactions(
       direction: transactions.direction,
       note: transactions.note,
       merchant: transactions.merchant,
+      source: transactions.source,
       categoryId: transactions.categoryId,
       categoryName: categories.name,
       categoryIcon: categories.icon,
@@ -523,6 +527,29 @@ export async function getNetWorth(userId: string) {
     total: cash + assets + owedToYou - youOwe,
     balances,
   };
+}
+
+/** Recurring templates, joined for display. */
+export async function listRecurring(userId: string) {
+  const rows = await db
+    .select({
+      id: recurringRules.id,
+      amountMinor: recurringRules.amountMinor,
+      direction: recurringRules.direction,
+      dayOfMonth: recurringRules.dayOfMonth,
+      active: recurringRules.active,
+      merchant: recurringRules.merchant,
+      categoryName: categories.name,
+      categoryIcon: categories.icon,
+      accountName: accounts.name,
+    })
+    .from(recurringRules)
+    .innerJoin(accounts, eq(accounts.id, recurringRules.accountId))
+    .leftJoin(categories, eq(categories.id, recurringRules.categoryId))
+    .where(eq(recurringRules.userId, userId))
+    .orderBy(recurringRules.dayOfMonth);
+
+  return rows.map((r) => ({ ...r, amountMinor: Number(r.amountMinor) }));
 }
 
 /** Flat category list for pickers. */

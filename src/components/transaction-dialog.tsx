@@ -234,6 +234,21 @@ export function TransactionDialog({
             />
           </div>
 
+          <label className="flex items-start gap-2.5 rounded-md bg-muted/60 p-3 text-sm">
+            <input
+              type="checkbox"
+              name="recurring"
+              className="mt-0.5 size-4 accent-primary"
+            />
+            <span>
+              Repeat every month
+              <span className="block text-xs text-muted-foreground">
+                Rent, SIP, salary — added automatically on the same date each
+                month. Manage them in Settings.
+              </span>
+            </span>
+          </label>
+
           {state && !state.ok && (
             <p
               role="alert"

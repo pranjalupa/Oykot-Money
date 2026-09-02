@@ -92,6 +92,13 @@ Full detail in `src/db/schema.ts` comments. The decisions behind it:
   split that prefills new months; a row with a real `YYYY-MM` overrides just that month.
   A sentinel rather than NULL because Postgres treats NULLs as distinct, so a nullable month
   would let ON CONFLICT miss and accumulate duplicate default rows. Ships as 50/30/20.
+- **A month with no plan inherits the last month that had one** (`ensureMonthPlan`
+  in `lib/month-setup.ts`). Only fires when the month has zero budget lines, so it can
+  never overwrite an edit or resurrect an amount you cleared.
+- **Recurring transactions are materialised lazily**, on opening the month, not by a
+  cron — there is no scheduler here. `recurring_rules.lastRunMonth` is what makes it
+  idempotent, and generation is restricted to the *current* month so browsing back
+  can't invent history.
 - **Budget lines are a separate table from transactions** — one planned row per category per
   month vs. many actuals. Different cardinalities; keeping them apart avoids a flag column
   and a `WHERE is_planned` on every query.
@@ -112,6 +119,19 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   teams, or sharing — don't build toward those without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
+- 2026-09-02 — **Recurring, auto-carry, reordering, and the last missing nav link.**
+  Added monthly repeats (toggle in the add dialog, managed in Settings), plan carry-over
+  to the next month, category reordering, and transaction editing — `updateTransaction`
+  and `setAccountArchived` had been written but left with no UI. `/income` existed via
+  the `[group]` route but had no sidebar entry; it does now.
+  - Default categories for NEW accounts trimmed from 36 (a copy of Pranjal's sheet) to
+    13 generic lines. Pranjal's real budget lives only in `pranjalupa@gmail.com`, loaded
+    by `scripts/import-my-budget.ts` (idempotent; reconciles to
+    31,600 / 11,000 / 22,267 / 64,867).
+  - `pranjal.upadhyay@elivaas.com` is a test account, not a second identity.
+  - Watch this: `drizzle/rls.sql` does NOT auto-discover tables. `recurring_rules`
+    shipped with RLS off until it was added there by hand. **Add every new table to
+    that file.**
 - 2026-09-02 — **Made it writable, multi-user, and deployed.** Migrated SQLite → Supabase
   Postgres (Vercel Marketplace, bom1) and added Supabase Auth with open signup. Everything the
   earlier build only displayed is now editable: transactions (add/delete), inline planned
@@ -141,8 +161,8 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
 Fully workable and deployed at https://oykot-money.vercel.app. Google sign-in is live
 alongside email/password. Month / Daily / Year / group pages / category detail / accounts /
 settings all read and write against Supabase, with auth and per-user isolation.
-**Not built yet:** editing an existing transaction (only add + delete), reordering categories,
-statement import or any automated entry, and recurring transactions.
+**Not built yet:** statement import or any automated entry (deliberately deferred), and
+archiving an account from the UI (`setAccountArchived` exists, nothing calls it).
 
 <!-- BEGIN:nextjs-agent-rules -->
 

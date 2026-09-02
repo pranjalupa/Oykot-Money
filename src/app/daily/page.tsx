@@ -13,6 +13,7 @@ import {
 } from "@/lib/budget";
 import { monthBounds } from "@/lib/targets";
 import { requireUser } from "@/lib/auth";
+import { prepareMonth } from "@/lib/month-setup";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +26,8 @@ export default async function DailyPage({
   const { month: monthParam } = await searchParams;
   const month = isValidMonth(monthParam) ? monthParam : currentMonth();
   const { start, end } = monthBounds(month);
+
+  await prepareMonth(user.id, month);
 
   const [daily, txs, accounts, categories] = await Promise.all([
     getDailyView(user.id, month),
@@ -132,6 +135,7 @@ export default async function DailyPage({
         </div>
         <TransactionList
           transactions={txs}
+          categories={categories}
           emptyNote="Nothing logged this month yet."
         />
       </section>

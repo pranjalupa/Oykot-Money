@@ -11,6 +11,7 @@ import {
   Gear,
   House,
   List,
+  Money,
   Moon,
   ShoppingBag,
   SignOut,
@@ -45,11 +46,12 @@ const SECTIONS: { heading: string | null; items: NavItem[] }[] = [
     ],
   },
   {
-    heading: "Where it goes",
+    heading: "Groups",
     items: [
       { href: "/needs", label: "Needs", icon: ChartPieSlice },
       { href: "/wants", label: "Wants", icon: ShoppingBag },
       { href: "/investments", label: "Investments", icon: TrendUp },
+      { href: "/income", label: "Income", icon: Money },
     ],
   },
   {

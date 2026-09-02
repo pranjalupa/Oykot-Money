@@ -143,6 +143,7 @@ export default async function CategoryPage({
         </div>
         <TransactionList
           transactions={txs}
+          categories={allCategories}
           emptyNote="Nothing in this category this month."
         />
       </section>
