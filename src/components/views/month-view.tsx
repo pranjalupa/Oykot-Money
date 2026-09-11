@@ -1,10 +1,14 @@
 import Link from "next/link";
-import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
 import { buttonVariants } from "@/components/ui/button";
-import { Money, BudgetBar } from "@/components/money";
+import { Money } from "@/components/money";
 import { CopyPlanButton } from "@/components/copy-plan-button";
 import { TargetEditor } from "@/components/target-editor";
-import { SplitChart, CategoryBudgetChart } from "@/components/charts/monthly-charts";
+import {
+  OverUnder,
+  TargetCard,
+  TopCategories,
+  WhereMoneyWent,
+} from "@/components/charts/monthly-insights";
 import {
   getMonthSummary,
   getTargets,
@@ -15,14 +19,15 @@ import {
 import { requireUser, ensureUserSetup } from "@/lib/auth";
 import { prepareMonth } from "@/lib/month-setup";
 import { percentOf } from "@/lib/money";
-import type { GroupKey } from "@/db/schema";
-import { cn } from "@/lib/utils";
 
+/**
+ * Monthly answers "where did it go, and was that the plan?" — a donut for the
+ * split of income, target bars for the split you aimed at, then which
+ * categories take the most and which went over.
+ */
 export async function MonthView({ month }: { month: string }) {
   const user = await requireUser();
   await ensureUserSetup(user.id);
-
-
   await prepareMonth(user.id, month);
 
   const [summary, overridden, targets] = await Promise.all([
@@ -32,44 +37,40 @@ export async function MonthView({ month }: { month: string }) {
   ]);
 
   const nothingPlanned = summary.plannedExpense === 0 && summary.plannedIncome === 0;
+  const g = summary.groups;
 
-  // Only the fields the charts use cross to the client, not every category.
-  const split = (k: "needs" | "wants" | "investments") => {
-    const g = summary.groups[k];
-    return {
-      targetPercent: g.targetPercent,
-      plannedPercent: g.plannedPercent,
-      actualPercent: g.actualPercent,
-      plannedMinor: g.plannedMinor,
-      actualMinor: g.actualMinor,
-    };
-  };
-  const topCategories = (["needs", "wants", "investments"] as const)
-    .flatMap((k) => summary.groups[k].categories)
-    .filter((c) => c.plannedMinor > 0 || c.actualMinor > 0)
-    .sort(
-      (a, b) =>
-        Math.max(b.plannedMinor, b.actualMinor) - Math.max(a.plannedMinor, a.actualMinor),
-    )
-    .slice(0, 8)
-    .map((c) => ({ name: c.name, budgetedMinor: c.plannedMinor, spentMinor: c.actualMinor }));
+  // Only what the charts draw crosses to the client — not every category row.
+  const categories = SPEND_GROUPS.flatMap((k) =>
+    g[k].categories.map((c) => ({
+      id: c.id,
+      name: c.name,
+      groupKey: k,
+      plannedMinor: c.plannedMinor,
+      actualMinor: c.actualMinor,
+      href: `/category/${c.id}?month=${month}`,
+    })),
+  );
+  const targetRows = SPEND_GROUPS.map((k) => ({
+    key: k,
+    href: `/${GROUP_META[k].slug}?month=${month}`,
+    targetPercent: g[k].targetPercent,
+    plannedPercent: g[k].plannedPercent,
+    actualPercent: g[k].actualPercent,
+    plannedMinor: g[k].plannedMinor,
+    actualMinor: g[k].actualMinor,
+  }));
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-6">
       {nothingPlanned && (
-        <div className="rounded-xl border border-dashed border-border p-6 text-center">
+        <div className="rounded-2xl border border-dashed border-border p-8 text-center">
           <p className="font-heading text-base font-bold">Nothing budgeted yet</p>
           <p className="accent-note mx-auto mt-1 max-w-md text-sm text-muted-foreground">
             Set what you expect to spend in each category, and the rest of the app
             starts working.
           </p>
-          <div className="mt-4 flex flex-wrap justify-center gap-2">
-            {/* buttonVariants, not hand-rolled padding — a raw link next to a
-                real Button is how the two ended up different heights. */}
-            <Link
-              href={`/needs?month=${month}`}
-              className={buttonVariants({ size: "sm" })}
-            >
+          <div className="mt-5 flex flex-wrap justify-center gap-2">
+            <Link href={`/needs?month=${month}`} className={buttonVariants({ size: "sm" })}>
               Set your budget
             </Link>
             <CopyPlanButton month={month} />
@@ -77,179 +78,40 @@ export async function MonthView({ month }: { month: string }) {
         </div>
       )}
 
-      {/* Headline numbers ------------------------------------------------- */}
-      <section className="grid gap-3 sm:grid-cols-3">
-        <StatCard
-          label="Income"
-          actualMinor={summary.actualIncome}
-          plannedMinor={summary.plannedIncome}
-        />
-        <StatCard
-          label="Expenses"
-          actualMinor={summary.actualExpense}
-          plannedMinor={summary.plannedExpense}
-        />
-        <StatCard
-          label="Saved this month"
-          actualMinor={summary.actualSaved}
-          plannedMinor={summary.plannedSaved}
-          tone="auto"
-        />
+      <section className="grid gap-4 sm:grid-cols-3">
+        <StatCard label="Income" actualMinor={summary.actualIncome} plannedMinor={summary.plannedIncome} />
+        <StatCard label="Expenses" actualMinor={summary.actualExpense} plannedMinor={summary.plannedExpense} />
+        <StatCard label="Saved this month" actualMinor={summary.actualSaved} plannedMinor={summary.plannedSaved} tone="auto" />
       </section>
 
-      {/* The target dial --------------------------------------------------- */}
-      <section>
-        <div className="mb-3 flex items-baseline justify-between gap-3">
-          <h2 className="font-heading text-lg font-bold">Target split</h2>
-          <span className="text-xs text-muted-foreground">
-            {overridden ? "Custom for this month" : "Your default split"}
-          </span>
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-3">
-          {SPEND_GROUPS.map((key) => {
-            const g = summary.groups[key];
-            return (
-              <Link
-                key={key}
-                href={`/${GROUP_META[key].slug}?month=${month}`}
-                className="group rounded-xl border border-border bg-card p-4 transition-colors hover:border-foreground/20"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="flex items-center gap-2 text-sm font-semibold">
-                    <span
-                      aria-hidden
-                      className="size-2.5 rounded-full"
-                      style={{ backgroundColor: `var(--${key})` }}
-                    />
-                    {GROUP_META[key].label}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    target {g.targetPercent}%
-                  </span>
-                </div>
-
-                <div className="mt-3 flex items-baseline gap-1.5">
-                  <Money
-                    minor={g.plannedMinor}
-                    className="font-heading text-xl font-bold"
-                  />
-                  <span className="text-xs text-muted-foreground">budgeted</span>
-                </div>
-
-                <div className="mt-3 space-y-1.5">
-                  <BudgetBar
-                    actualMinor={g.actualMinor}
-                    plannedMinor={g.plannedMinor}
-                    groupKey={key}
-                  />
-                  <div className="flex justify-between text-[11px] text-muted-foreground">
-                    <span>
-                      <Money minor={g.actualMinor} /> spent
-                    </span>
-                    <PlanDelta
-                      plannedPercent={g.plannedPercent}
-                      targetPercent={g.targetPercent}
-                    />
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-
-        {/* Edited here rather than in Settings: the split only means something
-            next to the budget it shapes. Keyed on the month so switching months
-            remounts it with that month's values instead of keeping stale ones. */}
-        <details className="group/split mt-3 rounded-xl border border-border bg-card">
-          <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium text-muted-foreground hover:text-foreground">
-            <span className="group-open/split:hidden">Adjust split</span>
-            <span className="hidden group-open/split:inline">Hide</span>
-          </summary>
-          <div className="border-t border-border p-4">
-            <TargetEditor
-              key={`${month}-${overridden}`}
-              targets={targets}
-              month={month}
-              hasOverride={overridden}
-            />
-          </div>
-        </details>
-      </section>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <SplitChart
-          groups={{ needs: split("needs"), wants: split("wants"), investments: split("investments") }}
-          plannedIncome={summary.plannedIncome}
-          actualIncome={summary.actualIncome}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <WhereMoneyWent
+          incomeMinor={summary.actualIncome > 0 ? summary.actualIncome : summary.plannedIncome}
+          incomeIsBudgeted={summary.actualIncome <= 0}
+          spent={{ needs: g.needs.actualMinor, wants: g.wants.actualMinor, investments: g.investments.actualMinor }}
         />
-        <CategoryBudgetChart rows={topCategories} />
+        <TargetCard
+          rows={targetRows}
+          custom={overridden}
+          editor={
+            // Edited here rather than in Settings: the split only means
+            // something next to the budget it shapes. Keyed on the month so
+            // switching months remounts it with that month's values.
+            <details className="group/split">
+              <summary className="cursor-pointer list-none text-sm font-medium text-muted-foreground hover:text-foreground">
+                <span className="group-open/split:hidden">Adjust split</span>
+                <span className="hidden group-open/split:inline">Hide</span>
+              </summary>
+              <div className="pt-4">
+                <TargetEditor key={`${month}-${overridden}`} targets={targets} month={month} hasOverride={overridden} />
+              </div>
+            </details>
+          }
+        />
       </div>
 
-      {/* Per-group breakdown ---------------------------------------------- */}
-      <section className="flex flex-col gap-4">
-        {(["needs", "wants", "investments", "income"] as GroupKey[]).map((key) => {
-          const g = summary.groups[key];
-          const top = [...g.categories]
-            .filter((c) => c.plannedMinor > 0 || c.actualMinor > 0)
-            .sort((a, b) => b.plannedMinor - a.plannedMinor)
-            .slice(0, 4);
-
-          return (
-            <div
-              key={key}
-              className="overflow-hidden rounded-xl border border-border bg-card"
-            >
-              <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
-                <div className="min-w-0">
-                  <h3 className="font-heading text-base font-bold">
-                    {GROUP_META[key].label}
-                  </h3>
-                  <p className="truncate text-xs text-muted-foreground">
-                    {GROUP_META[key].blurb}
-                  </p>
-                </div>
-                <div className="shrink-0 text-right">
-                  <div className="text-sm font-semibold">
-                    <Money minor={g.actualMinor} />
-                    <span className="text-muted-foreground"> of </span>
-                    <Money
-                      minor={g.plannedMinor}
-                      tone="muted"
-                      className="text-xs"
-                    />
-                  </div>
-                  <Link
-                    href={`/${GROUP_META[key].slug}?month=${month}`}
-                    className="mt-0.5 inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground"
-                  >
-                    {g.categories.length} categories
-                    <ArrowRight size={11} weight="bold" />
-                  </Link>
-                </div>
-              </div>
-
-              {top.length > 0 && (
-                <ul className="divide-y divide-border">
-                  {top.map((c) => (
-                    <li
-                      key={c.id}
-                      className="flex items-center justify-between gap-3 px-4 py-2 text-sm"
-                    >
-                      <span className="truncate text-muted-foreground">
-                        {c.name}
-                      </span>
-                      <span className="tabular shrink-0 text-xs text-muted-foreground">
-                        <Money minor={c.actualMinor} /> of <Money minor={c.plannedMinor} />
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          );
-        })}
-      </section>
+      <TopCategories rows={categories} />
+      <OverUnder rows={categories} />
     </div>
   );
 }
@@ -267,10 +129,8 @@ function StatCard({
 }) {
   const pct = percentOf(actualMinor, plannedMinor);
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
-      <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
-        {label}
-      </p>
+    <div className="rounded-2xl border border-border bg-card p-5">
+      <p className="text-xs text-muted-foreground">{label}</p>
       <p className="mt-1.5 font-heading text-2xl font-bold">
         <Money minor={actualMinor} tone={tone} />
       </p>
@@ -279,24 +139,5 @@ function StatCard({
         {plannedMinor > 0 && <span className="tabular"> · {pct}%</span>}
       </p>
     </div>
-  );
-}
-
-/** How the plan compares to the target — the sheet's "Ideal vs Planned" gap. */
-function PlanDelta({
-  plannedPercent,
-  targetPercent,
-}: {
-  plannedPercent: number;
-  targetPercent: number;
-}) {
-  const delta = plannedPercent - targetPercent;
-  if (plannedPercent === 0) return <span>not budgeted</span>;
-  if (delta === 0) return <span>on target</span>;
-  return (
-    <span className={cn(delta > 0 && "text-negative")}>
-      budgeted {plannedPercent}% ({delta > 0 ? "+" : ""}
-      {delta})
-    </span>
   );
 }

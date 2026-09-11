@@ -66,20 +66,20 @@ export function CategoryList({
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-border text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
-              <th scope="col" className="px-4 py-2 text-left font-semibold">
+            <tr className="border-b border-border text-xs text-muted-foreground">
+              <th scope="col" className="px-4 py-3 text-left font-medium">
                 Category
               </th>
-              <th scope="col" className="w-28 px-3 py-2 text-right font-semibold">
+              <th scope="col" className="w-28 px-3 py-3 text-right font-medium">
                 Budgeted
               </th>
-              <th scope="col" className="w-28 px-3 py-2 text-right font-semibold">
+              <th scope="col" className="w-28 px-3 py-3 text-right font-medium">
                 {isIncome ? "Received" : "Spent"}
               </th>
-              <th scope="col" className="hidden w-28 px-3 py-2 text-right font-semibold sm:table-cell">
+              <th scope="col" className="hidden w-28 px-3 py-3 text-right font-semibold sm:table-cell">
                 Remaining
               </th>
-              <th scope="col" className="w-9 px-2 py-2">
+              <th scope="col" className="w-9 px-2 py-3">
                 <span className="sr-only">Open</span>
               </th>
             </tr>
@@ -98,15 +98,15 @@ export function CategoryList({
           </tbody>
 
           <tfoot>
-            <tr className="border-t-2 border-border bg-muted/40 font-semibold">
-              <td className="px-4 py-2.5">Total</td>
-              <td className="px-3 py-2.5 text-right">
+            <tr className="border-t-2 border-border bg-muted/40 font-medium">
+              <td className="px-4 py-3.5">Total</td>
+              <td className="px-3 py-3.5 text-right">
                 <Money minor={totals.planned} />
               </td>
-              <td className="px-3 py-2.5 text-right">
+              <td className="px-3 py-3.5 text-right">
                 <Money minor={totals.actual} />
               </td>
-              <td className="hidden px-3 py-2.5 text-right sm:table-cell">
+              <td className="hidden px-3 py-3.5 text-right sm:table-cell">
                 <Remaining
                   planned={totals.planned}
                   actual={totals.actual}
@@ -120,7 +120,7 @@ export function CategoryList({
       </div>
 
       {idleCount > 0 && (
-        <div className="border-t border-border px-4 py-2.5">
+        <div className="border-t border-border px-4 py-3.5">
           <button
             type="button"
             onClick={() => setShowIdle((v) => !v)}
@@ -158,7 +158,7 @@ function Row({
   return (
     <>
       <tr className={cn("group hover:bg-muted/60", nested && "bg-muted/20")}>
-        <td className="px-4 py-2.5">
+        <td className="px-4 py-3.5">
           <div
             className="flex items-center gap-2.5"
             style={{ paddingLeft: depth * 20 }}
@@ -188,9 +188,29 @@ function Row({
               />
             )}
           </div>
+          {/* A thin bar under the name: how much of this line is used. */}
+          {cat.plannedMinor > 0 && (
+            <div
+              className="mt-2 h-1 overflow-hidden rounded-full bg-muted"
+              style={{ marginLeft: nested ? depth * 20 : 38 }}
+            >
+              <div
+                className="h-full rounded-full"
+                style={{
+                  width: `${Math.min((cat.actualMinor / cat.plannedMinor) * 100, 100)}%`,
+                  background:
+                    !isIncome && cat.actualMinor > cat.plannedMinor
+                      ? "var(--negative)"
+                      : isIncome
+                        ? "var(--primary)"
+                        : `var(--chart-${groupKey})`,
+                }}
+              />
+            </div>
+          )}
         </td>
 
-        <td className="px-3 py-2.5 text-right">
+        <td className="px-3 py-3.5 text-right">
           {editablePlan ? (
             <PlannedInput
               categoryId={cat.id}
@@ -202,7 +222,7 @@ function Row({
           )}
         </td>
 
-        <td className="px-3 py-2.5 text-right">
+        <td className="px-3 py-3.5 text-right">
           <Money
             minor={cat.actualMinor}
             tone={cat.actualMinor ? "default" : "muted"}
@@ -218,7 +238,7 @@ function Row({
           </div>
         </td>
 
-        <td className="hidden px-3 py-2.5 text-right sm:table-cell">
+        <td className="hidden px-3 py-3.5 text-right sm:table-cell">
           <Remaining
             planned={cat.plannedMinor}
             actual={cat.actualMinor}
@@ -226,7 +246,7 @@ function Row({
           />
         </td>
 
-        <td className="px-2 py-2.5">
+        <td className="px-2 py-3.5">
           <Link
             href={`/category/${cat.id}?month=${month}`}
             aria-label={`Open ${cat.name}`}

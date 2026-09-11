@@ -1,4 +1,3 @@
-import { Money } from "@/components/money";
 import { TransactionBrowser } from "@/components/transaction-browser";
 import {
   getDailyView,
@@ -8,10 +7,14 @@ import {
 } from "@/lib/budget";
 import { monthBounds } from "@/lib/targets";
 import { requireUser, getUserPrefs } from "@/lib/auth";
-import { currentMonthIn, dayOfMonthIn } from "@/lib/dates";
-import { DailySpendChart, SpendPaceChart } from "@/components/charts/daily-charts";
+import { currentMonthIn, dayOfMonthIn, todayIn } from "@/lib/dates";
+import { DailyHero, PaceCard, SpendingCalendar } from "@/components/charts/daily-insights";
 import { prepareMonth } from "@/lib/month-setup";
 
+/**
+ * Daily answers "can I spend this today?" first, then "am I on pace?", then
+ * "which days were expensive?" — each with the picture that fits it.
+ */
 export async function DailyView({ month }: { month: string }) {
   const user = await requireUser();
   const { timeZone } = await getUserPrefs();
@@ -26,9 +29,8 @@ export async function DailyView({ month }: { month: string }) {
     listCategories(user.id),
   ]);
 
-
-  // Draw actuals up to today this month, the whole month in the past, and
-  // nothing for a month that hasn't started.
+  // Actuals run up to today this month, the whole month in the past, and not
+  // at all for a month that hasn't started.
   const throughDay = daily.isCurrentMonth
     ? dayOfMonthIn(timeZone)
     : month < currentMonthIn(timeZone)
@@ -37,47 +39,18 @@ export async function DailyView({ month }: { month: string }) {
 
   return (
     <div className="flex flex-col gap-6">
-      <section className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
-            Safe to spend / day
-          </p>
-          <p className="mt-1.5 font-heading text-2xl font-bold">
-            <Money minor={daily.safePerDay} tone={daily.remaining > 0 ? "default" : "negative"} />
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {daily.isCurrentMonth
-              ? `${daily.daysLeft} day${daily.daysLeft === 1 ? "" : "s"} left`
-              : "whole month"}
-          </p>
-        </div>
+      <DailyHero
+        month={month}
+        budgetMinor={daily.dailyBudget}
+        spentMinor={daily.dailySpent}
+        remainingMinor={daily.remaining}
+        safePerDayMinor={daily.safePerDay}
+        daysLeft={daily.daysLeft}
+        isCurrentMonth={daily.isCurrentMonth}
+        throughDay={throughDay}
+      />
 
-        <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
-            Remaining
-          </p>
-          <p className="mt-1.5 font-heading text-2xl font-bold">
-            <Money minor={daily.remaining} tone="auto" />
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Needs + Wants only
-          </p>
-        </div>
-
-        <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
-            Spent this month
-          </p>
-          <p className="mt-1.5 font-heading text-2xl font-bold">
-            <Money minor={daily.dailySpent} />
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            of <Money minor={daily.dailyBudget} tone="muted" /> budgeted
-          </p>
-        </div>
-      </section>
-
-      <SpendPaceChart
+      <PaceCard
         month={month}
         days={daily.days}
         budgetMinor={daily.dailyBudget}
@@ -85,14 +58,12 @@ export async function DailyView({ month }: { month: string }) {
         throughDay={throughDay}
       />
 
-      <DailySpendChart month={month} days={daily.days} budgetMinor={daily.dailyBudget} />
+      <SpendingCalendar month={month} days={daily.days} today={todayIn(timeZone)} />
 
-      <section className="overflow-hidden rounded-xl border border-border bg-card">
-        <div className="border-b border-border px-4 py-3">
-          <h2 className="font-heading text-base font-bold">Transactions</h2>
-          <p className="text-xs text-muted-foreground">
-            Everything logged this month.
-          </p>
+      <section className="overflow-hidden rounded-2xl border border-border bg-card">
+        <div className="px-5 pt-5 pb-3 sm:px-6">
+          <h2 className="font-heading text-base font-semibold">Transactions</h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">Everything logged this month.</p>
         </div>
         <TransactionBrowser
           transactions={txs}

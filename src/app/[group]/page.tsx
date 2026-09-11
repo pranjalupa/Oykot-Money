@@ -1,12 +1,13 @@
 import { currentMonthIn, todayIn } from "@/lib/dates";
 import { notFound } from "next/navigation";
-import { Money, BudgetBar } from "@/components/money";
 import { MonthSwitcher } from "@/components/month-switcher";
 import { CategoryList } from "@/components/category-list";
+import { BudgetRing, PeriodTrend, groupColor } from "@/components/charts/detail-insights";
 import { TransactionDialog } from "@/components/transaction-dialog";
 import { NewCategoryDialog } from "@/components/new-category-dialog";
 import {
   getMonthSummary,
+  getGroupTrend,
   GROUP_META,
   isValidMonth,
   listAccounts,
@@ -36,16 +37,16 @@ export default async function GroupPage({
 
   await prepareMonth(user.id, month);
 
-  const [summary, accounts, categories] = await Promise.all([
+  const [summary, accounts, categories, trend] = await Promise.all([
     getMonthSummary(user.id, month),
     listAccounts(user.id),
     listCategories(user.id),
+    getGroupTrend(user.id, groupKey, month),
   ]);
 
   const g = summary.groups[groupKey];
   const meta = GROUP_META[groupKey];
   const isIncome = groupKey === "income";
-  const diff = g.plannedMinor - g.actualMinor;
 
   return (
     <div className="flex flex-col gap-6">
@@ -71,47 +72,17 @@ export default async function GroupPage({
         </div>
       </header>
 
-      <section className="rounded-xl border border-border bg-card p-5">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
-              {isIncome ? "Received" : "Spent"}
-            </p>
-            <p className="mt-1 font-heading text-3xl font-bold">
-              <Money minor={g.actualMinor} />
-            </p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              of <Money minor={g.plannedMinor} tone="muted" /> budgeted
-            </p>
-          </div>
+      <BudgetRing
+        groupKey={groupKey}
+        spentMinor={g.actualMinor}
+        plannedMinor={g.plannedMinor}
+        isIncome={isIncome}
+        footnote={isIncome ? undefined : `target ${g.targetPercent}% of income`}
+      />
 
-          {!isIncome && (
-            <div className="text-right">
-              <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
-                {diff >= 0 ? "Remaining" : "Over budget"}
-              </p>
-              <p className="mt-1 font-heading text-2xl font-bold">
-                <Money
-                  minor={Math.abs(diff)}
-                  tone={diff >= 0 ? "default" : "negative"}
-                />
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                target {g.targetPercent}% · budgeted {g.plannedPercent}% of income
-              </p>
-            </div>
-          )}
-        </div>
+      <PeriodTrend title="Last six months" points={trend} color={groupColor(groupKey)} isIncome={isIncome} />
 
-        <BudgetBar
-          actualMinor={g.actualMinor}
-          plannedMinor={g.plannedMinor}
-          groupKey={groupKey}
-          className="mt-4 h-2"
-        />
-      </section>
-
-      <section className="overflow-hidden rounded-xl border border-border bg-card">
+      <section className="overflow-hidden rounded-2xl border border-border bg-card">
         <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
           <p className="text-sm font-semibold">Categories</p>
           <NewCategoryDialog

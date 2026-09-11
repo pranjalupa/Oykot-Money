@@ -6,67 +6,51 @@ import { cn } from "@/lib/utils";
 export type LegendItem = {
   label: string;
   color: string;
-  /** Mirrors the mark: a block for bars and areas, a stroke for lines. */
   kind?: "bar" | "line" | "dashed";
 };
 
 /**
- * The frame every chart sits in: title, legend, and a Chart / Table switch.
+ * The frame every chart sits in — deliberately quiet.
  *
- * The table isn't optional. A chart alone gates its numbers behind colour and
- * hover; the table is the same data readable by anyone — screen reader,
- * colour-blind reader, someone who just wants the figure.
+ * Title on top, the visual with room around it, and underneath one plain
+ * sentence saying what it means. The takeaway is the point: a regular user
+ * shouldn't have to decode axes to learn "you're ₹2,300 under pace".
+ *
+ * The table is one small link at the bottom rather than a toggle competing
+ * with the title, but it's always there — the chart alone gates numbers
+ * behind colour and hover.
  */
 export function ChartCard({
   title,
-  description,
+  aside,
   legend,
+  takeaway,
+  note,
   table,
   children,
   className,
 }: {
   title: string;
-  description?: React.ReactNode;
+  /** Right side of the header — a headline figure, a period label. */
+  aside?: React.ReactNode;
   legend?: LegendItem[];
-  table: { head: string[]; rows: React.ReactNode[][]; note?: string };
+  takeaway?: React.ReactNode;
+  note?: React.ReactNode;
+  table?: { head: string[]; rows: React.ReactNode[][]; note?: string };
   children: React.ReactNode;
   className?: string;
 }) {
-  const [view, setView] = useState<"chart" | "table">("chart");
+  const [asTable, setAsTable] = useState(false);
 
   return (
-    <section className={cn("rounded-xl border border-border bg-card", className)}>
-      <header className="flex items-start justify-between gap-3 px-4 pt-4">
-        <div className="min-w-0 flex-1">
-          <h2 className="font-heading text-base font-bold">{title}</h2>
-          {description && (
-            <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
-          )}
-        </div>
-        <div className="flex shrink-0 gap-0.5 rounded-md bg-muted p-0.5" role="group" aria-label={`${title} view`}>
-          {(["chart", "table"] as const).map((v) => (
-            <button
-              key={v}
-              type="button"
-              onClick={() => setView(v)}
-              aria-pressed={view === v}
-              className={cn(
-                "rounded px-2 py-0.5 text-xs font-medium capitalize transition-colors",
-                view === v
-                  ? "bg-card text-foreground ring-1 ring-foreground/15"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {v}
-            </button>
-          ))}
-        </div>
+    <section className={cn("flex flex-col rounded-2xl border border-border bg-card p-5 sm:p-6", className)}>
+      <header className="flex items-start justify-between gap-4">
+        <h2 className="font-heading text-base font-semibold">{title}</h2>
+        {aside && <div className="shrink-0 text-right text-sm text-muted-foreground">{aside}</div>}
       </header>
 
-      {/* A legend only when there's more than one series — a single series is
-          named by the title. */}
-      {view === "chart" && legend && legend.length > 1 && (
-        <ul className="flex flex-wrap gap-x-4 gap-y-1 px-4 pt-3 text-xs text-muted-foreground">
+      {!asTable && legend && legend.length > 1 && (
+        <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
           {legend.map((l) => (
             <li key={l.label} className="flex items-center gap-1.5">
               <Swatch color={l.color} kind={l.kind ?? "bar"} />
@@ -76,16 +60,14 @@ export function ChartCard({
         </ul>
       )}
 
-      <div className="px-2 pt-2 pb-3">
-        {view === "chart" ? (
-          children
-        ) : (
-          <div className="max-h-80 overflow-auto px-2">
+      <div className="mt-5 flex-1">
+        {asTable && table ? (
+          <div className="max-h-80 overflow-auto">
             <table className="w-full text-sm">
               <thead className="sticky top-0 bg-card">
-                <tr className="border-b border-border text-[11px] tracking-wide text-muted-foreground uppercase">
+                <tr className="border-b border-border text-xs text-muted-foreground">
                   {table.head.map((h, i) => (
-                    <th key={h} className={cn("py-2 font-semibold", i === 0 ? "text-left" : "text-right")}>
+                    <th key={h} className={cn("py-2.5 font-medium", i === 0 ? "text-left" : "text-right")}>
                       {h}
                     </th>
                   ))}
@@ -95,7 +77,7 @@ export function ChartCard({
                 {table.rows.map((row, r) => (
                   <tr key={r}>
                     {row.map((cell, i) => (
-                      <td key={i} className={cn("tabular py-1.5", i === 0 ? "text-left" : "text-right")}>
+                      <td key={i} className={cn("tabular py-2.5", i === 0 ? "text-left" : "text-right")}>
                         {cell}
                       </td>
                     ))}
@@ -103,16 +85,36 @@ export function ChartCard({
                 ))}
               </tbody>
             </table>
-            {table.note && <p className="pt-2 text-xs text-muted-foreground">{table.note}</p>}
+            {table.note && <p className="pt-3 text-xs text-muted-foreground">{table.note}</p>}
           </div>
+        ) : (
+          children
         )}
       </div>
+
+      {(takeaway || note || table) && (
+        <footer className="mt-5 flex items-end justify-between gap-4">
+          <div className="min-w-0">
+            {takeaway && <p className="text-sm font-medium text-foreground">{takeaway}</p>}
+            {note && <p className="mt-0.5 text-xs text-muted-foreground">{note}</p>}
+          </div>
+          {table && (
+            <button
+              type="button"
+              onClick={() => setAsTable((v) => !v)}
+              className="shrink-0 text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+            >
+              {asTable ? "View as chart" : "View as table"}
+            </button>
+          )}
+        </footer>
+      )}
     </section>
   );
 }
 
 function Swatch({ color, kind }: { color: string; kind: "bar" | "line" | "dashed" }) {
-  if (kind === "bar") return <span aria-hidden className="size-2.5 rounded-[3px]" style={{ background: color }} />;
+  if (kind === "bar") return <span aria-hidden className="size-2.5 rounded-full" style={{ background: color }} />;
   return (
     <span
       aria-hidden
@@ -122,10 +124,7 @@ function Swatch({ color, kind }: { color: string; kind: "bar" | "line" | "dashed
   );
 }
 
-/**
- * Tooltip body: values lead, labels follow, each series keyed by a short line
- * in its colour — the reader already knows the series, they want the number.
- */
+/** Tooltip body: the value leads, the label follows. */
 export function TooltipBox({
   title,
   rows,
@@ -134,11 +133,11 @@ export function TooltipBox({
   rows: { label: string; value: React.ReactNode; color?: string }[];
 }) {
   return (
-    <div className="min-w-36 rounded-lg border border-border bg-card px-3 py-2 text-xs shadow-md">
-      <p className="mb-1 text-muted-foreground">{title}</p>
+    <div className="min-w-36 rounded-xl border border-border bg-card px-3 py-2.5 text-xs shadow-lg">
+      <p className="mb-1.5 text-muted-foreground">{title}</p>
       {rows.map((r) => (
-        <p key={r.label} className="flex items-center gap-2">
-          {r.color && <span aria-hidden className="w-2.5 border-t-2" style={{ borderColor: r.color }} />}
+        <p key={r.label} className="flex items-center gap-2 py-0.5">
+          {r.color && <span aria-hidden className="size-2 rounded-full" style={{ background: r.color }} />}
           <span className="tabular font-semibold text-foreground">{r.value}</span>
           <span className="text-muted-foreground">{r.label}</span>
         </p>
@@ -147,9 +146,10 @@ export function TooltipBox({
   );
 }
 
-/** Shared axis/grid styling: hairline, solid, recessive. */
-export const AXIS = {
-  tick: { fill: "var(--muted-foreground)", fontSize: 11 },
+/** X-axis styling. There is no y-axis anywhere: labels and tooltips carry values. */
+export const X_AXIS = {
+  tick: { fill: "var(--muted-foreground)", fontSize: 12 },
   axisLine: false,
   tickLine: false,
+  tickMargin: 10,
 } as const;

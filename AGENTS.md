@@ -131,6 +131,22 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   Teams and sharing are still out — don't build toward them without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
+- 2026-09-11 (3) — **Charts rebuilt around the question each one answers.** The first set was
+  dense (side-by-side halves, 30- and 24-bar charts, heavy stone blocks, duplicated data).
+  - Form follows the question: ring (budget used), donut (split of income, net worth mix),
+    area (pace, savings, net worth), calendar heatmap (which days), bullet bars (target split),
+    ranked bars (categories, merchants), diverging bars (over/under, who owes whom).
+  - Building blocks in `components/charts/` (`radial-progress`, `donut`, `area-trend`,
+    `column-trend`, `ranked-bars`, `diverging-bars`, `bullet-bars`, `calendar-heatmap`);
+    screens compose them in `*-insights.tsx`, which also write the takeaway sentence.
+  - Label-heavy bars are plain HTML, not Recharts, so labels never crop on a phone.
+  - No y-axis anywhere; every `ChartCard` ends with a takeaway and a "View as table" link.
+  - Colour: group shades as before; single measures use `--primary` (supersedes the stone
+    accent); ranked category bars take their group's colour; unspent is `--muted` track.
+  - New queries: `getGroupTrend`, `getMerchantBreakdown`. Removed the target cards, per-group
+    breakdown, income-vs-spending chart and the yearly spending mini-bars (duplicates).
+  - Checked with sample data in light, dark and at phone width. Recharts draws nothing in a
+    hidden tab (no animation frames) — a blank chart in a background preview isn't a bug.
 - 2026-09-11 (2) — **Dates, charts, trial and pricing, legal, data rights, and the bug sweep.**
   - **Time is the user's, not the server's.** The server runs on UTC. `lib/dates.ts`
     (`todayIn`, `currentMonthIn`) takes the profile's timezone, which the browser reports via

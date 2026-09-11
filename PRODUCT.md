@@ -118,12 +118,13 @@ when you've navigated away) — or a **year switcher** on the Yearly tab — plu
 #### Daily (default)
 Answers "can I spend this today?"
 
-- **Safe to spend / day** — with days left in the month.
-- **Remaining** — what's left of the Needs + Wants budget.
-- **Spent this month** — of what was budgeted for Needs + Wants.
-- **Spending pace** chart — spending so far against a straight line to your budget at month's
-  end. Under the line is on track. Assumed fixed costs count from day one.
-- **Spending by day** chart — a column per day, with an even-pace reference line.
+- **Today** — a ring showing how much of the month's Needs + Wants budget is used, with
+  **safe to spend today** in the middle; beside it Remaining, Spent, Days left and **Pace**
+  (under or over, and by how much).
+- **Spending pace** — a soft area of spending so far against a dashed line to your budget at
+  month's end. Assumed fixed costs count from day one.
+- **Spending calendar** — the month as a calendar, darker on days you spent more, with your
+  biggest day and the number of no-spend days.
 - **Transactions** — everything logged this month (up to 300), each editable or deletable,
   with **search** (merchant, category, account, amount) and filters for type and category.
 
@@ -133,30 +134,35 @@ Answers "how is this month going against the plan?"
 - **Empty state** when nothing is budgeted: *Set your budget* (goes to Needs) and
   *Copy last month*.
 - **Income · Expenses · Saved this month** — each against its budget.
-- **Target split** — one card per spend group: target %, amount budgeted, amount spent,
-  a progress bar, and how the budget compares to the target. Cards link to the group page.
-  **Adjust split** opens the editor in place, for every month or just this one (§6.7).
-- **Your split** chart — Target, Budgeted and Spent as three stacked bars of each group's
-  share of income. Past the dashed line means more than you earn.
-- **Biggest categories** chart — your eight largest budget lines, budgeted against spent.
-- **Per-group breakdown** — each group's total and its top four categories by budget.
+- **Where your money went** — a donut of Needs, Wants, Investments and what's not spent, with
+  spent-of-income in the middle and each group's amount and share beside it.
+- **Your target split** — a bar per group: spent (solid), budgeted (pale) and a mark at the
+  target. *Adjust split* opens the editor here (§6.7). Group names link to their pages.
+- **Where it goes** — every category that has spending, biggest first, coloured by its group,
+  with its budget as a pale bar behind.
+- **Over and under budget** — bars from a centre line: over budget to the left, room left to
+  the right.
 
 #### Yearly
 Answers "how did the year go?"
 
 - Totals for **Income**, **Spent** and **Saved**.
-- **Income and spending** chart — both, month by month.
-- **Saved each month** chart — above zero in green, below in red, with the year's savings rate.
-- **Month by month** — income against expenses for each of the twelve months.
-- Includes assumed-spent Needs, so it agrees with the Monthly tab.
+- **Savings rate** — a ring of the share of income kept.
+- **Savings this year** — a running total, month by month.
+- **Saved each month** — above zero in green, below in red.
+- **Spending mix** — each month's spending split into Needs, Wants and Investments.
+- **Month by month** — income, spent and saved for each month; tap a month to open it.
 
 ### 5.2 Group pages — Needs, Wants, Investments, Income
 
-- **Headline:** Spent (or Received) of budgeted; **Remaining** or **Over budget**; the
-  group's target % and budgeted % of income; a progress bar.
+- **A ring in the group's colour** — how much of its budget is used, with what's left (or
+  over) in the middle; Spent, Budgeted, Used and Remaining beside it.
+- **Last six months** — six columns, this month solid, with this month's budget as a dashed
+  line and a comparison to your average.
 - **Category table** with columns **Category · Budgeted · Spent · Remaining**:
   - **Budgeted edits inline** — click the figure, type, Enter or click away to save.
   - Sub-categories are indented under their parent.
+  - A thin bar under each name shows how much of that line is used; it turns red when over.
   - A **Total** row at the bottom.
   - Categories with nothing budgeted and nothing spent are hidden behind
     *Show N untouched categories*.
@@ -170,14 +176,17 @@ transaction in it that month, with an **Add** button. If the whole figure is ass
 list explains: *"The ₹X above is the budgeted amount, counted automatically. Add a
 transaction and the real figure replaces it."*
 
-A **Last six months** chart shows budgeted against spent for the category, following the same
-roll-up and assume-spent rules as the month view.
+The same **ring** and **Last six months** chart as the group pages, plus **Where it goes**: the
+month's spending in this category by merchant (from the merchant or note on each transaction),
+biggest first, with each one's share.
 
 ### 5.4 Money — `/money`
 - **Net worth** headline, broken down into **Cash · Assets · Owed to you · You owe**, with a
   *See who* link to People when anyone owes or is owed.
-- **Net worth over time** chart — one point per month, recorded as you use the app. History
-  starts 2026-09-11; it can't be rebuilt backwards because assets keep no history.
+- **Net worth over time** — a soft area, one point per month, with the change since the first
+  month. History starts 2026-09-11; it can't be rebuilt backwards because assets keep no history.
+- **What it's made of** — a donut of cash, assets and money owed to you, with net worth in the
+  middle and what you owe noted underneath.
 - **Accounts** — your spending accounts, with balances and subtype (Bank, Cash, UPI wallet —
   "Wallet" outside India — Credit card).
 - **Assets** — with their value and when it was last updated.
@@ -187,6 +196,8 @@ roll-up and assume-spent rules as the month view.
 
 ### 5.5 People — `/people`
 - **Owed to you** and **You owe** totals.
+- **Balances** — one bar per person from a centre line: they owe you to the right, you owe
+  them to the left.
 - One row per person: icon, name, optional handle, **owes you / you owe / settled up**, and the
   amount.
 - Per row: **drag to reorder**, **edit**, **archive**, **delete**.
@@ -436,12 +447,15 @@ tables as a second layer; anonymous access is revoked.
 - **Icons:** Phosphor duotone, picked from a searchable grid grouped by theme. Searching a
   group name finds its icons ("food" finds the fork).
 - **Tooltips** on every icon-only button, suppressed on phones where there's no hover.
-- **Charts** use chart-only shades of the group colours (`--chart-needs`, `--chart-wants`,
-  `--chart-investments`), checked for lightness, saturation, colour-blind separation and 3:1
-  contrast in both themes. Only those three ever sit side by side. Single-series and
-  budget-against-spent charts use a stone pair (`--chart-accent`, `--chart-neutral`), because the
-  brand primary is close to Needs in light mode and is Wants in dark. Every chart has a
-  **Table** view, a legend when there's more than one series, and hover tooltips.
+- **Charts** pick the form that answers the question, not the other way round: a ring for
+  "how much is used", a donut for "where did it go", an area for a trend, a calendar for
+  "which days", bars from a centre line for over/under and who-owes-whom.
+  - Quiet by default: generous space, no y-axis, a faint grid or none, soft fills, rounded ends.
+  - Every chart ends with **one plain-language takeaway** and a small **View as table** link.
+  - Group colours come from chart-only shades (`--chart-needs`, `--chart-wants`,
+    `--chart-investments`), checked for colour-blind separation and contrast in both themes.
+    Single measures use the brand primary; money not spent is drawn as empty track.
+  - Lists of labelled bars are plain HTML, so names are never cropped on a phone.
 
 ---
 

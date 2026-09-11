@@ -5,10 +5,9 @@ import { and, eq } from "drizzle-orm";
 import { ArrowLeft } from "@phosphor-icons/react/dist/ssr";
 import { db } from "@/db";
 import { categories } from "@/db/schema";
-import { Money, BudgetBar } from "@/components/money";
 import { CategoryIcon } from "@/components/category-icon";
 import { TransactionList } from "@/components/transaction-list";
-import { CategoryTrendChart } from "@/components/charts/trend-charts";
+import { BudgetRing, MerchantBreakdown, PeriodTrend, groupColor } from "@/components/charts/detail-insights";
 import { TransactionDialog } from "@/components/transaction-dialog";
 import { MonthSwitcher } from "@/components/month-switcher";
 import {
@@ -19,6 +18,7 @@ import {
   listCategories,
   listTransactions,
   getCategoryTrend,
+  getMerchantBreakdown,
 } from "@/lib/budget";
 import { monthBounds } from "@/lib/targets";
 import { formatMoney } from "@/lib/money";
@@ -49,13 +49,14 @@ export default async function CategoryPage({
   const month = isValidMonth(monthParam) ? monthParam : currentMonthIn(timeZone);
   const { start, end } = monthBounds(month);
 
-  const [summary, txs, accounts, allCategories, currency, trend] = await Promise.all([
+  const [summary, txs, accounts, allCategories, currency, trend, merchants] = await Promise.all([
     getMonthSummary(user.id, month),
     listTransactions(user.id, { from: start, to: end, categoryId: id }),
     listAccounts(user.id),
     listCategories(user.id),
     getUserCurrency(),
     getCategoryTrend(user.id, id, month),
+    getMerchantBreakdown(user.id, id, month),
   ]);
 
   // Find this category in the assembled tree — it may be a child.
@@ -67,7 +68,6 @@ export default async function CategoryPage({
   const planned = row?.plannedMinor ?? 0;
   const actual = row?.actualMinor ?? 0;
   const assumed = (row?.assumedMinor ?? 0) > 0;
-  const diff = planned - actual;
   const isIncome = cat.groupKey === "income";
 
   return (
@@ -106,46 +106,21 @@ export default async function CategoryPage({
         </div>
       </header>
 
-      <section className="rounded-xl border border-border bg-card p-5">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
-              {isIncome ? "Received" : "Spent"}
-            </p>
-            <p className="mt-1 font-heading text-3xl font-bold">
-              <Money minor={actual} />
-            </p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              of <Money minor={planned} tone="muted" /> budgeted
-            </p>
-          </div>
-          {!isIncome && planned > 0 && (
-            <div className="text-right">
-              <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
-                {diff >= 0 ? "Remaining" : "Over budget"}
-              </p>
-              <p className="mt-1 font-heading text-2xl font-bold">
-                <Money
-                  minor={Math.abs(diff)}
-                  tone={diff >= 0 ? "default" : "negative"}
-                />
-              </p>
-            </div>
-          )}
-        </div>
-        {planned > 0 && (
-          <BudgetBar
-            actualMinor={actual}
-            plannedMinor={planned}
-            groupKey={cat.groupKey}
-            className="mt-4 h-2"
-          />
-        )}
-      </section>
+      <BudgetRing
+        groupKey={cat.groupKey}
+        spentMinor={actual}
+        plannedMinor={planned}
+        isIncome={isIncome}
+        footnote={assumed ? "includes assumed spend" : undefined}
+      />
 
-      <CategoryTrendChart points={trend} isIncome={isIncome} />
+      <PeriodTrend title="Last six months" points={trend} color={groupColor(cat.groupKey)} isIncome={isIncome} />
 
-      <section className="overflow-hidden rounded-xl border border-border bg-card">
+      {!isIncome && (
+        <MerchantBreakdown items={merchants} categoryName={cat.name} color={groupColor(cat.groupKey)} />
+      )}
+
+      <section className="overflow-hidden rounded-2xl border border-border bg-card">
         <div className="border-b border-border px-4 py-3">
           <h2 className="font-heading text-base font-bold">Transactions</h2>
         </div>
