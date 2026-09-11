@@ -1,12 +1,30 @@
 "use client";
 
-import { useTransition } from "react";
-import { Repeat, Trash } from "@phosphor-icons/react";
+import { useActionState, useState, useTransition } from "react";
+import { PencilSimple, Repeat, Trash, Warning } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { IconButton } from "@/components/icon-button";
-import { setRecurringActive, deleteRecurringRule } from "@/app/actions";
+import {
+  setRecurringActive,
+  deleteRecurringRule,
+  updateRecurringRule,
+  type ActionResult,
+} from "@/app/actions";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { CurrencySymbol } from "@/components/currency-provider";
+import { toMajor } from "@/lib/money";
 import { CategoryIcon } from "@/components/category-icon";
-import { formatMoney } from "@/lib/money";
+import { Money } from "@/components/money";
 import { cn } from "@/lib/utils";
 
 export type RecurringRow = {
@@ -97,8 +115,10 @@ function Row({ rule }: { rule: RecurringRow }) {
           rule.direction === "inflow" && "text-positive",
         )}
       >
-        {formatMoney(rule.direction === "inflow" ? rule.amountMinor : -rule.amountMinor)}
+        <Money minor={rule.direction === "inflow" ? rule.amountMinor : -rule.amountMinor} />
       </span>
+
+      <EditRecurringDialog rule={rule} label={label} />
 
       <IconButton
         label={rule.active ? `Pause ${label}` : `Resume ${label}`}
@@ -117,5 +137,98 @@ function Row({ rule }: { rule: RecurringRow }) {
         <Trash size={14} weight="bold" />
       </IconButton>
     </li>
+  );
+}
+
+/**
+ * Amount, day and label — the things that change when rent goes up. Affects
+ * repeats from now on; transactions it already added are history and stay.
+ */
+function EditRecurringDialog({ rule, label }: { rule: RecurringRow; label: string }) {
+  const [open, setOpen] = useState(false);
+  const [state, action, pending] = useActionState<ActionResult | null, FormData>(
+    async (prev, fd) => {
+      const res = await updateRecurringRule(prev, fd);
+      if (res.ok) {
+        toast.success("Repeat updated");
+        setOpen(false);
+      }
+      return res;
+    },
+    null,
+  );
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger
+        render={
+          <IconButton label={`Edit repeat for ${label}`}>
+            <PencilSimple size={14} weight="bold" />
+          </IconButton>
+        }
+      />
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="font-heading">Edit repeat</DialogTitle>
+          <DialogDescription>
+            Applies from the next one. Transactions it already added stay as they
+            are — edit those directly if they need to change.
+          </DialogDescription>
+        </DialogHeader>
+        <form action={action} className="flex flex-col gap-4">
+          <input type="hidden" name="id" value={rule.id} />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor={`rep-amt-${rule.id}`}>
+                Amount (<CurrencySymbol />)
+              </Label>
+              <Input
+                id={`rep-amt-${rule.id}`}
+                name="amount"
+                inputMode="decimal"
+                required
+                autoFocus
+                defaultValue={toMajor(rule.amountMinor)}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor={`rep-day-${rule.id}`}>Day of month</Label>
+              <Input
+                id={`rep-day-${rule.id}`}
+                name="dayOfMonth"
+                type="number"
+                min={1}
+                max={31}
+                required
+                defaultValue={rule.dayOfMonth}
+              />
+            </div>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor={`rep-mer-${rule.id}`}>Merchant / note</Label>
+            <Input
+              id={`rep-mer-${rule.id}`}
+              name="merchant"
+              defaultValue={rule.merchant ?? ""}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Past the end of a short month, it lands on the last day.
+          </p>
+          {state && !state.ok && (
+            <p
+              role="alert"
+              className="flex items-start gap-2 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive"
+            >
+              <Warning size={16} weight="fill" className="mt-0.5 shrink-0" />
+              {state.error}
+            </p>
+          )}
+          <Button type="submit" disabled={pending} className="w-full">
+            {pending ? "Saving…" : "Save"}
+          </Button>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { ArrowCounterClockwise, Trash } from "@phosphor-icons/react";
+import { Trash } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import {
   deleteAccount,
@@ -18,11 +18,14 @@ import {
 } from "@/components/ui/dialog";
 import { CategoryIcon } from "@/components/category-icon";
 import { IconButton } from "@/components/icon-button";
+import { ArchiveButton } from "@/components/archive-button";
 import { SortableList, SortableRow } from "@/components/sortable-list";
 import { Money } from "@/components/money";
 import { EditAccountDialog } from "@/components/account-dialogs";
 import type { AccountBalance } from "@/lib/budget";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/components/currency-provider";
+import { formatDay } from "@/lib/dates";
 
 export function AccountsManager({
   accounts,
@@ -73,6 +76,7 @@ export function AccountsManager({
 }
 
 function Row({ account }: { account: AccountBalance }) {
+  const locale = useLocale();
   const [pending, start] = useTransition();
 
   function archive() {
@@ -101,7 +105,7 @@ function Row({ account }: { account: AccountBalance }) {
         {account.kind === "asset" && (
           <p className="text-xs text-muted-foreground">
             {account.valueUpdatedAt
-              ? `Updated ${new Date(account.valueUpdatedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}`
+              ? `Updated ${formatDay(account.valueUpdatedAt, locale)}`
               : "Value not set yet"}
           </p>
         )}
@@ -120,13 +124,14 @@ function Row({ account }: { account: AccountBalance }) {
 
       <EditAccountDialog account={account} />
 
-      <IconButton
+      <ArchiveButton
         label={`Archive ${account.name}`}
-        onClick={archive}
+        name={account.name}
+        balanceMinor={account.balanceMinor}
+        archived={false}
+        onToggle={archive}
         disabled={pending}
-      >
-        <ArrowCounterClockwise size={14} weight="bold" />
-      </IconButton>
+      />
 
       <DeleteAccountButton account={account} disabled={pending} />
     </SortableRow>

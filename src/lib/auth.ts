@@ -2,12 +2,26 @@ import "server-only";
 
 import { cache } from "react";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { eq } from "drizzle-orm";
 import { createClient } from "@/lib/supabase/server";
 import { db } from "@/db";
-import { accounts, categories, groupTargets, DEFAULT_MONTH } from "@/db/schema";
+import { accounts, categories, groupTargets, profiles, DEFAULT_MONTH } from "@/db/schema";
 import { DEFAULT_CATEGORIES, DEFAULT_ACCOUNTS } from "@/lib/defaults";
 import { DEFAULT_TARGETS } from "@/lib/targets";
+import {
+  DEFAULT_CURRENCY,
+  currencyForCountry,
+  isCurrency,
+  type CurrencyCode,
+} from "@/lib/currency";
+import {
+  REGIONS,
+  isRegion,
+  isTimeZone,
+  regionForCountry,
+  type RegionCode,
+} from "@/lib/region";
 
 /**
  * The session user for this request.
@@ -80,4 +94,81 @@ export async function ensureUserSetup(userId: string) {
   });
 
   return true;
+}
+
+/**
+ * The signed-in user's profile, created on first read.
+ *
+ * Lazy rather than at signup because a user can arrive three ways — the email
+ * form, Google, or an account that predates profiles — and every one of them
+ * passes through a page render. The first render seeds it from user_metadata
+ * (the signup form writes `full_name` and `currency`; Google writes
+ * `full_name`), falling back to a currency guessed from the visitor's country.
+ */
+export const getProfile = cache(async () => {
+  const user = await getUser();
+  if (!user) return null;
+
+  const [existing] = await db
+    .select()
+    .from(profiles)
+    .where(eq(profiles.userId, user.id))
+    .limit(1);
+  if (existing) return existing;
+
+  const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
+  const name = String(meta.full_name ?? meta.name ?? "").trim().slice(0, 80) || null;
+  const country = (await headers()).get("x-vercel-ip-country");
+  const currency = isCurrency(meta.currency)
+    ? meta.currency
+    : currencyForCountry(country);
+  const region = isRegion(meta.region) ? meta.region : regionForCountry(country);
+  const timezone = isTimeZone(meta.timezone) ? meta.timezone : null;
+
+  const [created] = await db
+    .insert(profiles)
+    .values({ userId: user.id, displayName: name, currency, region, timezone })
+    .onConflictDoNothing()
+    .returning();
+  if (created) return created;
+
+  // Another render created it a moment ago.
+  const [raced] = await db
+    .select()
+    .from(profiles)
+    .where(eq(profiles.userId, user.id))
+    .limit(1);
+  return raced ?? null;
+});
+
+export async function getUserCurrency(): Promise<CurrencyCode> {
+  const profile = await getProfile();
+  return profile && isCurrency(profile.currency) ? profile.currency : DEFAULT_CURRENCY;
+}
+
+export type UserPrefs = {
+  currency: CurrencyCode;
+  region: RegionCode;
+  locale: string;
+  /** The zone to compute "today" in — the browser's, else the region's. */
+  timeZone: string;
+  /** What's actually stored, so the client can tell whether to report its own. */
+  savedTimeZone: string | null;
+};
+
+/** Everything that changes how numbers and dates read for this user. */
+export async function getUserPrefs(): Promise<UserPrefs> {
+  const profile = await getProfile();
+  const currency =
+    profile && isCurrency(profile.currency) ? profile.currency : DEFAULT_CURRENCY;
+  const region: RegionCode =
+    profile && isRegion(profile.region) ? profile.region : "IN";
+  const saved = profile?.timezone ?? null;
+  return {
+    currency,
+    region,
+    locale: REGIONS[region].locale,
+    timeZone: isTimeZone(saved) ? saved : REGIONS[region].timeZone,
+    savedTimeZone: saved,
+  };
 }

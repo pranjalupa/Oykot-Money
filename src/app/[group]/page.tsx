@@ -1,3 +1,4 @@
+import { currentMonthIn, todayIn } from "@/lib/dates";
 import { notFound } from "next/navigation";
 import { Money, BudgetBar } from "@/components/money";
 import { MonthSwitcher } from "@/components/month-switcher";
@@ -5,15 +6,13 @@ import { CategoryList } from "@/components/category-list";
 import { TransactionDialog } from "@/components/transaction-dialog";
 import { NewCategoryDialog } from "@/components/new-category-dialog";
 import {
-  currentMonth,
   getMonthSummary,
   GROUP_META,
   isValidMonth,
   listAccounts,
   listCategories,
-  today,
 } from "@/lib/budget";
-import { requireUser } from "@/lib/auth";
+import { requireUser, getUserPrefs } from "@/lib/auth";
 import { prepareMonth } from "@/lib/month-setup";
 import { GROUP_KEYS, type GroupKey } from "@/db/schema";
 
@@ -31,8 +30,9 @@ export default async function GroupPage({
   const groupKey = group as GroupKey;
 
   const user = await requireUser();
+  const { timeZone } = await getUserPrefs();
   const { month: monthParam } = await searchParams;
-  const month = isValidMonth(monthParam) ? monthParam : currentMonth();
+  const month = isValidMonth(monthParam) ? monthParam : currentMonthIn(timeZone);
 
   await prepareMonth(user.id, month);
 
@@ -66,7 +66,7 @@ export default async function GroupPage({
           <TransactionDialog
             accounts={accounts}
             categories={categories}
-            defaultDate={today()}
+            defaultDate={todayIn(timeZone)}
           />
         </div>
       </header>
@@ -81,14 +81,14 @@ export default async function GroupPage({
               <Money minor={g.actualMinor} />
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
-              of <Money minor={g.plannedMinor} tone="muted" /> planned
+              of <Money minor={g.plannedMinor} tone="muted" /> budgeted
             </p>
           </div>
 
           {!isIncome && (
             <div className="text-right">
               <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
-                {diff >= 0 ? "Left to spend" : "Over plan"}
+                {diff >= 0 ? "Remaining" : "Over budget"}
               </p>
               <p className="mt-1 font-heading text-2xl font-bold">
                 <Money
@@ -97,7 +97,7 @@ export default async function GroupPage({
                 />
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                target {g.targetPercent}% · plan {g.plannedPercent}% of income
+                target {g.targetPercent}% · budgeted {g.plannedPercent}% of income
               </p>
             </div>
           )}

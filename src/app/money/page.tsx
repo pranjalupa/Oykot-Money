@@ -3,8 +3,10 @@ import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
 import { Money } from "@/components/money";
 import { AccountsManager } from "@/components/accounts-manager";
 import { NewAccountDialog } from "@/components/account-dialogs";
-import { getNetWorth } from "@/lib/budget";
-import { requireUser } from "@/lib/auth";
+import { getNetWorth, getNetWorthHistory, saveNetWorthSnapshot } from "@/lib/budget";
+import { currentMonthIn } from "@/lib/dates";
+import { NetWorthChart } from "@/components/charts/trend-charts";
+import { requireUser, getUserPrefs } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +17,11 @@ export const dynamic = "force-dynamic";
  */
 export default async function MoneyPage() {
   const user = await requireUser();
-  const net = await getNetWorth(user.id);
+  const [net, { timeZone }] = await Promise.all([getNetWorth(user.id), getUserPrefs()]);
+  // Net worth can't be rebuilt later (assets keep no history), so record this
+  // month's figure whenever it's looked at — the chart below reads these back.
+  await saveNetWorthSnapshot(user.id, currentMonthIn(timeZone), net);
+  const history = await getNetWorthHistory(user.id);
 
   const spending = net.balances.filter((b) => b.kind === "spending");
   const assets = net.balances.filter((b) => b.kind === "asset");
@@ -64,6 +70,8 @@ export default async function MoneyPage() {
           </Link>
         )}
       </section>
+
+      <NetWorthChart points={history} />
 
       <AccountsManager
         accounts={spending}

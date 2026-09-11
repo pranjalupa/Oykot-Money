@@ -1,13 +1,11 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 import { PencilSimple, Warning } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { IconButton } from "@/components/icon-button";
 import { updateTransaction, type ActionResult } from "@/app/actions";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -16,123 +14,76 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  TransactionFields,
+  type PickerAccount,
+  type PickerCategory,
+} from "@/components/transaction-fields";
 import { toMajor } from "@/lib/money";
-import type { PickerCategory } from "@/components/transaction-dialog";
 import type { TransactionRow } from "@/lib/budget";
 
 /**
- * Amount, date, category and note are the things people actually get wrong.
- * Which account it came from isn't editable here — changing that rewrites two
- * balances, and deleting and re-adding is clearer than a silent correction.
+ * Everything is editable, account and type included — moving a transaction
+ * to another account used to mean deleting and re-adding it.
  */
 export function EditTransactionDialog({
   transaction,
+  accounts,
   categories,
 }: {
   transaction: TransactionRow;
+  accounts: PickerAccount[];
   categories: PickerCategory[];
 }) {
   const [open, setOpen] = useState(false);
   const [state, action, pending] = useActionState<ActionResult | null, FormData>(
-    updateTransaction,
+    async (prev, fd) => {
+      const res = await updateTransaction(prev, fd);
+      if (res.ok) {
+        toast.success("Transaction updated");
+        setOpen(false);
+      }
+      return res;
+    },
     null,
   );
 
-  useEffect(() => {
-    if (state?.ok) {
-      toast.success("Transaction updated");
-      setOpen(false);
-    }
-  }, [state]);
-
-  const isTransfer = transaction.direction === "transfer" && !transaction.categoryId;
-
-  // Income transactions pick from Income; everything else from the spend groups.
-  const relevant = categories.filter((c) =>
-    transaction.direction === "inflow"
-      ? c.groupKey === "income"
-      : c.groupKey !== "income",
-  );
+  const label = transaction.merchant || transaction.categoryName || "transaction";
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
         render={
-          <IconButton
-            label={`Edit ${transaction.merchant || transaction.categoryName || "transaction"}`}
-          >
+          <IconButton label={`Edit ${label}`}>
             <PencilSimple size={14} weight="bold" />
           </IconButton>
         }
       />
 
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="font-heading">Edit transaction</DialogTitle>
           <DialogDescription>
-            {transaction.accountName}
-            {transaction.counterAccountName
-              ? ` → ${transaction.counterAccountName}`
-              : ""}
+            Change anything. Move it to another account and both balances follow.
           </DialogDescription>
         </DialogHeader>
 
         <form action={action} className="flex flex-col gap-4">
           <input type="hidden" name="id" value={transaction.id} />
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor={`amt-${transaction.id}`}>Amount (₹)</Label>
-              <Input
-                id={`amt-${transaction.id}`}
-                name="amount"
-                inputMode="decimal"
-                required
-                autoFocus
-                defaultValue={toMajor(transaction.amountMinor)}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor={`date-${transaction.id}`}>Date</Label>
-              <Input
-                id={`date-${transaction.id}`}
-                name="date"
-                type="date"
-                required
-                defaultValue={transaction.date}
-              />
-            </div>
-          </div>
-
-          {!isTransfer && (
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor={`cat-${transaction.id}`}>Category</Label>
-              <select
-                id={`cat-${transaction.id}`}
-                name="categoryId"
-                defaultValue={transaction.categoryId ?? ""}
-                className="h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
-              >
-                <option value="">Uncategorised</option>
-                {relevant.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.parentId ? "— " : ""}
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor={`mer-${transaction.id}`}>Merchant / note</Label>
-            <Input
-              id={`mer-${transaction.id}`}
-              name="merchant"
-              defaultValue={transaction.merchant ?? ""}
-              placeholder="Blinkit, landlord, …"
-            />
-          </div>
+          <TransactionFields
+            idPrefix={`edit-${transaction.id}`}
+            accounts={accounts}
+            categories={categories}
+            initial={{
+              direction: transaction.direction,
+              amount: String(toMajor(transaction.amountMinor)),
+              date: transaction.date,
+              accountId: transaction.accountId,
+              counterAccountId: transaction.counterAccountId,
+              categoryId: transaction.categoryId,
+              merchant: transaction.merchant,
+            }}
+          />
 
           {state && !state.ok && (
             <p

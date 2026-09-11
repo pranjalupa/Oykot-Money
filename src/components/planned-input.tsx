@@ -3,7 +3,8 @@
 import { useState, useTransition, useRef } from "react";
 import { toast } from "sonner";
 import { setPlannedAmount } from "@/app/actions";
-import { toMajor } from "@/lib/money";
+import { formatMoney, toMajor } from "@/lib/money";
+import { useCurrency } from "@/components/currency-provider";
 import { cn } from "@/lib/utils";
 
 /**
@@ -20,6 +21,7 @@ export function PlannedInput({
   month: string;
   plannedMinor: number;
 }) {
+  const currency = useCurrency();
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(String(toMajor(plannedMinor) || ""));
   const [pending, start] = useTransition();
@@ -27,7 +29,7 @@ export function PlannedInput({
 
   function save() {
     setEditing(false);
-    const next = Number(value.replace(/[,\s₹]/g, "") || 0);
+    const next = Number(value.replace(/[^\d.-]/g, "") || 0);
     if (next === toMajor(plannedMinor)) return;
 
     start(async () => {
@@ -59,7 +61,7 @@ export function PlannedInput({
         )}
         title="Edit planned amount"
       >
-        {plannedMinor > 0 ? `₹${toMajor(plannedMinor).toLocaleString("en-IN")}` : "set plan"}
+        {plannedMinor > 0 ? formatMoney(plannedMinor, { currency }) : "set budget"}
       </button>
     );
   }
@@ -70,7 +72,7 @@ export function PlannedInput({
       value={value}
       autoFocus
       inputMode="decimal"
-      aria-label="Planned amount in rupees"
+      aria-label="Budgeted amount"
       onChange={(e) => setValue(e.target.value)}
       onBlur={save}
       onKeyDown={(e) => {

@@ -3,15 +3,18 @@ import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
 import { buttonVariants } from "@/components/ui/button";
 import { Money, BudgetBar } from "@/components/money";
 import { CopyPlanButton } from "@/components/copy-plan-button";
+import { TargetEditor } from "@/components/target-editor";
+import { SplitChart, CategoryBudgetChart } from "@/components/charts/monthly-charts";
 import {
   getMonthSummary,
+  getTargets,
   GROUP_META,
   hasMonthOverride,
   SPEND_GROUPS,
 } from "@/lib/budget";
 import { requireUser, ensureUserSetup } from "@/lib/auth";
 import { prepareMonth } from "@/lib/month-setup";
-import { formatMoney, percentOf } from "@/lib/money";
+import { percentOf } from "@/lib/money";
 import type { GroupKey } from "@/db/schema";
 import { cn } from "@/lib/utils";
 
@@ -22,18 +25,40 @@ export async function MonthView({ month }: { month: string }) {
 
   await prepareMonth(user.id, month);
 
-  const [summary, overridden] = await Promise.all([
+  const [summary, overridden, targets] = await Promise.all([
     getMonthSummary(user.id, month),
     hasMonthOverride(user.id, month),
+    getTargets(user.id, month),
   ]);
 
   const nothingPlanned = summary.plannedExpense === 0 && summary.plannedIncome === 0;
+
+  // Only the fields the charts use cross to the client, not every category.
+  const split = (k: "needs" | "wants" | "investments") => {
+    const g = summary.groups[k];
+    return {
+      targetPercent: g.targetPercent,
+      plannedPercent: g.plannedPercent,
+      actualPercent: g.actualPercent,
+      plannedMinor: g.plannedMinor,
+      actualMinor: g.actualMinor,
+    };
+  };
+  const topCategories = (["needs", "wants", "investments"] as const)
+    .flatMap((k) => summary.groups[k].categories)
+    .filter((c) => c.plannedMinor > 0 || c.actualMinor > 0)
+    .sort(
+      (a, b) =>
+        Math.max(b.plannedMinor, b.actualMinor) - Math.max(a.plannedMinor, a.actualMinor),
+    )
+    .slice(0, 8)
+    .map((c) => ({ name: c.name, budgetedMinor: c.plannedMinor, spentMinor: c.actualMinor }));
 
   return (
     <div className="flex flex-col gap-8">
       {nothingPlanned && (
         <div className="rounded-xl border border-dashed border-border p-6 text-center">
-          <p className="font-heading text-base font-bold">Nothing planned yet</p>
+          <p className="font-heading text-base font-bold">Nothing budgeted yet</p>
           <p className="accent-note mx-auto mt-1 max-w-md text-sm text-muted-foreground">
             Set what you expect to spend in each category, and the rest of the app
             starts working.
@@ -45,7 +70,7 @@ export async function MonthView({ month }: { month: string }) {
               href={`/needs?month=${month}`}
               className={buttonVariants({ size: "sm" })}
             >
-              Set your plan
+              Set your budget
             </Link>
             <CopyPlanButton month={month} />
           </div>
@@ -76,12 +101,9 @@ export async function MonthView({ month }: { month: string }) {
       <section>
         <div className="mb-3 flex items-baseline justify-between gap-3">
           <h2 className="font-heading text-lg font-bold">Target split</h2>
-          <Link
-            href="/settings"
-            className="text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground"
-          >
+          <span className="text-xs text-muted-foreground">
             {overridden ? "Custom for this month" : "Your default split"}
-          </Link>
+          </span>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-3">
@@ -112,7 +134,7 @@ export async function MonthView({ month }: { month: string }) {
                     minor={g.plannedMinor}
                     className="font-heading text-xl font-bold"
                   />
-                  <span className="text-xs text-muted-foreground">planned</span>
+                  <span className="text-xs text-muted-foreground">budgeted</span>
                 </div>
 
                 <div className="mt-3 space-y-1.5">
@@ -135,7 +157,34 @@ export async function MonthView({ month }: { month: string }) {
             );
           })}
         </div>
+
+        {/* Edited here rather than in Settings: the split only means something
+            next to the budget it shapes. Keyed on the month so switching months
+            remounts it with that month's values instead of keeping stale ones. */}
+        <details className="group/split mt-3 rounded-xl border border-border bg-card">
+          <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium text-muted-foreground hover:text-foreground">
+            <span className="group-open/split:hidden">Adjust split</span>
+            <span className="hidden group-open/split:inline">Hide</span>
+          </summary>
+          <div className="border-t border-border p-4">
+            <TargetEditor
+              key={`${month}-${overridden}`}
+              targets={targets}
+              month={month}
+              hasOverride={overridden}
+            />
+          </div>
+        </details>
       </section>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <SplitChart
+          groups={{ needs: split("needs"), wants: split("wants"), investments: split("investments") }}
+          plannedIncome={summary.plannedIncome}
+          actualIncome={summary.actualIncome}
+        />
+        <CategoryBudgetChart rows={topCategories} />
+      </div>
 
       {/* Per-group breakdown ---------------------------------------------- */}
       <section className="flex flex-col gap-4">
@@ -163,7 +212,7 @@ export async function MonthView({ month }: { month: string }) {
                 <div className="shrink-0 text-right">
                   <div className="text-sm font-semibold">
                     <Money minor={g.actualMinor} />
-                    <span className="text-muted-foreground"> / </span>
+                    <span className="text-muted-foreground"> of </span>
                     <Money
                       minor={g.plannedMinor}
                       tone="muted"
@@ -191,7 +240,7 @@ export async function MonthView({ month }: { month: string }) {
                         {c.name}
                       </span>
                       <span className="tabular shrink-0 text-xs text-muted-foreground">
-                        {formatMoney(c.actualMinor)} / {formatMoney(c.plannedMinor)}
+                        <Money minor={c.actualMinor} /> of <Money minor={c.plannedMinor} />
                       </span>
                     </li>
                   ))}
@@ -226,7 +275,7 @@ function StatCard({
         <Money minor={actualMinor} tone={tone} />
       </p>
       <p className="mt-1 text-xs text-muted-foreground">
-        of <Money minor={plannedMinor} tone="muted" /> planned
+        of <Money minor={plannedMinor} tone="muted" /> budgeted
         {plannedMinor > 0 && <span className="tabular"> · {pct}%</span>}
       </p>
     </div>
@@ -242,11 +291,11 @@ function PlanDelta({
   targetPercent: number;
 }) {
   const delta = plannedPercent - targetPercent;
-  if (plannedPercent === 0) return <span>not planned</span>;
+  if (plannedPercent === 0) return <span>not budgeted</span>;
   if (delta === 0) return <span>on target</span>;
   return (
     <span className={cn(delta > 0 && "text-negative")}>
-      plan {plannedPercent}% ({delta > 0 ? "+" : ""}
+      budgeted {plannedPercent}% ({delta > 0 ? "+" : ""}
       {delta})
     </span>
   );

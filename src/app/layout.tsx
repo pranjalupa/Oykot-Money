@@ -4,7 +4,12 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AppShell } from "@/components/app-shell";
-import { getUser } from "@/lib/auth";
+import { getUser, getProfile, getUserPrefs } from "@/lib/auth";
+import { TimezoneSync } from "@/components/timezone-sync";
+import { getAccess } from "@/lib/access";
+import { DEFAULT_REGION } from "@/lib/region";
+import { CurrencyProvider } from "@/components/currency-provider";
+import { DEFAULT_CURRENCY } from "@/lib/currency";
 import "./globals.css";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
@@ -33,6 +38,9 @@ export default async function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   // Nav only makes sense once you're in; the auth pages render bare.
   const user = await getUser();
+  const prefs = user ? await getUserPrefs() : null;
+  const access = user ? await getAccess() : null;
+  const name = user ? ((await getProfile())?.displayName ?? null) : null;
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -48,9 +56,21 @@ export default async function RootLayout({
           {/* Short delay, not zero: tooltips that fire the instant the pointer
               crosses a toolbar are noise. Long enough to mean "I paused here". */}
           <TooltipProvider delay={350}>
-            <AppShell signedIn={!!user} email={user?.email ?? null}>
-              {children}
-            </AppShell>
+            <CurrencyProvider
+              currency={prefs?.currency ?? DEFAULT_CURRENCY}
+              region={prefs?.region ?? DEFAULT_REGION}
+              timeZone={prefs?.timeZone}
+            >
+              {user && <TimezoneSync saved={prefs?.savedTimeZone ?? null} />}
+              <AppShell
+                signedIn={!!user}
+                email={user?.email ?? null}
+                name={name}
+                trial={access ? { state: access.state, daysLeft: access.daysLeft, enforced: access.enforced } : null}
+              >
+                {children}
+              </AppShell>
+            </CurrencyProvider>
           </TooltipProvider>
           <Toaster position="bottom-center" />
         </ThemeProvider>

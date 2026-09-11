@@ -30,6 +30,8 @@ set `user.email` before the first commit.
 - Pranjal's personal budgeting tool. Personal/single-user for now.
 - Possible future: turn into a SaaS or public app. Not committed to — see trajectory below.
 - Owner/account: github.com/pranjalupa
+- Product spec — screens, rules, calculations, known gaps: `PRODUCT.md`. Keep it in step
+  when behaviour changes.
 
 ## Stack (decisions, not an inventory — see package.json for versions)
 - **Next.js App Router + TypeScript + Tailwind v4 + shadcn/ui.** Matches the setup in the
@@ -57,8 +59,12 @@ set `user.email` before the first commit.
   - Confirmation and OAuth redirects use the request-derived origin, so localhost and
     production both work with no per-environment config. Supabase only honours those URLs if
     they're in the project's redirect allow-list.
-- **Money is integer paise everywhere** — stored as `bigint`. Never floats, never rupees,
-  until `lib/money.ts` formats at the UI edge.
+- **Money is integer hundredths everywhere** — stored as `bigint`. Never floats, never major
+  units, until `lib/money.ts` formats at the UI edge **in the user's currency**
+  (`profiles.currency`). One currency per user and **never converted** — switching relabels.
+  Server code passes it explicitly (`getUserCurrency()`); client code reads `useCurrency()`;
+  `<Money>` does it for you. Two-decimal currencies only while `MINOR_PER_UNIT` is 100.
+  `accounts.currency` is a leftover column — the profile is the source of truth.
 - **Hosting: Vercel** (project `oykot-money`, connected to this repo).
 
 ## Multi-tenancy — read before writing any query
@@ -120,51 +126,60 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
 
 ## Product trajectory
 - **Phase 1 (done):** personal budgeting tool.
-- **Phase 2 (current):** multi-user with open signup and per-user isolation. Still no billing,
-  teams, or sharing — don't build toward those without being asked.
+- **Phase 2 (done):** multi-user with open signup and per-user isolation.
+- **Phase 3 (current, 2026-09-11):** paid SaaS. Plan and build order in `PRODUCT.md` §13.
+  Teams and sharing are still out — don't build toward them without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
-- 2026-09-03 — **Naming split, tabbed home, real tables, drag, delete, icon grid.**
-  - **`people` is its own table.** *Account* had meant three things (your bank account,
-    Rahul, your login); it now means only "a place your money sits". A `loan` account is
-    just the ledger, pointing at a `people` row via `accounts.person_id` — balance
-    arithmetic untouched, sign still carries direction. `people.kind` is
-    `person | institution`, so borrowing FROM a bank is finally expressible.
-    Migrated one person per existing loan account (2 rows). Added to `rls.sql`; 8/8 tables
-    now covered.
-  - Cascade `people` → `accounts` is load-bearing: deleting a person tries to take their
-    ledger, `transactions.account_id` is RESTRICT, so Postgres refuses if history exists.
-  - **`/` is a tabbed home** (Daily · Monthly · Yearly, Daily default). View is a URL param,
-    not client state — every tab stays a server render and stays linkable. `/daily`,
-    `/year`, `/accounts` are redirects.
-  - **`Budgeted · Spent · Remaining`** as real columns, replacing `12,000 / 15,000`.
-    Untouched rows collapse behind a toggle — a fresh month is otherwise all zeroes.
-  - **Drag reordering** (dnd-kit) replaced the arrow buttons; the handle stays a real
-    button so keyboard reorder survives. `reorder*` actions take a whole ordering, verify
-    every id belongs to the caller, write in one transaction.
-  - **Delete** for categories / accounts / people, with the schema's real behaviour in the
-    confirm: category delete keeps the money and drops the label (SET NULL); account and
-    person delete are refused when history exists (RESTRICT).
-  - **Icons 33 → 137**, grouped and searchable in a grid. Group labels are searchable
-    because nobody knows a fork is called `ForkKnife`.
-  - **Every icon-only control carries its name.** `IconButton` / `IconLink` take a
-    *required* `label` → tooltip + `aria-label`, so a nameless icon button can't be written
-    by accident. Nav shows tooltips only when collapsed.
-  - Fixed: `MonthSwitcher` appended `?month=` unconditionally, so `/?view=daily` became
-    `/?view=daily?month=…` and silently dropped the view.
-- 2026-09-03 — **Assume-spent for fixed Needs.** `categories.assume_spent`: the budgeted
-  amount counts as spent with no transaction. A real transaction **replaces** the assumption
-  for that month rather than topping it up — 15,000 budgeted, 15,400 actual reads 15,400.
-  - **Nothing is written to `transactions`.** The assumption lives only in the read path
-    (`getMonthSummary`, and `assumedNeedsByMonth` for the year view), so turning the flag
-    off restores the true ledger with no cleanup. This is the whole reason it isn't built
-    on `recurring_rules`, which materialises real rows.
-  - Needs-group only, and not for children that roll their plan up into a parent — they
-    have no plan of their own, so assuming would spend against a budget of zero. Enforced
-    in `app/actions.ts`, re-reading the group from the DB rather than trusting the form.
-  - `CategoryRow.assumedMinor` carries how much of the actual was assumed, so the UI can
-    mark it. Assumed money must never render identically to logged money.
-- Earlier entries (2026-09-01 → 2026-09-02, first build through multi-user launch) archived to `docs/decisions/2026-09.md`.
+- 2026-09-11 (2) — **Dates, charts, trial and pricing, legal, data rights, and the bug sweep.**
+  - **Time is the user's, not the server's.** The server runs on UTC. `lib/dates.ts`
+    (`todayIn`, `currentMonthIn`) takes the profile's timezone, which the browser reports via
+    `TimezoneSync`. Never call `new Date()` for "today". `formatDay` parses stored dates as UTC
+    so "2026-09-03" can't print as Sep 2. Region (date format) is separate from currency.
+  - **Transactions: one validator** (`readTransaction`) for add and edit, and one set of fields
+    (`TransactionFields`). Edit can move account and type. Carry-over never fills future months;
+    repeats skip archived accounts and categories.
+  - **Charts** are shadcn charts (Recharts) inside `ChartCard`, which always offers a Table view.
+    `--chart-needs/wants/investments` were computed with the dataviz palette validator in both
+    modes. Only those three stack (in that order); single series and budget-vs-spent use the
+    stone `--chart-accent`/`--chart-neutral`, because the brand primary collides with the
+    group hues.
+  - **Net worth history** comes from `net_worth_snapshots`, written by Money and by Home via
+    `after()`. It can't be backfilled.
+  - **Access:** `subscriptions` plus `getAccess()` in `lib/access.ts`. Every write action calls
+    `requireWriter()`, which redirects to `/pricing?trial=ended` when read-only. Profile,
+    timezone, export and delete never go through it. Enforcement is behind
+    `ACCESS_ENFORCED=true` — leave it off until checkout works.
+  - **Delete account** deletes rows in dependency order in one transaction (`transactions.
+    account_id` is RESTRICT, so don't rely on the auth.users cascade), then calls
+    `auth.admin.deleteUser` through `lib/supabase/admin.ts` (service role, server only).
+  - Public routes: `/` (landing when signed out, an exact match in middleware), `/pricing`,
+    `/legal/*`, `/auth/*`. Prices live in `lib/pricing.ts`, the legal contact in `lib/legal.ts`.
+  - Dialogs close from inside a wrapped `useActionState` action, never an effect. Lint is 0.
+- 2026-09-11 — **Profiles and per-user currency** (first slice of SaaS phase 1).
+  - `profiles` (name, currency), **created lazily** in `getProfile()`: a user arrives by the
+    email form, Google, or predating profiles, and all three pass through a render.
+  - Signup puts name + currency in `user_metadata`, because with email confirmation there's
+    no session — so no profile row — until the link is clicked. Google gets its name from
+    Google and currency from `x-vercel-ip-country`.
+  - `<Money>` is now a client component reading a context set in the root layout, so money
+    can be formatted deep inside client components without threading the profile through.
+  - RLS on 9/9 tables. Dates are still `en-IN` for everyone — known gap.
+- 2026-09-11 — **Going SaaS: paid-only with a trial, India and global from day one.**
+  Reverses Phase 2's "no billing". Detail in `PRODUCT.md` §13.
+  - **Two providers, one `subscriptions` table.** Razorpay (UPI Autopay, ₹) for India; a
+    Merchant of Record for everyone else. Not LemonSqueezy: no UPI, no INR settlement, and
+    it's being folded into Stripe Managed Payments.
+  - **Access is decided in one server-side check** and enforced in every write action, not
+    just the UI. Webhooks are the source of truth; the checkout return page is not.
+  - **After the trial: read-only, never locked out** — your history stays yours.
+  - Seller is an individual (no GST registration yet). Whether global sales through an MoR
+    force GST registration is an open question for a CA — don't treat it as settled.
+  - Phase 0 (the known gaps) done: the target-split editor moved to the Monthly tab, where
+    it sits next to the budget it shapes (Settings keeps a pointer); UI wording is
+    Budgeted · Spent · Remaining / Over budget everywhere; transaction delete confirms;
+    `createAccount` refuses `kind = loan`, since only `createPerson` may make a ledger.
+- Earlier entries (2026-09-01 → 2026-09-03, first build through multi-user launch) archived to `docs/decisions/2026-09.md`.
 ## Status
 Fully workable and deployed at https://oykot-money.vercel.app. Home (Daily/Monthly/Yearly
 tabs) / group pages / category detail / Money / People / Settings all read and write against
@@ -172,9 +187,9 @@ Supabase, with auth and per-user isolation. Archiving, deleting, drag reordering
 icon grid are wired everywhere they apply.
 **Not built yet:** statement import or any automated entry (deliberately deferred; see the
 `merchant_rules` note above).
-**Known lint debt:** ~11 `react-hooks/set-state-in-effect` errors, all the same
-close-the-dialog-on-success pattern shared by every action dialog. Worth fixing as one
-sweep rather than one file at a time.
+**Next:** payments — Razorpay, then a Merchant of Record, in test mode (`PRODUCT.md` §13.6,
+phases 3–4). Turn on `ACCESS_ENFORCED` only once checkout works. Legal pages are drafts.
+**Lint:** clean.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

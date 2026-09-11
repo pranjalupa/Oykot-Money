@@ -9,14 +9,19 @@ import { GoogleButton } from "@/components/google-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { CurrencySelect } from "@/components/currency-select";
+import { DEFAULT_CURRENCY, type CurrencyCode } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 
 export function AuthForm({
   mode,
   googleEnabled = false,
+  defaultCurrency = DEFAULT_CURRENCY,
 }: {
   mode: "signin" | "signup";
   googleEnabled?: boolean;
+  /** Pre-selected on signup — guessed from the visitor's country. */
+  defaultCurrency?: CurrencyCode;
 }) {
   const isSignUp = mode === "signup";
   const searchParams = useSearchParams();
@@ -51,6 +56,20 @@ export function AuthForm({
       >
         <input type="hidden" name="next" value={next} />
 
+        {isSignUp && (
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="name">Name</Label>
+            <Input
+              id="name"
+              name="name"
+              autoComplete="name"
+              required
+              maxLength={80}
+              placeholder="What should we call you?"
+            />
+          </div>
+        )}
+
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="email">Email</Label>
           <Input
@@ -64,7 +83,17 @@ export function AuthForm({
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="password">Password</Label>
+          <div className="flex items-baseline justify-between gap-3">
+            <Label htmlFor="password">Password</Label>
+            {!isSignUp && (
+              <Link
+                href="/auth/forgot"
+                className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+              >
+                Forgot password?
+              </Link>
+            )}
+          </div>
           <Input
             id="password"
             name="password"
@@ -75,6 +104,16 @@ export function AuthForm({
             placeholder={isSignUp ? "At least 8 characters" : "••••••••"}
           />
         </div>
+
+        {isSignUp && (
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="currency">Currency</Label>
+            <CurrencySelect id="currency" defaultValue={defaultCurrency} />
+            <p className="text-xs text-muted-foreground">
+              What your budget is counted in. You can change it later in Settings.
+            </p>
+          </div>
+        )}
 
         {linkFailed && !state && (
           <p

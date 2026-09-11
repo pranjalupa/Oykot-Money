@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 import { Plus, PencilSimple, Warning } from "@phosphor-icons/react";
 import { toast } from "sonner";
+import { CurrencySymbol, useRegion } from "@/components/currency-provider";
 import { IconButton } from "@/components/icon-button";
 import {
   createAccount,
@@ -32,11 +33,6 @@ const KINDS = [
     hint: "A bank account, cash, or a wallet you spend from.",
   },
   {
-    key: "loan",
-    label: "Person",
-    hint: "Someone you lend to or borrow from. Tracks what they owe you.",
-  },
-  {
     key: "asset",
     label: "Asset",
     hint: "SIP, PF, emergency fund. You set the value; no transaction history.",
@@ -57,18 +53,20 @@ function ErrorNote({ error }: { error: string }) {
 
 export function NewAccountDialog() {
   const [open, setOpen] = useState(false);
+  const region = useRegion();
   const [kind, setKind] = useState<(typeof KINDS)[number]["key"]>("spending");
   const [state, action, pending] = useActionState<ActionResult | null, FormData>(
-    createAccount,
+    // Close from inside the action rather than an effect watching `state`.
+    async (prev, fd) => {
+      const res = await (createAccount)(prev, fd);
+      if (res.ok) {
+        toast.success("Account added");
+        setOpen(false);
+      }
+      return res;
+    },
     null,
   );
-
-  useEffect(() => {
-    if (state?.ok) {
-      toast.success("Account added");
-      setOpen(false);
-    }
-  }, [state]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -115,7 +113,7 @@ export function NewAccountDialog() {
               required
               autoFocus
               placeholder={
-                kind === "loan" ? "Rahul" : kind === "asset" ? "SIP" : "HDFC Savings"
+                kind === "asset" ? "SIP" : "HDFC Savings"
               }
             />
           </div>
@@ -132,12 +130,12 @@ export function NewAccountDialog() {
                 >
                   <option value="bank">Bank</option>
                   <option value="cash">Cash</option>
-                  <option value="wallet">UPI wallet</option>
+                  <option value="wallet">{region === "IN" ? "UPI wallet" : "Wallet"}</option>
                   <option value="credit_card">Credit card</option>
                 </select>
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="acc-opening">Balance right now (₹)</Label>
+                <Label htmlFor="acc-opening">Balance right now (<CurrencySymbol />)</Label>
                 <Input
                   id="acc-opening"
                   name="openingBalance"
@@ -150,7 +148,7 @@ export function NewAccountDialog() {
 
           {kind === "asset" && (
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="acc-value">What it&rsquo;s worth today (₹)</Label>
+              <Label htmlFor="acc-value">What it&rsquo;s worth today (<CurrencySymbol />)</Label>
               <Input
                 id="acc-value"
                 name="currentValue"
@@ -162,7 +160,7 @@ export function NewAccountDialog() {
 
           <IconPicker
             id="acc-icon"
-            defaultValue={kind === "loan" ? "HandCoins" : "Bank"}
+            defaultValue={kind === "asset" ? "ChartLineUp" : "Bank"}
           />
 
           {state && !state.ok && <ErrorNote error={state.error} />}
@@ -193,16 +191,17 @@ export function EditAccountDialog({
   const isAsset = account.kind === "asset";
 
   const [state, action, pending] = useActionState<ActionResult | null, FormData>(
-    isAsset ? updateAssetValue : updateAccount,
+    // Close from inside the action rather than an effect watching `state`.
+    async (prev, fd) => {
+      const res = await (isAsset ? updateAssetValue : updateAccount)(prev, fd);
+      if (res.ok) {
+        toast.success(isAsset ? "Value updated" : "Account updated");
+        setOpen(false);
+      }
+      return res;
+    },
     null,
   );
-
-  useEffect(() => {
-    if (state?.ok) {
-      toast.success(isAsset ? "Value updated" : "Account updated");
-      setOpen(false);
-    }
-  }, [state, isAsset]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -232,7 +231,7 @@ export function EditAccountDialog({
 
           {isAsset ? (
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor={`val-${account.id}`}>Current value (₹)</Label>
+              <Label htmlFor={`val-${account.id}`}>Current value (<CurrencySymbol />)</Label>
               <Input
                 id={`val-${account.id}`}
                 name="currentValue"
@@ -255,7 +254,7 @@ export function EditAccountDialog({
 
               {account.kind === "spending" && (
                 <div className="flex flex-col gap-1.5">
-                  <Label htmlFor={`ob-${account.id}`}>Opening balance (₹)</Label>
+                  <Label htmlFor={`ob-${account.id}`}>Opening balance (<CurrencySymbol />)</Label>
                   <Input
                     id={`ob-${account.id}`}
                     name="openingBalance"

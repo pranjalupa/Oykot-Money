@@ -10,11 +10,13 @@ import {
   transactions,
   recurringRules,
   people,
+  netWorthSnapshots,
   DEFAULT_MONTH,
   type GroupKey,
   type PersonKind,
 } from "@/db/schema";
-import { DEFAULT_TARGETS, monthBounds } from "@/lib/targets";
+import { DEFAULT_TARGETS, monthBounds, shiftMonth } from "@/lib/targets";
+import { currentMonthIn, dayOfMonthIn } from "@/lib/dates";
 
 export { DEFAULT_TARGETS, GROUP_META, SPEND_GROUPS } from "@/lib/targets";
 export {
@@ -332,7 +334,11 @@ export async function listTransactions(
  * the Needs+Wants plan divided by the days remaining. Investments are excluded
  * — that money is meant to leave.
  */
-export async function getDailyView(userId: string, month: string) {
+export async function getDailyView(
+  userId: string,
+  month: string,
+  timeZone?: string,
+) {
   const { start, end } = monthBounds(month);
 
   const perDay = await db
@@ -361,10 +367,9 @@ export async function getDailyView(userId: string, month: string) {
 
   const [y, m] = month.split("-").map(Number);
   const lastDay = new Date(y, m, 0).getDate();
-  const now = new Date();
-  const isCurrentMonth = now.getFullYear() === y && now.getMonth() + 1 === m;
+  const isCurrentMonth = month === currentMonthIn(timeZone);
   const daysLeft = isCurrentMonth
-    ? Math.max(lastDay - now.getDate() + 1, 1)
+    ? Math.max(lastDay - dayOfMonthIn(timeZone) + 1, 1)
     : lastDay;
 
   const remaining = dailyBudget - dailySpent;
@@ -764,5 +769,141 @@ export async function listPeople(userId: string): Promise<PersonRow[]> {
     accountId: r.accountId,
     balanceMinor: r.accountId ? (byAccount.get(r.accountId) ?? 0) : 0,
     hasHistory: !!r.accountId && withHistory.has(r.accountId),
+  }));
+}
+
+/* -------------------------------------------------------------------------- */
+/* Trends                                                                      */
+/* -------------------------------------------------------------------------- */
+
+export type TrendPoint = {
+  month: string;
+  budgetedMinor: number;
+  spentMinor: number;
+  /** Spent came from assume-spent, not transactions. */
+  assumed: boolean;
+};
+
+/**
+ * Budgeted against spent for one category over the last `count` months,
+ * ending at `endMonth`. Follows the same rules as the month view: children's
+ * spending rolls up, only children that don't budget separately roll their
+ * budget up, and assume-spent fills a month with no transactions.
+ *
+ * Two grouped queries rather than `getMonthSummary` six times over.
+ */
+export async function getCategoryTrend(
+  userId: string,
+  categoryId: string,
+  endMonth: string,
+  count = 6,
+): Promise<TrendPoint[]> {
+  const months = Array.from({ length: count }, (_, i) => shiftMonth(endMonth, i - count + 1));
+
+  const [self] = await db
+    .select({ assumeSpent: categories.assumeSpent })
+    .from(categories)
+    .where(and(eq(categories.id, categoryId), eq(categories.userId, userId)))
+    .limit(1);
+  if (!self) return [];
+
+  const kids = await db
+    .select({ id: categories.id, budgetsSeparately: categories.budgetsSeparately })
+    .from(categories)
+    .where(and(eq(categories.userId, userId), eq(categories.parentId, categoryId)));
+  const spendIds = [categoryId, ...kids.map((k) => k.id)];
+  const budgetIds = [categoryId, ...kids.filter((k) => !k.budgetsSeparately).map((k) => k.id)];
+
+  const spent = await db
+    .select({
+      month: sql<string>`to_char(${transactions.date}, 'YYYY-MM')`.as("month"),
+      total: sql<string>`sum(${transactions.amountMinor})`.as("total"),
+    })
+    .from(transactions)
+    .where(
+      and(
+        eq(transactions.userId, userId),
+        inArray(transactions.categoryId, spendIds),
+        gte(transactions.date, `${months[0]}-01`),
+        lte(transactions.date, monthBounds(endMonth).end),
+      ),
+    )
+    .groupBy(sql`to_char(${transactions.date}, 'YYYY-MM')`);
+
+  const budgeted = await db
+    .select({
+      month: budgetLines.month,
+      total: sql<string>`sum(${budgetLines.plannedMinor})`.as("total"),
+    })
+    .from(budgetLines)
+    .where(
+      and(
+        eq(budgetLines.userId, userId),
+        inArray(budgetLines.categoryId, budgetIds),
+        inArray(budgetLines.month, months),
+      ),
+    )
+    .groupBy(budgetLines.month);
+
+  const spentBy = new Map(spent.map((r) => [r.month, Number(r.total ?? 0)]));
+  const budgetBy = new Map(budgeted.map((r) => [r.month, Number(r.total ?? 0)]));
+
+  return months.map((month) => {
+    const budgetedMinor = budgetBy.get(month) ?? 0;
+    const transacted = spentBy.get(month) ?? 0;
+    const assumed = self.assumeSpent && transacted === 0 && budgetedMinor > 0;
+    return {
+      month,
+      budgetedMinor,
+      spentMinor: assumed ? budgetedMinor : transacted,
+      assumed,
+    };
+  });
+}
+
+/* -------------------------------------------------------------------------- */
+/* Net worth history                                                           */
+/* -------------------------------------------------------------------------- */
+
+type NetWorth = Awaited<ReturnType<typeof getNetWorth>>;
+
+/** Overwrite this month's snapshot with the latest figures. */
+export async function saveNetWorthSnapshot(userId: string, month: string, net: NetWorth) {
+  const values = {
+    totalMinor: net.total,
+    cashMinor: net.cash,
+    assetsMinor: net.assets,
+    owedToYouMinor: net.owedToYou,
+    youOweMinor: net.youOwe,
+    updatedAt: new Date(),
+  };
+  await db
+    .insert(netWorthSnapshots)
+    .values({ userId, month, ...values })
+    .onConflictDoUpdate({
+      target: [netWorthSnapshots.userId, netWorthSnapshots.month],
+      set: values,
+    });
+}
+
+/** Compute and record. For callers that don't already have the figures. */
+export async function recordNetWorth(userId: string, month: string) {
+  await saveNetWorthSnapshot(userId, month, await getNetWorth(userId));
+}
+
+export async function getNetWorthHistory(userId: string, count = 12) {
+  const rows = await db
+    .select()
+    .from(netWorthSnapshots)
+    .where(eq(netWorthSnapshots.userId, userId))
+    .orderBy(desc(netWorthSnapshots.month))
+    .limit(count);
+  return rows.reverse().map((r) => ({
+    month: r.month,
+    totalMinor: Number(r.totalMinor),
+    cashMinor: Number(r.cashMinor),
+    assetsMinor: Number(r.assetsMinor),
+    owedToYouMinor: Number(r.owedToYouMinor),
+    youOweMinor: Number(r.youOweMinor),
   }));
 }

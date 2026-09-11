@@ -1,36 +1,40 @@
 import Link from "next/link";
 import { ArrowSquareOut } from "@phosphor-icons/react/dist/ssr";
-import { TargetEditor } from "@/components/target-editor";
 import { CategoryManager } from "@/components/category-manager";
 import { RecurringList } from "@/components/recurring-list";
 import {
-  currentMonth,
-  getTargets,
-  hasMonthOverride,
-  isValidMonth,
   listCategories,
   listRecurring,
-  monthLabel,
 } from "@/lib/budget";
-import { requireUser } from "@/lib/auth";
+import { requireUser, getProfile, getUserPrefs } from "@/lib/auth";
+import { getAccess } from "@/lib/access";
+import { formatDay } from "@/lib/dates";
+import { ProfileForm } from "@/components/profile-form";
+import { AccountData } from "@/components/account-data";
+import { DEFAULT_CURRENCY, isCurrency } from "@/lib/currency";
+import { DEFAULT_REGION, isRegion } from "@/lib/region";
 
 export const dynamic = "force-dynamic";
 
-export default async function SettingsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ month?: string }>;
-}) {
+export default async function SettingsPage() {
   const user = await requireUser();
-  const { month: monthParam } = await searchParams;
-  const month = isValidMonth(monthParam) ? monthParam : currentMonth();
 
-  const [targets, override, categories, recurring] = await Promise.all([
-    getTargets(user.id, month),
-    hasMonthOverride(user.id, month),
+  const [categories, recurring, profile] = await Promise.all([
     listCategories(user.id),
     listRecurring(user.id),
+    getProfile(),
   ]);
+  const [access, { locale }] = await Promise.all([getAccess(), getUserPrefs()]);
+  const planLabel =
+    access?.state === "complimentary"
+      ? "Complimentary — free for good"
+      : access?.state === "active"
+        ? `Paid · ${access.plan ?? "monthly"}`
+        : access?.state === "trial"
+          ? `Free trial · ends ${formatDay(access.trialEndsAt.toISOString(), locale, { day: "numeric", month: "long" })}`
+          : access?.state === "grace"
+            ? "Payment problem — update your payment"
+            : "Trial ended";
 
   return (
     <div className="flex flex-col gap-8">
@@ -42,13 +46,53 @@ export default async function SettingsPage({
       </header>
 
       <section className="rounded-xl border border-border bg-card p-5">
-        <h2 className="font-heading text-lg font-bold">Target split</h2>
+        <h2 className="font-heading text-lg font-bold">Profile</h2>
         <p className="mt-0.5 mb-4 text-sm text-muted-foreground">
-          How you want income divided. The classic rule is 50/30/20 — change it
-          to whatever actually fits. Editing {monthLabel(month)} only bends that
-          month.
+          Your name, the currency your budget is counted in, and how dates read.
         </p>
-        <TargetEditor targets={targets} month={month} hasOverride={override} />
+        <ProfileForm
+          name={profile?.displayName ?? ""}
+          region={
+            profile && isRegion(profile.region) ? profile.region : DEFAULT_REGION
+          }
+          currency={
+            profile && isCurrency(profile.currency)
+              ? profile.currency
+              : DEFAULT_CURRENCY
+          }
+        />
+      </section>
+
+      <section className="rounded-xl border border-border bg-card p-5">
+        <h2 className="font-heading text-lg font-bold">Billing</h2>
+        <p className="mt-0.5 text-sm text-muted-foreground">{planLabel}</p>
+        {access && access.state !== "complimentary" && access.state !== "active" && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            Payments aren&rsquo;t live yet, so there&rsquo;s nothing to pay — you keep full access
+            until they are.
+          </p>
+        )}
+        <Link
+          href="/pricing"
+          className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium underline underline-offset-4"
+        >
+          See plans
+          <ArrowSquareOut size={14} weight="bold" />
+        </Link>
+      </section>
+
+      <section className="rounded-xl border border-border bg-card p-5">
+        <h2 className="font-heading text-lg font-bold">Target split</h2>
+        <p className="mt-0.5 text-sm text-muted-foreground">
+          Set on the Monthly tab now, next to the budget it shapes.
+        </p>
+        <Link
+          href="/?view=month"
+          className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium underline underline-offset-4"
+        >
+          Open Monthly
+          <ArrowSquareOut size={14} weight="bold" />
+        </Link>
       </section>
 
       <section className="rounded-xl border border-border bg-card p-5">
@@ -91,6 +135,13 @@ export default async function SettingsPage({
             <ArrowSquareOut size={14} weight="bold" />
           </Link>
         </div>
+      </section>
+      <section className="rounded-xl border border-border bg-card p-5">
+        <h2 className="font-heading text-lg font-bold">Your data</h2>
+        <p className="mt-0.5 mb-4 text-sm text-muted-foreground">
+          Download everything you&rsquo;ve entered, or delete it all. Both work whatever your plan.
+        </p>
+        <AccountData />
       </section>
     </div>
   );

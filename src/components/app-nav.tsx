@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import {
   ChartPieSlice,
   Gear,
@@ -97,8 +97,12 @@ function isActive(pathname: string, href: string) {
 
 function ThemeToggle({ expanded = false }: { expanded?: boolean }) {
   const { resolvedTheme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  // True on the client, false during SSR — without an effect that renders twice.
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
   // Until mounted we don't know the resolved theme; render a stable icon
   // rather than guessing and flipping on hydration.
@@ -185,12 +189,24 @@ function SignOutButton({ expanded = false }: { expanded?: boolean }) {
   );
 }
 
-export function AppNav({ email }: { email: string | null }) {
+export function AppNav({
+  email,
+  name,
+}: {
+  email: string | null;
+  name: string | null;
+}) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
   // A drawer that stays open after you navigate hides the page you asked for.
-  useEffect(() => setOpen(false), [pathname]);
+  // Close the drawer when the route changes — adjusted during render, so
+  // there is no frame where the new page shows under an open drawer.
+  const [lastPath, setLastPath] = useState(pathname);
+  if (pathname !== lastPath) {
+    setLastPath(pathname);
+    setOpen(false);
+  }
 
   return (
     <>
@@ -208,10 +224,15 @@ export function AppNav({ email }: { email: string | null }) {
         <div className="mt-4 flex flex-col gap-0.5 border-t border-border pt-3">
           <ThemeToggle expanded />
           <SignOutButton expanded />
-          {email && (
-            <p className="truncate px-2.5 pt-2 text-[11px] text-muted-foreground">
-              {email}
-            </p>
+          {(name || email) && (
+            <div className="min-w-0 px-2.5 pt-2">
+              {name && (
+                <p className="truncate text-xs font-medium text-foreground">{name}</p>
+              )}
+              {email && (
+                <p className="truncate text-[11px] text-muted-foreground">{email}</p>
+              )}
+            </div>
           )}
         </div>
       </aside>
@@ -237,10 +258,15 @@ export function AppNav({ email }: { email: string | null }) {
                 <div className="mt-4 flex flex-col gap-0.5 border-t border-border pt-3">
                   <ThemeToggle expanded />
                   <SignOutButton expanded />
-                  {email && (
-                    <p className="truncate px-2.5 pt-2 text-[11px] text-muted-foreground">
-                      {email}
-                    </p>
+                  {(name || email) && (
+                    <div className="min-w-0 px-2.5 pt-2">
+                      {name && (
+                        <p className="truncate text-xs font-medium text-foreground">{name}</p>
+                      )}
+                      {email && (
+                        <p className="truncate text-[11px] text-muted-foreground">{email}</p>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>

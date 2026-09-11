@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { currentMonthIn, todayIn } from "@/lib/dates";
 import { and, eq } from "drizzle-orm";
 import { ArrowLeft } from "@phosphor-icons/react/dist/ssr";
 import { db } from "@/db";
@@ -7,21 +8,21 @@ import { categories } from "@/db/schema";
 import { Money, BudgetBar } from "@/components/money";
 import { CategoryIcon } from "@/components/category-icon";
 import { TransactionList } from "@/components/transaction-list";
+import { CategoryTrendChart } from "@/components/charts/trend-charts";
 import { TransactionDialog } from "@/components/transaction-dialog";
 import { MonthSwitcher } from "@/components/month-switcher";
 import {
-  currentMonth,
   getMonthSummary,
   GROUP_META,
   isValidMonth,
   listAccounts,
   listCategories,
   listTransactions,
-  today,
+  getCategoryTrend,
 } from "@/lib/budget";
 import { monthBounds } from "@/lib/targets";
 import { formatMoney } from "@/lib/money";
-import { requireUser } from "@/lib/auth";
+import { requireUser, getUserCurrency, getUserPrefs } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +35,7 @@ export default async function CategoryPage({
 }) {
   const { id } = await params;
   const user = await requireUser();
+  const { timeZone } = await getUserPrefs();
 
   const [cat] = await db
     .select()
@@ -44,14 +46,16 @@ export default async function CategoryPage({
   if (!cat) notFound();
 
   const { month: monthParam } = await searchParams;
-  const month = isValidMonth(monthParam) ? monthParam : currentMonth();
+  const month = isValidMonth(monthParam) ? monthParam : currentMonthIn(timeZone);
   const { start, end } = monthBounds(month);
 
-  const [summary, txs, accounts, allCategories] = await Promise.all([
+  const [summary, txs, accounts, allCategories, currency, trend] = await Promise.all([
     getMonthSummary(user.id, month),
     listTransactions(user.id, { from: start, to: end, categoryId: id }),
     listAccounts(user.id),
     listCategories(user.id),
+    getUserCurrency(),
+    getCategoryTrend(user.id, id, month),
   ]);
 
   // Find this category in the assembled tree — it may be a child.
@@ -96,7 +100,7 @@ export default async function CategoryPage({
           <TransactionDialog
             accounts={accounts}
             categories={allCategories}
-            defaultDate={today()}
+            defaultDate={todayIn(timeZone)}
             defaultCategoryId={id}
           />
         </div>
@@ -112,13 +116,13 @@ export default async function CategoryPage({
               <Money minor={actual} />
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
-              of <Money minor={planned} tone="muted" /> planned
+              of <Money minor={planned} tone="muted" /> budgeted
             </p>
           </div>
           {!isIncome && planned > 0 && (
             <div className="text-right">
               <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
-                {diff >= 0 ? "Left" : "Over"}
+                {diff >= 0 ? "Remaining" : "Over budget"}
               </p>
               <p className="mt-1 font-heading text-2xl font-bold">
                 <Money
@@ -139,16 +143,19 @@ export default async function CategoryPage({
         )}
       </section>
 
+      <CategoryTrendChart points={trend} isIncome={isIncome} />
+
       <section className="overflow-hidden rounded-xl border border-border bg-card">
         <div className="border-b border-border px-4 py-3">
           <h2 className="font-heading text-base font-bold">Transactions</h2>
         </div>
         <TransactionList
           transactions={txs}
+          accounts={accounts}
           categories={allCategories}
           emptyNote={
             assumed
-              ? `Nothing logged. The ${formatMoney(actual)} above is the budgeted amount, counted automatically. Add a transaction and the real figure replaces it.`
+              ? `Nothing logged. The ${formatMoney(actual, { currency })} above is the budgeted amount, counted automatically. Add a transaction and the real figure replaces it.`
               : "Nothing in this category this month."
           }
         />

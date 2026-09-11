@@ -152,6 +152,16 @@
   --chart-3: #c1543f;
   --chart-4: #98cdb9;
   --chart-5: #8c897e;
+  /* Chart-only shades of the group hues. The UI colours above stay as they
+     are; these are stepped to pass the chart palette checks (lightness band,
+     chroma floor, colour-blind separation, 3:1 on the card). Order in a stack
+     is always Needs, Wants, Investments. */
+  --chart-needs: #1c7049;
+  --chart-wants: #968f15;
+  --chart-investments: #19a499;
+  /* The series that matters, and the grey context it's read against. */
+  --chart-accent: #4a4843;
+  --chart-neutral: #8c897e;
 
   --sidebar: #ffffff;
   --sidebar-foreground: #272727;
@@ -199,6 +209,11 @@
   --chart-3: #e2988a;
   --chart-4: #adaaa0;
   --chart-5: #f7f7f7;
+  --chart-needs: #278463;
+  --chart-wants: #62a611;
+  --chart-investments: #0aa4aa;
+  --chart-accent: #e6e3db;
+  --chart-neutral: #8c897e;
 
   --sidebar: #272727;
   --sidebar-foreground: #f7f7f7;

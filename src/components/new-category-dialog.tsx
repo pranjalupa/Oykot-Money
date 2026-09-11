@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 import { Plus, Warning } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { createCategory, type ActionResult } from "@/app/actions";
@@ -27,18 +27,20 @@ export function NewCategoryDialog({
 }) {
   const [open, setOpen] = useState(false);
   const [parentId, setParentId] = useState("");
+  // Close (and reset the parent picker) from inside the action rather than an
+  // effect watching `state`.
   const [state, action, pending] = useActionState<ActionResult | null, FormData>(
-    createCategory,
+    async (prev, fd) => {
+      const res = await createCategory(prev, fd);
+      if (res.ok) {
+        toast.success("Category added");
+        setOpen(false);
+        setParentId("");
+      }
+      return res;
+    },
     null,
   );
-
-  useEffect(() => {
-    if (state?.ok) {
-      toast.success("Category added");
-      setOpen(false);
-      setParentId("");
-    }
-  }, [state]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

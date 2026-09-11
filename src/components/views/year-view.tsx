@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { Money } from "@/components/money";
 import { getYearSummary } from "@/lib/budget";
-import { requireUser } from "@/lib/auth";
+import { requireUser, getUserPrefs } from "@/lib/auth";
+import { formatMonthShort } from "@/lib/dates";
+import { IncomeExpenseChart, SavingsChart } from "@/components/charts/yearly-charts";
 import { formatCompact, percentOf } from "@/lib/money";
 
 const GROUPS = [
@@ -12,13 +14,23 @@ const GROUPS = [
 
 export async function YearView({ year }: { year: number }) {
   const user = await requireUser();
-  const summary = await getYearSummary(user.id, year);
+  const [summary, { currency, locale }] = await Promise.all([
+    getYearSummary(user.id, year),
+    getUserPrefs(),
+  ]);
   const peak = Math.max(
     ...summary.byMonth.map((m) => Math.max(m.expense, m.income)),
     1,
   );
 
   const savingsRate = percentOf(summary.totals.saved, summary.totals.income);
+
+  const chartMonths = summary.byMonth.map((m) => ({
+    month: m.month,
+    income: m.income,
+    expense: m.expense,
+    saved: m.saved,
+  }));
 
   return (
     <div className="flex flex-col gap-6">
@@ -37,6 +49,11 @@ export async function YearView({ year }: { year: number }) {
         </div>
       </section>
 
+      <div className="grid gap-4 lg:grid-cols-2">
+        <IncomeExpenseChart months={chartMonths} />
+        <SavingsChart months={chartMonths} />
+      </div>
+
       {/* Month-by-month ---------------------------------------------------- */}
       <section className="overflow-hidden rounded-xl border border-border bg-card">
         <div className="border-b border-border px-4 py-3">
@@ -47,11 +64,11 @@ export async function YearView({ year }: { year: number }) {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[34rem] text-sm">
+          <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border text-[11px] tracking-wide text-muted-foreground uppercase">
                 <th className="px-4 py-2 text-left font-semibold">Month</th>
-                <th className="px-4 py-2 text-left font-semibold">Spending</th>
+                <th className="hidden px-4 py-2 text-left font-semibold sm:table-cell">Spending</th>
                 <th className="px-4 py-2 text-right font-semibold">Spent</th>
                 <th className="px-4 py-2 text-right font-semibold">Income</th>
                 <th className="px-4 py-2 text-right font-semibold">Saved</th>
@@ -70,17 +87,15 @@ export async function YearView({ year }: { year: number }) {
                         href={`/?month=${m.month}`}
                         className="hover:underline"
                       >
-                        {new Date(`${m.month}-01`).toLocaleDateString("en-IN", {
-                          month: "short",
-                        })}
+                        {formatMonthShort(m.month, locale)}
                       </Link>
                     </td>
-                    <td className="px-4 py-2.5">
+                    <td className="hidden px-4 py-2.5 sm:table-cell">
                       <div className="flex h-2.5 w-full min-w-24 overflow-hidden rounded-full bg-muted">
                         {GROUPS.map((g) => (
                           <div
                             key={g.key}
-                            title={`${g.label}: ${formatCompact(m[g.key])}`}
+                            title={`${g.label}: ${formatCompact(m[g.key], currency)}`}
                             style={{
                               width: `${(m[g.key] / peak) * 100}%`,
                               backgroundColor: `var(--${g.key})`,
@@ -90,10 +105,10 @@ export async function YearView({ year }: { year: number }) {
                       </div>
                     </td>
                     <td className="tabular px-4 py-2.5 text-right">
-                      {active ? formatCompact(m.expense) : "—"}
+                      {active ? formatCompact(m.expense, currency) : "—"}
                     </td>
                     <td className="tabular px-4 py-2.5 text-right">
-                      {active ? formatCompact(m.income) : "—"}
+                      {active ? formatCompact(m.income, currency) : "—"}
                     </td>
                     <td className="tabular px-4 py-2.5 text-right">
                       {active ? (

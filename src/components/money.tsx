@@ -1,5 +1,8 @@
+"use client";
+
 import { cn } from "@/lib/utils";
 import { formatMoney } from "@/lib/money";
+import { useCurrency } from "@/components/currency-provider";
 
 /**
  * Every amount in the app goes through here, so figures always line up in a
@@ -16,6 +19,7 @@ export function Money({
   tone?: "default" | "muted" | "positive" | "negative" | "auto";
   signed?: boolean;
 }) {
+  const currency = useCurrency();
   const resolved =
     tone === "auto" ? (minor < 0 ? "negative" : minor > 0 ? "positive" : "muted") : tone;
 
@@ -29,7 +33,7 @@ export function Money({
         className,
       )}
     >
-      {formatMoney(minor, { signed })}
+      {formatMoney(minor, { signed, currency })}
     </span>
   );
 }

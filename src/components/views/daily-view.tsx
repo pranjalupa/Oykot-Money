@@ -1,27 +1,39 @@
 import { Money } from "@/components/money";
-import { TransactionList } from "@/components/transaction-list";
+import { TransactionBrowser } from "@/components/transaction-browser";
 import {
   getDailyView,
+  listAccounts,
   listCategories,
   listTransactions,
 } from "@/lib/budget";
 import { monthBounds } from "@/lib/targets";
-import { requireUser } from "@/lib/auth";
+import { requireUser, getUserPrefs } from "@/lib/auth";
+import { currentMonthIn, dayOfMonthIn } from "@/lib/dates";
+import { DailySpendChart, SpendPaceChart } from "@/components/charts/daily-charts";
 import { prepareMonth } from "@/lib/month-setup";
 
 export async function DailyView({ month }: { month: string }) {
   const user = await requireUser();
+  const { timeZone } = await getUserPrefs();
   const { start, end } = monthBounds(month);
 
   await prepareMonth(user.id, month);
 
-  const [daily, txs, categories] = await Promise.all([
-    getDailyView(user.id, month),
+  const [daily, txs, accounts, categories] = await Promise.all([
+    getDailyView(user.id, month, timeZone),
     listTransactions(user.id, { from: start, to: end, limit: 300 }),
+    listAccounts(user.id),
     listCategories(user.id),
   ]);
 
-  const busiest = daily.days.reduce((max, d) => Math.max(max, d.totalMinor), 0);
+
+  // Draw actuals up to today this month, the whole month in the past, and
+  // nothing for a month that hasn't started.
+  const throughDay = daily.isCurrentMonth
+    ? dayOfMonthIn(timeZone)
+    : month < currentMonthIn(timeZone)
+      ? 31
+      : 0;
 
   return (
     <div className="flex flex-col gap-6">
@@ -42,7 +54,7 @@ export async function DailyView({ month }: { month: string }) {
 
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
-            Left in plan
+            Remaining
           </p>
           <p className="mt-1.5 font-heading text-2xl font-bold">
             <Money minor={daily.remaining} tone="auto" />
@@ -60,39 +72,20 @@ export async function DailyView({ month }: { month: string }) {
             <Money minor={daily.dailySpent} />
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            of <Money minor={daily.dailyBudget} tone="muted" /> planned
+            of <Money minor={daily.dailyBudget} tone="muted" /> budgeted
           </p>
         </div>
       </section>
 
-      {daily.days.length > 0 && (
-        <section className="rounded-xl border border-border bg-card p-4">
-          <h2 className="mb-3 font-heading text-base font-bold">By day</h2>
-          <ul className="flex flex-col gap-1.5">
-            {daily.days.map((d) => (
-              <li key={d.date} className="flex items-center gap-3">
-                <span className="tabular w-24 shrink-0 text-xs text-muted-foreground">
-                  {new Date(d.date).toLocaleDateString("en-IN", {
-                    day: "numeric",
-                    month: "short",
-                  })}
-                </span>
-                <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
-                  <div
-                    className="h-full rounded-full bg-needs"
-                    style={{
-                      width: `${busiest ? (d.totalMinor / busiest) * 100 : 0}%`,
-                    }}
-                  />
-                </div>
-                <span className="w-24 shrink-0 text-right text-xs font-medium">
-                  <Money minor={d.totalMinor} />
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      <SpendPaceChart
+        month={month}
+        days={daily.days}
+        budgetMinor={daily.dailyBudget}
+        spentMinor={daily.dailySpent}
+        throughDay={throughDay}
+      />
+
+      <DailySpendChart month={month} days={daily.days} budgetMinor={daily.dailyBudget} />
 
       <section className="overflow-hidden rounded-xl border border-border bg-card">
         <div className="border-b border-border px-4 py-3">
@@ -101,8 +94,9 @@ export async function DailyView({ month }: { month: string }) {
             Everything logged this month.
           </p>
         </div>
-        <TransactionList
+        <TransactionBrowser
           transactions={txs}
+          accounts={accounts}
           categories={categories}
           emptyNote="Nothing logged this month yet."
         />

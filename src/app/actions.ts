@@ -11,6 +11,10 @@ import {
   transactions,
   recurringRules,
   people,
+  profiles,
+  subscriptions,
+  netWorthSnapshots,
+  merchantRules,
   GROUP_KEYS,
   ACCOUNT_KINDS,
   PERSON_KINDS,
@@ -18,8 +22,15 @@ import {
   type GroupKey,
   type PersonKind,
 } from "@/db/schema";
-import { requireUser } from "@/lib/auth";
+import { requireUser, getUserPrefs } from "@/lib/auth";
+import { requireWriter } from "@/lib/access";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { todayIn } from "@/lib/dates";
 import { toMinor } from "@/lib/money";
+import { isCurrency } from "@/lib/currency";
+import { isRegion, isTimeZone } from "@/lib/region";
 import { isValidDate, isValidMonth, SPEND_GROUPS } from "@/lib/targets";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
@@ -52,9 +63,14 @@ async function ownsAccount(userId: string, id: string) {
 }
 
 function parseAmount(raw: FormDataEntryValue | null): number | null {
-  const n = Number(String(raw ?? "").replace(/[,\s₹]/g, ""));
+  const n = Number(String(raw ?? "").replace(/[^\d.-]/g, ""));
   if (!Number.isFinite(n) || n < 0) return null;
   return toMinor(n);
+}
+
+/** "Today" for the signed-in user, in their timezone. */
+async function userToday() {
+  return todayIn((await getUserPrefs()).timeZone);
 }
 
 function refresh() {
@@ -65,12 +81,25 @@ function refresh() {
 /* Transactions                                                                */
 /* -------------------------------------------------------------------------- */
 
-export async function createTransaction(
-  _prev: ActionResult | null,
-  formData: FormData,
-): Promise<ActionResult> {
-  const user = await requireUser();
+type TransactionInput = {
+  date: string;
+  amountMinor: number;
+  direction: "outflow" | "inflow" | "transfer";
+  accountId: string;
+  counterAccountId: string | null;
+  categoryId: string | null;
+  merchant: string | null;
+  note: string | null;
+};
 
+/**
+ * Validation shared by add and edit, so an edit can never save something add
+ * would have refused — the account, type and category rules are the same.
+ */
+async function readTransaction(
+  userId: string,
+  formData: FormData,
+): Promise<TransactionInput | { error: string }> {
   const date = String(formData.get("date") ?? "");
   const direction = String(formData.get("direction") ?? "outflow");
   const accountId = String(formData.get("accountId") ?? "");
@@ -78,75 +107,79 @@ export async function createTransaction(
   const rawCounter = String(formData.get("counterAccountId") ?? "");
   const amountMinor = parseAmount(formData.get("amount"));
 
-  if (!isValidDate(date)) return fail("Pick a valid date.");
+  if (!isValidDate(date)) return { error: "Pick a valid date." };
   if (amountMinor === null || amountMinor === 0)
-    return fail("Enter an amount greater than zero.");
-  if (!["outflow", "inflow", "transfer"].includes(direction))
-    return fail("Unknown transaction type.");
-  if (!accountId || !(await ownsAccount(user.id, accountId)))
-    return fail("Pick an account.");
+    return { error: "Enter an amount greater than zero." };
+  if (direction !== "outflow" && direction !== "inflow" && direction !== "transfer")
+    return { error: "Unknown transaction type." };
+  if (!accountId || !(await ownsAccount(userId, accountId)))
+    return { error: "Pick an account." };
 
-  const counterAccountId = rawCounter || null;
-  if (counterAccountId && !(await ownsAccount(user.id, counterAccountId)))
-    return fail("Pick a valid destination account.");
+  // Only a transfer has a far end; a stale value from a switched tab is dropped.
+  const counterAccountId = direction === "transfer" ? rawCounter || null : null;
+  if (counterAccountId && !(await ownsAccount(userId, counterAccountId)))
+    return { error: "Pick a valid destination account." };
   if (counterAccountId === accountId)
-    return fail("Pick two different accounts for a transfer.");
+    return { error: "Pick two different accounts for a transfer." };
 
   let categoryId = rawCategory || null;
-  if (categoryId && !(await ownsCategory(user.id, categoryId)))
-    return fail("Pick a valid category.");
+  if (categoryId && !(await ownsCategory(userId, categoryId)))
+    return { error: "Pick a valid category." };
 
   // The rule from the data model: only a spending↔spending move skips a
   // category. Anything else — including lending to a person — needs one.
   if (direction === "transfer") {
-    if (!counterAccountId) return fail("A transfer needs a destination account.");
-    const [from] = await db
-      .select({ kind: accounts.kind })
+    if (!counterAccountId) return { error: "A transfer needs a destination account." };
+    const kinds = await db
+      .select({ id: accounts.id, kind: accounts.kind })
       .from(accounts)
-      .where(eq(accounts.id, accountId));
-    const [to] = await db
-      .select({ kind: accounts.kind })
-      .from(accounts)
-      .where(eq(accounts.id, counterAccountId));
-
-    if (from?.kind === "spending" && to?.kind === "spending") {
+      .where(inArray(accounts.id, [accountId, counterAccountId]));
+    const kindOf = (id: string) => kinds.find((k) => k.id === id)?.kind;
+    if (kindOf(accountId) === "spending" && kindOf(counterAccountId) === "spending") {
       categoryId = null; // invisible to the budget, by design
     } else if (!categoryId) {
-      return fail("This transfer still needs a category.");
+      return { error: "This transfer still needs a category." };
     }
   } else if (!categoryId) {
-    return fail("Pick a category.");
+    return { error: "Pick a category." };
   }
 
-  const merchant = String(formData.get("merchant") ?? "").trim() || null;
-  const note = String(formData.get("note") ?? "").trim() || null;
-
-  await db.insert(transactions).values({
-    userId: user.id,
+  return {
     date,
     amountMinor,
-    direction: direction as "outflow" | "inflow" | "transfer",
+    direction,
     accountId,
     counterAccountId,
     categoryId,
-    merchant,
-    note,
-  });
+    merchant: String(formData.get("merchant") ?? "").trim() || null,
+    note: String(formData.get("note") ?? "").trim() || null,
+  };
+}
+
+export async function createTransaction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const user = await requireWriter();
+  const tx = await readTransaction(user.id, formData);
+  if ("error" in tx) return fail(tx.error);
+
+  await db.insert(transactions).values({ userId: user.id, ...tx });
 
   // "Repeat monthly" saves a template alongside the transaction. It's marked
   // as already run for this month, so today's entry isn't duplicated.
   if (formData.get("recurring") === "on") {
     await db.insert(recurringRules).values({
       userId: user.id,
-      amountMinor,
-      direction: direction as "outflow" | "inflow" | "transfer",
-      accountId,
-      counterAccountId,
-      categoryId,
-      merchant,
-      note,
-      dayOfMonth: Number(date.slice(8, 10)) || 1,
-      lastRunMonth: date.slice(0, 7),
+      amountMinor: tx.amountMinor,
+      direction: tx.direction,
+      accountId: tx.accountId,
+      counterAccountId: tx.counterAccountId,
+      categoryId: tx.categoryId,
+      merchant: tx.merchant,
+      note: tx.note,
+      dayOfMonth: Number(tx.date.slice(8, 10)) || 1,
+      lastRunMonth: tx.date.slice(0, 7),
     });
   }
 
@@ -154,11 +187,15 @@ export async function createTransaction(
   return { ok: true };
 }
 
+/**
+ * Edit anything, including the account and the type. That used to mean
+ * deleting and re-adding; both balances now move in one step instead.
+ */
 export async function updateTransaction(
   _prev: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
-  const user = await requireUser();
+  const user = await requireWriter();
   const id = String(formData.get("id") ?? "");
   if (!id) return fail("Missing transaction.");
 
@@ -169,25 +206,12 @@ export async function updateTransaction(
     .limit(1);
   if (!existing) return fail("Transaction not found.");
 
-  const date = String(formData.get("date") ?? "");
-  const amountMinor = parseAmount(formData.get("amount"));
-  const rawCategory = String(formData.get("categoryId") ?? "");
-
-  if (!isValidDate(date)) return fail("Pick a valid date.");
-  if (amountMinor === null || amountMinor === 0)
-    return fail("Enter an amount greater than zero.");
-  if (rawCategory && !(await ownsCategory(user.id, rawCategory)))
-    return fail("Pick a valid category.");
+  const tx = await readTransaction(user.id, formData);
+  if ("error" in tx) return fail(tx.error);
 
   await db
     .update(transactions)
-    .set({
-      date,
-      amountMinor,
-      categoryId: rawCategory || null,
-      merchant: String(formData.get("merchant") ?? "").trim() || null,
-      note: String(formData.get("note") ?? "").trim() || null,
-    })
+    .set(tx)
     .where(and(eq(transactions.id, id), eq(transactions.userId, user.id)));
 
   refresh();
@@ -195,7 +219,7 @@ export async function updateTransaction(
 }
 
 export async function deleteTransaction(formData: FormData) {
-  const user = await requireUser();
+  const user = await requireWriter();
   const id = String(formData.get("id") ?? "");
   if (!id) return;
 
@@ -214,7 +238,7 @@ export async function setPlannedAmount(
   _prev: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
-  const user = await requireUser();
+  const user = await requireWriter();
   const categoryId = String(formData.get("categoryId") ?? "");
   const month = String(formData.get("month") ?? "");
   const plannedMinor = parseAmount(formData.get("planned"));
@@ -240,7 +264,7 @@ export async function setPlannedAmount(
 export async function copyPlanFromPreviousMonth(
   formData: FormData,
 ): Promise<ActionResult> {
-  const user = await requireUser();
+  const user = await requireWriter();
   const month = String(formData.get("month") ?? "");
   if (!isValidMonth(month)) return fail("Bad month.");
 
@@ -288,7 +312,7 @@ export async function setTargets(
   _prev: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
-  const user = await requireUser();
+  const user = await requireWriter();
   const scope = String(formData.get("scope") ?? "default");
   const month = String(formData.get("month") ?? "");
 
@@ -327,7 +351,7 @@ export async function setTargets(
 
 /** Drops this month's override so it inherits the default again. */
 export async function clearMonthTargets(formData: FormData) {
-  const user = await requireUser();
+  const user = await requireWriter();
   const month = String(formData.get("month") ?? "");
   if (!isValidMonth(month)) return;
 
@@ -346,7 +370,7 @@ export async function createCategory(
   _prev: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
-  const user = await requireUser();
+  const user = await requireWriter();
   const name = String(formData.get("name") ?? "").trim();
   const groupKey = String(formData.get("groupKey") ?? "") as GroupKey;
   const rawParent = String(formData.get("parentId") ?? "");
@@ -354,7 +378,7 @@ export async function createCategory(
   if (!name) return fail("Give the category a name.");
   if (!GROUP_KEYS.includes(groupKey)) return fail("Pick a group.");
 
-  let parentId: string | null = rawParent || null;
+  const parentId: string | null = rawParent || null;
   if (parentId) {
     const [parent] = await db
       .select({ id: categories.id, parentId: categories.parentId })
@@ -389,7 +413,7 @@ export async function updateCategory(
   _prev: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
-  const user = await requireUser();
+  const user = await requireWriter();
   const id = String(formData.get("id") ?? "");
   const name = String(formData.get("name") ?? "").trim();
   const groupKey = String(formData.get("groupKey") ?? "") as GroupKey;
@@ -417,7 +441,7 @@ export async function updateCategory(
  * doesn't silently change when you retire a category.
  */
 export async function setCategoryArchived(formData: FormData) {
-  const user = await requireUser();
+  const user = await requireWriter();
   const id = String(formData.get("id") ?? "");
   const archived = formData.get("archived") === "true";
   if (!(await ownsCategory(user.id, id))) return;
@@ -441,7 +465,7 @@ export async function setCategoryArchived(formData: FormData) {
 export async function setCategoryAssumeSpent(
   formData: FormData,
 ): Promise<ActionResult> {
-  const user = await requireUser();
+  const user = await requireWriter();
   const id = String(formData.get("id") ?? "");
   const assumeSpent = formData.get("assumeSpent") === "true";
 
@@ -474,7 +498,7 @@ export async function setCategoryAssumeSpent(
 }
 
 export async function setRecurringActive(formData: FormData) {
-  const user = await requireUser();
+  const user = await requireWriter();
   const id = String(formData.get("id") ?? "");
   const active = formData.get("active") === "true";
 
@@ -487,7 +511,7 @@ export async function setRecurringActive(formData: FormData) {
 }
 
 export async function deleteRecurringRule(formData: FormData) {
-  const user = await requireUser();
+  const user = await requireWriter();
   const id = String(formData.get("id") ?? "");
 
   // Deletes the template only — transactions it already created stay put,
@@ -507,12 +531,16 @@ export async function createAccount(
   _prev: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
-  const user = await requireUser();
+  const user = await requireWriter();
   const name = String(formData.get("name") ?? "").trim();
   const kind = String(formData.get("kind") ?? "") as (typeof ACCOUNT_KINDS)[number];
 
   if (!name) return fail("Give the account a name.");
   if (!ACCOUNT_KINDS.includes(kind)) return fail("Pick an account type.");
+  // People own their loan ledgers — createPerson makes both together. A loan
+  // account made here would belong to nobody: invisible on Money and People,
+  // yet still counted in net worth and offered in the transfer picker.
+  if (kind === "loan") return fail("Add people from the People page.");
 
   const opening = parseAmount(formData.get("openingBalance")) ?? 0;
   const value = parseAmount(formData.get("currentValue")) ?? 0;
@@ -529,9 +557,9 @@ export async function createAccount(
     kind,
     subtype: kind === "spending" ? subtype : null,
     openingBalanceMinor: kind === "spending" ? opening : 0,
-    openingBalanceDate: kind === "spending" ? new Date().toISOString().slice(0, 10) : null,
+    openingBalanceDate: kind === "spending" ? await userToday() : null,
     currentValueMinor: kind === "asset" ? value : 0,
-    valueUpdatedAt: kind === "asset" ? new Date().toISOString().slice(0, 10) : null,
+    valueUpdatedAt: kind === "asset" ? await userToday() : null,
     isLiability: subtype === "credit_card",
     icon: String(formData.get("icon") ?? "") || null,
     sortOrder: (lastOrder ?? 0) + 1,
@@ -545,7 +573,7 @@ export async function updateAccount(
   _prev: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
-  const user = await requireUser();
+  const user = await requireWriter();
   const id = String(formData.get("id") ?? "");
   const name = String(formData.get("name") ?? "").trim();
 
@@ -574,7 +602,7 @@ export async function updateAssetValue(
   _prev: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
-  const user = await requireUser();
+  const user = await requireWriter();
   const id = String(formData.get("id") ?? "");
   const value = parseAmount(formData.get("currentValue"));
 
@@ -585,7 +613,7 @@ export async function updateAssetValue(
     .update(accounts)
     .set({
       currentValueMinor: value,
-      valueUpdatedAt: new Date().toISOString().slice(0, 10),
+      valueUpdatedAt: await userToday(),
     })
     .where(and(eq(accounts.id, id), eq(accounts.userId, user.id)));
 
@@ -594,7 +622,7 @@ export async function updateAssetValue(
 }
 
 export async function setAccountArchived(formData: FormData) {
-  const user = await requireUser();
+  const user = await requireWriter();
   const id = String(formData.get("id") ?? "");
   const archived = formData.get("archived") === "true";
   if (!(await ownsAccount(user.id, id))) return;
@@ -631,7 +659,7 @@ export async function createPerson(
   _prev: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
-  const user = await requireUser();
+  const user = await requireWriter();
   const name = String(formData.get("name") ?? "").trim();
   const handle = String(formData.get("handle") ?? "").trim();
   const kindRaw = String(formData.get("kind") ?? "person");
@@ -678,7 +706,7 @@ export async function updatePerson(
   _prev: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
-  const user = await requireUser();
+  const user = await requireWriter();
   const id = String(formData.get("id") ?? "");
   const name = String(formData.get("name") ?? "").trim();
   const handle = String(formData.get("handle") ?? "").trim();
@@ -719,7 +747,7 @@ export async function updatePerson(
  * so Postgres refuses to drop a ledger with history no matter what this says.
  */
 export async function deletePerson(formData: FormData): Promise<ActionResult> {
-  const user = await requireUser();
+  const user = await requireWriter();
   const id = String(formData.get("id") ?? "");
   if (!(await ownsPerson(user.id, id))) return fail("Person not found.");
 
@@ -736,7 +764,7 @@ export async function deletePerson(formData: FormData): Promise<ActionResult> {
 }
 
 export async function setPersonArchived(formData: FormData) {
-  const user = await requireUser();
+  const user = await requireWriter();
   const id = String(formData.get("id") ?? "");
   const archived = formData.get("archived") === "true";
   if (!(await ownsPerson(user.id, id))) return;
@@ -776,7 +804,18 @@ export async function categoryImpact(id: string) {
     .from(categories)
     .where(and(eq(categories.userId, user.id), eq(categories.parentId, id)));
 
-  return { transactions: tx?.n ?? 0, children: kids?.n ?? 0 };
+  // recurring_rules.category_id is ON DELETE CASCADE — count them so the
+  // confirm can say so, instead of repeats quietly vanishing.
+  const [reps] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(recurringRules)
+    .where(and(eq(recurringRules.userId, user.id), eq(recurringRules.categoryId, id)));
+
+  return {
+    transactions: tx?.n ?? 0,
+    children: kids?.n ?? 0,
+    repeats: reps?.n ?? 0,
+  };
 }
 
 /**
@@ -789,7 +828,7 @@ export async function categoryImpact(id: string) {
  * mistake.
  */
 export async function deleteCategory(formData: FormData): Promise<ActionResult> {
-  const user = await requireUser();
+  const user = await requireWriter();
   const id = String(formData.get("id") ?? "");
   if (!(await ownsCategory(user.id, id))) return fail("Category not found.");
 
@@ -820,7 +859,7 @@ export async function accountImpact(id: string) {
  * into a sentence worth reading.
  */
 export async function deleteAccount(formData: FormData): Promise<ActionResult> {
-  const user = await requireUser();
+  const user = await requireWriter();
   const id = String(formData.get("id") ?? "");
   if (!(await ownsAccount(user.id, id))) return fail("Account not found.");
 
@@ -849,7 +888,7 @@ export async function deleteAccount(formData: FormData): Promise<ActionResult> {
  * account's rows and a failure can't leave the order half-applied.
  */
 export async function reorderCategories(formData: FormData): Promise<ActionResult> {
-  const user = await requireUser();
+  const user = await requireWriter();
   const ids = parseIds(formData.get("ids"));
   if (!ids) return fail("Bad ordering.");
   if (!ids.length) return { ok: true };
@@ -874,7 +913,7 @@ export async function reorderCategories(formData: FormData): Promise<ActionResul
 }
 
 export async function reorderPeople(formData: FormData): Promise<ActionResult> {
-  const user = await requireUser();
+  const user = await requireWriter();
   const ids = parseIds(formData.get("ids"));
   if (!ids) return fail("Bad ordering.");
   if (!ids.length) return { ok: true };
@@ -899,7 +938,7 @@ export async function reorderPeople(formData: FormData): Promise<ActionResult> {
 }
 
 export async function reorderAccounts(formData: FormData): Promise<ActionResult> {
-  const user = await requireUser();
+  const user = await requireWriter();
   const ids = parseIds(formData.get("ids"));
   if (!ids) return fail("Bad ordering.");
   if (!ids.length) return { ok: true };
@@ -941,3 +980,122 @@ function parseIds(raw: FormDataEntryValue | null): string[] | null {
 
 const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/* -------------------------------------------------------------------------- */
+/* Profile                                                                     */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Name and currency. Changing currency relabels every amount rather than
+ * converting it — the settings form says so before you save.
+ */
+export async function updateProfile(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const user = await requireUser();
+  const name = String(formData.get("name") ?? "").trim().slice(0, 80);
+  const currency = String(formData.get("currency") ?? "");
+  const region = String(formData.get("region") ?? "");
+
+  if (!name) return fail("Enter your name.");
+  if (!isCurrency(currency)) return fail("Pick a currency from the list.");
+  if (!isRegion(region)) return fail("Pick a region from the list.");
+
+  await db
+    .insert(profiles)
+    .values({ userId: user.id, displayName: name, currency, region })
+    .onConflictDoUpdate({
+      target: profiles.userId,
+      set: { displayName: name, currency, region, updatedAt: new Date() },
+    });
+
+  refresh();
+  return { ok: true };
+}
+
+/** Stores the zone the browser reports. Ignores anything Intl doesn't recognise. */
+export async function saveTimezone(formData: FormData) {
+  const user = await requireUser();
+  const timezone = String(formData.get("timezone") ?? "");
+  if (!isTimeZone(timezone)) return;
+
+  await db
+    .update(profiles)
+    .set({ timezone, updatedAt: new Date() })
+    .where(eq(profiles.userId, user.id));
+
+  refresh();
+}
+
+/**
+ * Change a repeat's amount, day or label. Affects repeats from here on; the
+ * transactions it already made are history and stay as they were.
+ */
+export async function updateRecurringRule(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const user = await requireWriter();
+  const id = String(formData.get("id") ?? "");
+  const amountMinor = parseAmount(formData.get("amount"));
+  const dayOfMonth = Number(formData.get("dayOfMonth"));
+  const merchant = String(formData.get("merchant") ?? "").trim() || null;
+
+  if (amountMinor === null || amountMinor === 0)
+    return fail("Enter an amount greater than zero.");
+  if (!Number.isInteger(dayOfMonth) || dayOfMonth < 1 || dayOfMonth > 31)
+    return fail("Pick a day between 1 and 31.");
+
+  const updated = await db
+    .update(recurringRules)
+    .set({ amountMinor, dayOfMonth, merchant })
+    .where(and(eq(recurringRules.id, id), eq(recurringRules.userId, user.id)))
+    .returning({ id: recurringRules.id });
+  if (!updated.length) return fail("Repeat not found.");
+
+  refresh();
+  return { ok: true };
+}
+
+/* -------------------------------------------------------------------------- */
+/* Delete my account                                                           */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Removes everything, then the login.
+ *
+ * The data goes first, explicitly and in dependency order inside one
+ * transaction: `transactions.account_id` is ON DELETE RESTRICT, so leaving it
+ * to the auth.users cascade could trip over the order Postgres picks. Allowed
+ * even when access has run out — leaving is never paywalled.
+ */
+export async function deleteMyAccount(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const user = await requireUser();
+  if (String(formData.get("confirm") ?? "").trim() !== "DELETE")
+    return fail('Type DELETE to confirm.');
+
+  await db.transaction(async (tx) => {
+    await tx.delete(transactions).where(eq(transactions.userId, user.id));
+    await tx.delete(recurringRules).where(eq(recurringRules.userId, user.id));
+    await tx.delete(merchantRules).where(eq(merchantRules.userId, user.id));
+    await tx.delete(budgetLines).where(eq(budgetLines.userId, user.id));
+    await tx.delete(netWorthSnapshots).where(eq(netWorthSnapshots.userId, user.id));
+    await tx.delete(groupTargets).where(eq(groupTargets.userId, user.id));
+    await tx.delete(accounts).where(eq(accounts.userId, user.id));
+    await tx.delete(people).where(eq(people.userId, user.id));
+    await tx.delete(categories).where(eq(categories.userId, user.id));
+    await tx.delete(profiles).where(eq(profiles.userId, user.id));
+    await tx.delete(subscriptions).where(eq(subscriptions.userId, user.id));
+  });
+
+  const { error } = await createAdminClient().auth.admin.deleteUser(user.id);
+  if (error)
+    return fail("Your data is deleted, but the login couldn't be removed. Email us and we'll finish it.");
+
+  await (await createClient()).auth.signOut();
+  redirect("/");
+}

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { ensureUserSetup } from "@/lib/auth";
+import { DEFAULT_CURRENCY, isCurrency } from "@/lib/currency";
 
 export type AuthResult = { ok: true; message?: string } | { ok: false; error: string };
 
@@ -68,7 +69,11 @@ export async function signUp(
   formData: FormData,
 ): Promise<AuthResult> {
   const { email, password } = readCredentials(formData);
+  const name = String(formData.get("name") ?? "").trim().slice(0, 80);
+  const rawCurrency = String(formData.get("currency") ?? "");
+  const currency = isCurrency(rawCurrency) ? rawCurrency : DEFAULT_CURRENCY;
 
+  if (!name) return { ok: false, error: "Tell us your name." };
   if (!email) return { ok: false, error: "Enter an email address." };
   if (password.length < 8)
     return { ok: false, error: "Use a password of at least 8 characters." };
@@ -78,7 +83,12 @@ export async function signUp(
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { emailRedirectTo: `${origin}/auth/callback` },
+    options: {
+      emailRedirectTo: `${origin}/auth/callback`,
+      // Rides along in user_metadata so it survives the email-confirmation gap:
+      // there is no session, and so no profile row, until the link is clicked.
+      data: { full_name: name, currency },
+    },
   });
 
   if (error) return { ok: false, error: error.message };
@@ -131,4 +141,48 @@ export async function signOut() {
   await supabase.auth.signOut();
   revalidatePath("/", "layout");
   redirect("/login");
+}
+
+/**
+ * Always answers the same way, whether or not the address has an account —
+ * otherwise this form would tell anyone which emails are registered.
+ */
+export async function requestPasswordReset(
+  _prev: AuthResult | null,
+  formData: FormData,
+): Promise<AuthResult> {
+  const email = String(formData.get("email") ?? "").trim();
+  if (!email) return { ok: false, error: "Enter your email address." };
+
+  const supabase = await createClient();
+  const origin = await siteOrigin();
+  await supabase.auth.resetPasswordForEmail(email, {
+    // The callback exchanges the code for a session, then sends them on.
+    redirectTo: `${origin}/auth/callback?next=/auth/reset`,
+  });
+
+  return {
+    ok: true,
+    message:
+      "If there's an account for that email, a reset link is on its way. It works once.",
+  };
+}
+
+/** Runs inside the short-lived session the reset link created. */
+export async function updatePassword(
+  _prev: AuthResult | null,
+  formData: FormData,
+): Promise<AuthResult> {
+  const password = String(formData.get("password") ?? "");
+  const confirm = String(formData.get("confirm") ?? "");
+  if (password.length < 8)
+    return { ok: false, error: "Use a password of at least 8 characters." };
+  if (password !== confirm) return { ok: false, error: "The two passwords don't match." };
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/", "layout");
+  redirect("/");
 }

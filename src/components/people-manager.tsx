@@ -1,8 +1,7 @@
 "use client";
 
-import { useActionState, useEffect, useState, useTransition } from "react";
+import { useActionState, useState, useTransition } from "react";
 import {
-  ArrowCounterClockwise,
   Bank,
   PencilSimple,
   Plus,
@@ -32,6 +31,7 @@ import {
 import { CategoryIcon } from "@/components/category-icon";
 import { IconPicker } from "@/components/icon-picker";
 import { IconButton } from "@/components/icon-button";
+import { ArchiveButton } from "@/components/archive-button";
 import { SortableList, SortableRow } from "@/components/sortable-list";
 import { Money } from "@/components/money";
 import type { PersonRow } from "@/lib/budget";
@@ -150,13 +150,14 @@ function PersonRowItem({ person }: { person: PersonRow }) {
 
       <PersonDialog person={person} />
 
-      <IconButton
+      <ArchiveButton
         label={person.archived ? `Restore ${person.name}` : `Archive ${person.name}`}
-        onClick={toggleArchive}
+        name={person.name}
+        balanceMinor={person.balanceMinor}
+        archived={person.archived}
+        onToggle={toggleArchive}
         disabled={pending}
-      >
-        <ArrowCounterClockwise size={14} weight="bold" />
-      </IconButton>
+      />
 
       <DeletePersonButton person={person} disabled={pending} />
     </SortableRow>
@@ -168,16 +169,17 @@ export function PersonDialog({ person }: { person?: PersonRow }) {
   const editing = !!person;
   const [open, setOpen] = useState(false);
   const [state, action, pending] = useActionState<ActionResult | null, FormData>(
-    editing ? updatePerson : createPerson,
+    // Close from inside the action rather than an effect watching `state`.
+    async (prev, fd) => {
+      const res = await (editing ? updatePerson : createPerson)(prev, fd);
+      if (res.ok) {
+        toast.success(editing ? "Saved" : "Person added");
+        setOpen(false);
+      }
+      return res;
+    },
     null,
   );
-
-  useEffect(() => {
-    if (state?.ok) {
-      toast.success(editing ? "Saved" : "Person added");
-      setOpen(false);
-    }
-  }, [state, editing]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

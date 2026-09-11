@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { after } from "next/server";
+import { currentMonthIn, todayIn } from "@/lib/dates";
 import { CaretLeft, CaretRight } from "@phosphor-icons/react/dist/ssr";
 import { IconLink } from "@/components/icon-link";
 import { MonthSwitcher } from "@/components/month-switcher";
@@ -7,15 +9,15 @@ import { DailyView } from "@/components/views/daily-view";
 import { MonthView } from "@/components/views/month-view";
 import { YearView } from "@/components/views/year-view";
 import {
-  currentMonth,
   isValidMonth,
   listAccounts,
+  recordNetWorth,
   listCategories,
   monthLabel,
-  today,
 } from "@/lib/budget";
-import { requireUser, ensureUserSetup } from "@/lib/auth";
+import { getUser, ensureUserSetup, getUserPrefs } from "@/lib/auth";
 import { cn } from "@/lib/utils";
+import { Landing } from "@/components/landing";
 
 export const dynamic = "force-dynamic";
 
@@ -41,7 +43,17 @@ export default async function HomePage({
 }: {
   searchParams: Promise<{ view?: string; month?: string; year?: string }>;
 }) {
-  const user = await requireUser();
+  const user = await getUser();
+  // Signed out, "/" is the front door rather than a redirect to login.
+  if (!user) return <Landing />;
+  const { timeZone } = await getUserPrefs();
+  // Home is the page people open most, so it keeps net worth history filled
+  // in — after the response, so it never slows the page down.
+  after(() =>
+    recordNetWorth(user.id, currentMonthIn(timeZone)).catch((e) =>
+      console.error("net worth snapshot failed", e),
+    ),
+  );
   await ensureUserSetup(user.id);
 
   const params = await searchParams;
@@ -49,7 +61,7 @@ export default async function HomePage({
     ? (params.view as View)
     : "daily";
 
-  const month = isValidMonth(params.month) ? params.month : currentMonth();
+  const month = isValidMonth(params.month) ? params.month : currentMonthIn(timeZone);
 
   const parsedYear = Number(params.year);
   const year =
@@ -92,7 +104,7 @@ export default async function HomePage({
           <TransactionDialog
             accounts={accounts}
             categories={categories}
-            defaultDate={today()}
+            defaultDate={todayIn(timeZone)}
           />
         </div>
       </header>

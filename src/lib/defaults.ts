@@ -3,7 +3,7 @@ import type { GroupKey, AccountKind } from "@/db/schema";
 /**
  * The starter set a NEW account is seeded with.
  *
- * Deliberately small and generic — twelve lines someone can read in one go,
+ * Deliberately small and generic — thirteen lines someone can read in one go,
  * not a copy of anyone's personal budget. A new user should recognise every
  * line and then add their own; a 36-row taxonomy inherited from a stranger is
  * something you delete, not something you use.
@@ -48,13 +48,3 @@ export const DEFAULT_ACCOUNTS: {
   { name: "Bank Account", kind: "spending", subtype: "bank", icon: "Bank" },
   { name: "Cash", kind: "spending", subtype: "cash", icon: "Money" },
 ];
-
-/** Phosphor icon names offered in the category/account pickers. */
-export const ICON_CHOICES = [
-  "House", "Lightning", "ShoppingCart", "Drop", "Barbell", "Carrot",
-  "WifiHigh", "Bus", "Broom", "FirstAid", "Pill", "Heart", "Package",
-  "ArrowUUpLeft", "ArrowUUpRight", "DotsThree", "ForkKnife", "TShirt",
-  "FilmSlate", "ShoppingBag", "Repeat", "Gift", "AirplaneTilt", "HandCoins",
-  "Storefront", "Bank", "ChartLineUp", "Umbrella", "Coins", "Money",
-  "GraduationCap", "Wallet", "Tag",
-] as const;

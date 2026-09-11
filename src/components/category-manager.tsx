@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState, useTransition } from "react";
+import { useActionState, useState, useTransition } from "react";
 import {
   ArrowCounterClockwise,
   PencilSimple,
@@ -221,17 +221,19 @@ function CategoryRow({ cat }: { cat: Cat }) {
 
 function EditCategoryDialog({ cat }: { cat: Cat }) {
   const [open, setOpen] = useState(false);
+  // Close from inside the action rather than an effect watching `state` —
+  // same result, without a second render pass.
   const [state, action, pending] = useActionState<ActionResult | null, FormData>(
-    updateCategory,
+    async (prev, fd) => {
+      const res = await updateCategory(prev, fd);
+      if (res.ok) {
+        toast.success("Category updated");
+        setOpen(false);
+      }
+      return res;
+    },
     null,
   );
-
-  useEffect(() => {
-    if (state?.ok) {
-      toast.success("Category updated");
-      setOpen(false);
-    }
-  }, [state]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -334,6 +336,7 @@ function DeleteCategoryButton({
   const [impact, setImpact] = useState<{
     transactions: number;
     children: number;
+    repeats: number;
   } | null>(null);
   const [pending, start] = useTransition();
 
@@ -393,7 +396,16 @@ function DeleteCategoryButton({
                     {impact.children === 1 ? "y" : "ies"} will be deleted too.
                   </p>
                 )}
-                {impact.transactions === 0 && impact.children === 0 && (
+                {impact.repeats > 0 && (
+                  <p className="rounded-md bg-destructive/10 p-3 text-destructive">
+                    {impact.repeats} monthly repeat
+                    {impact.repeats === 1 ? "" : "s"} using it will stop and be
+                    removed. The transactions they already made stay.
+                  </p>
+                )}
+                {impact.transactions === 0 &&
+                  impact.children === 0 &&
+                  impact.repeats === 0 && (
                   <p className="text-muted-foreground">
                     Nothing else uses it. Safe to remove.
                   </p>

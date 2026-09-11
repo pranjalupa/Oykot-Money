@@ -1,19 +1,22 @@
-import { ArrowsLeftRight, Repeat, Trash } from "@phosphor-icons/react/dist/ssr";
+import { ArrowsLeftRight, Repeat } from "@phosphor-icons/react/dist/ssr";
 import { Money } from "@/components/money";
+import { LocalDate } from "@/components/currency-provider";
 import { CategoryIcon } from "@/components/category-icon";
 import { EditTransactionDialog } from "@/components/edit-transaction-dialog";
-import { IconButton } from "@/components/icon-button";
-import { deleteTransaction } from "@/app/actions";
-import type { PickerCategory } from "@/components/transaction-dialog";
+import { DeleteTransactionButton } from "@/components/delete-transaction-button";
+import type { PickerAccount, PickerCategory } from "@/components/transaction-fields";
 import type { TransactionRow } from "@/lib/budget";
 
 export function TransactionList({
   transactions,
-  categories = [],
+  accounts,
+  categories,
   emptyNote,
 }: {
   transactions: TransactionRow[];
-  categories?: PickerCategory[];
+  /** Needed by Edit, which can move a transaction to another account. */
+  accounts: PickerAccount[];
+  categories: PickerCategory[];
   emptyNote?: string;
 }) {
   if (!transactions.length) {
@@ -59,10 +62,7 @@ export function TransactionList({
                 )}
               </p>
               <p className="truncate text-xs text-muted-foreground">
-                {new Date(t.date).toLocaleDateString("en-IN", {
-                  day: "numeric",
-                  month: "short",
-                })}
+                <LocalDate date={t.date} />
                 {" · "}
                 {isTransfer
                   ? `${t.accountName} → ${t.counterAccountName ?? "?"}`
@@ -82,14 +82,9 @@ export function TransactionList({
               className="shrink-0 text-sm font-semibold"
             />
 
-            <EditTransactionDialog transaction={t} categories={categories} />
+            <EditTransactionDialog transaction={t} accounts={accounts} categories={categories} />
 
-            <form action={deleteTransaction} className="shrink-0">
-              <input type="hidden" name="id" value={t.id} />
-              <IconButton label={`Delete ${label}`} tone="danger" type="submit">
-                <Trash size={14} weight="bold" />
-              </IconButton>
-            </form>
+            <DeleteTransactionButton id={t.id} label={label} />
           </li>
         );
       })}

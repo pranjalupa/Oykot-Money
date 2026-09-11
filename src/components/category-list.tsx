@@ -64,7 +64,7 @@ export function CategoryList({
   return (
     <div>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[34rem] border-collapse text-sm">
+        <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="border-b border-border text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
               <th scope="col" className="px-4 py-2 text-left font-semibold">
@@ -76,7 +76,7 @@ export function CategoryList({
               <th scope="col" className="w-28 px-3 py-2 text-right font-semibold">
                 {isIncome ? "Received" : "Spent"}
               </th>
-              <th scope="col" className="w-28 px-3 py-2 text-right font-semibold">
+              <th scope="col" className="hidden w-28 px-3 py-2 text-right font-semibold sm:table-cell">
                 Remaining
               </th>
               <th scope="col" className="w-9 px-2 py-2">
@@ -106,7 +106,7 @@ export function CategoryList({
               <td className="px-3 py-2.5 text-right">
                 <Money minor={totals.actual} />
               </td>
-              <td className="px-3 py-2.5 text-right">
+              <td className="hidden px-3 py-2.5 text-right sm:table-cell">
                 <Remaining
                   planned={totals.planned}
                   actual={totals.actual}
@@ -208,9 +208,17 @@ function Row({
             tone={cat.actualMinor ? "default" : "muted"}
             className={cn(assumed && "text-muted-foreground")}
           />
+          {/* On phones the Remaining column is hidden; it rides under Spent. */}
+          <div className="text-[11px] sm:hidden">
+            <Remaining
+              planned={cat.plannedMinor}
+              actual={cat.actualMinor}
+              isIncome={isIncome}
+            />
+          </div>
         </td>
 
-        <td className="px-3 py-2.5 text-right">
+        <td className="hidden px-3 py-2.5 text-right sm:table-cell">
           <Remaining
             planned={cat.plannedMinor}
             actual={cat.actualMinor}

@@ -20,7 +20,7 @@ export function CopyPlanButton({ month }: { month: string }) {
           const fd = new FormData();
           fd.set("month", month);
           const res = await copyPlanFromPreviousMonth(fd);
-          if (res.ok) toast.success("Copied last month's plan");
+          if (res.ok) toast.success("Copied last month's budget");
           else toast.error(res.error);
         })
       }

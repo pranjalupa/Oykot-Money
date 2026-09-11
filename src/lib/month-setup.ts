@@ -2,8 +2,16 @@ import "server-only";
 
 import { and, desc, eq, lt, ne, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { budgetLines, recurringRules, transactions } from "@/db/schema";
-import { currentMonth, daysInMonth, isValidMonth } from "@/lib/targets";
+import {
+  accounts,
+  budgetLines,
+  categories,
+  recurringRules,
+  transactions,
+} from "@/db/schema";
+import { daysInMonth, isValidMonth } from "@/lib/targets";
+import { currentMonthIn } from "@/lib/dates";
+import { getUserPrefs } from "@/lib/auth";
 
 /**
  * Carries last month's plan into a month that has none.
@@ -18,6 +26,13 @@ import { currentMonth, daysInMonth, isValidMonth } from "@/lib/targets";
  */
 export async function ensureMonthPlan(userId: string, month: string) {
   if (!isValidMonth(month)) return false;
+
+  // Never into the future. Browsing ahead used to copy the budget the moment
+  // you looked, which froze that month: any later change to this month's
+  // budget never reached it. A future month now carries over when it arrives
+  // (or on demand with "Copy last month").
+  const { timeZone } = await getUserPrefs();
+  if (month > currentMonthIn(timeZone)) return false;
 
   const [existing] = await db
     .select({ id: budgetLines.id })
@@ -75,7 +90,8 @@ export async function ensureMonthPlan(userId: string, month: string) {
  * pre-spend money you haven't spent.
  */
 export async function ensureRecurringForMonth(userId: string, month: string) {
-  if (month !== currentMonth()) return 0;
+  const { timeZone } = await getUserPrefs();
+  if (month !== currentMonthIn(timeZone)) return 0;
 
   const due = await db
     .select()
@@ -86,6 +102,9 @@ export async function ensureRecurringForMonth(userId: string, month: string) {
         eq(recurringRules.active, true),
         // NULL lastRunMonth means it has never run.
         sql`(${recurringRules.lastRunMonth} is null or ${recurringRules.lastRunMonth} <> ${month})`,
+        // Never post into an account, person or category you've archived.
+        sql`not exists (select 1 from ${accounts} a where a.id in (${recurringRules.accountId}, ${recurringRules.counterAccountId}) and a.archived)`,
+        sql`not exists (select 1 from ${categories} c where c.id = ${recurringRules.categoryId} and c.archived)`,
       ),
     );
 

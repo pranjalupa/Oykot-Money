@@ -89,6 +89,109 @@ export const people = pgTable(
 );
 
 /* -------------------------------------------------------------------------- */
+/* Profiles                                                                    */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * One row per user: what to call them, and what their money is counted in.
+ *
+ * Kept here rather than in Supabase's user_metadata because the app reads it
+ * on every render and every other bit of user state lives in Postgres. Created
+ * lazily on first load (`getProfile` in lib/auth.ts), seeded from whatever the
+ * signup form or Google put in user_metadata.
+ */
+export const profiles = pgTable("profiles", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => authUsers.id, { onDelete: "cascade" }),
+  displayName: text("display_name"),
+  /** A key of CURRENCIES in lib/currency.ts. Validated in app code. */
+  currency: text("currency").notNull().default("INR"),
+  /** A key of REGIONS in lib/region.ts — decides date format. */
+  region: text("region").notNull().default("IN"),
+  /** IANA zone reported by the browser. Null until first seen; see lib/dates.ts. */
+  timezone: text("timezone"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+/* -------------------------------------------------------------------------- */
+/* Subscriptions                                                               */
+/* -------------------------------------------------------------------------- */
+
+export const SUBSCRIPTION_STATUSES = [
+  "trialing",
+  "active",
+  "past_due",
+  "cancelled",
+  "expired",
+  "complimentary",
+] as const;
+
+/**
+ * One row per user: where they stand with paying.
+ *
+ * Provider-neutral on purpose. Razorpay (India) and a Merchant of Record
+ * (everyone else) will both write here through their webhooks, and the rest
+ * of the app only ever asks `getAccess()` in lib/access.ts — never which
+ * provider someone pays through.
+ */
+export const subscriptions = pgTable("subscriptions", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => authUsers.id, { onDelete: "cascade" }),
+  status: text("status", { enum: SUBSCRIPTION_STATUSES }).notNull().default("trialing"),
+  /** monthly | yearly. Null while trialing. */
+  plan: text("plan"),
+  /** razorpay | mor. Null until payments exist. */
+  provider: text("provider"),
+  providerCustomerId: text("provider_customer_id"),
+  providerSubscriptionId: text("provider_subscription_id"),
+  currency: text("currency"),
+  trialEndsAt: timestamp("trial_ends_at", { withTimezone: true }).notNull(),
+  currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
+  cancelAtPeriodEnd: boolean("cancel_at_period_end").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/* -------------------------------------------------------------------------- */
+/* Net worth snapshots                                                         */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * One row per user per month: net worth as last seen that month.
+ *
+ * Needed because net worth can't be rebuilt after the fact — assets have no
+ * history, only the value you last typed. So the app records it as it goes:
+ * the current month's row is overwritten whenever you look, and a past month
+ * keeps the last value it had. History starts the day this shipped.
+ */
+export const netWorthSnapshots = pgTable(
+  "net_worth_snapshots",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => authUsers.id, { onDelete: "cascade" }),
+    month: text("month").notNull(),
+    totalMinor: money("total_minor").notNull(),
+    cashMinor: money("cash_minor").notNull(),
+    assetsMinor: money("assets_minor").notNull(),
+    owedToYouMinor: money("owed_to_you_minor").notNull(),
+    youOweMinor: money("you_owe_minor").notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [uniqueIndex("net_worth_snapshots_user_month_idx").on(t.userId, t.month)],
+);
+
+/* -------------------------------------------------------------------------- */
 /* Accounts                                                                    */
 /* -------------------------------------------------------------------------- */
 
