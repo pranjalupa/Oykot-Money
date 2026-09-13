@@ -42,7 +42,7 @@ export type TransactionTab = "outflow" | "inflow" | "person" | "move";
 const TAB_LABEL: Record<TransactionTab, string> = {
   outflow: "Spent",
   inflow: "Received",
-  person: "Person",
+  person: "Lend / Borrow",
   move: "Move",
 };
 type PersonMode = "gave" | "got";
@@ -279,7 +279,7 @@ export function TransactionFields({
             {a.name}
           </option>
         ))}
-        {tab === "person" && <option value={NEW}>+ Add person…</option>}
+        {tab === "person" && <option value={NEW}>+ Add person or lender…</option>}
       </select>
       {adding === "person" && inlineAdd("person")}
     </div>
@@ -360,7 +360,7 @@ export function TransactionFields({
 
       {tab === "person" && (
         <>
-          {counterField("Person")}
+          {counterField("Who")}
           {accountField(personMode === "gave" ? "Paid from" : "Received into")}
           <p className="-mt-2 text-xs text-muted-foreground">
             {personMode === "gave"
