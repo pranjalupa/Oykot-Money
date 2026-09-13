@@ -8,22 +8,21 @@ import { useCurrency, useLocale } from "@/components/currency-provider";
 import { formatCompact, formatMoney } from "@/lib/money";
 import { formatMonthShort } from "@/lib/dates";
 
-function Stat({ label, value, sub }: { label: string; value: React.ReactNode; sub?: React.ReactNode }) {
+function Stat({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="mt-1 font-heading text-xl font-semibold">{value}</dd>
-      {sub && <dd className="mt-0.5 text-xs text-muted-foreground">{sub}</dd>}
+      <dt className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">{label}</dt>
+      <dd className="mt-0.5 text-base font-semibold">{value}</dd>
     </div>
   );
 }
 
 /**
  * How a group or category stands against its budget: the headline figure,
- * then the four numbers behind it.
+ * then the four numbers behind it in one row.
  *
- * This was a dial. The dial drew one number — percent used — that the grid
- * beside it already carried, so it went.
+ * Same shape as the Net worth card on Money — a label, one big number, and a
+ * divided row of stats — so every summary in the app reads the same way.
  */
 export function BudgetSummary({
   spentMinor,
@@ -36,43 +35,33 @@ export function BudgetSummary({
   isIncome: boolean;
   footnote?: string;
 }) {
-  const currency = useCurrency();
-  const money = (m: number) => formatMoney(m, { currency });
   const pct = plannedMinor > 0 ? Math.round((spentMinor / plannedMinor) * 100) : 0;
   const diff = plannedMinor - spentMinor;
   const over = !isIncome && diff < 0;
 
   return (
-    <section className="rounded-2xl border border-border bg-card p-6 sm:p-8">
-      <div className="flex flex-col gap-8 sm:flex-row sm:items-center sm:gap-12">
-        <div className="shrink-0">
-          <p className="text-xs text-muted-foreground">
-            {plannedMinor <= 0 ? "Spent" : isIncome ? "Received" : over ? "Over budget" : "Left to spend"}
-          </p>
-          <p className="mt-1 font-heading text-4xl font-bold">
-            {plannedMinor <= 0 ? (
-              <Money minor={spentMinor} />
-            ) : (
-              <Money minor={Math.abs(diff)} tone={over ? "negative" : "default"} />
-            )}
-          </p>
-          <p className="mt-1.5 text-xs text-muted-foreground">
-            {plannedMinor > 0
-              ? `${pct}% of ${money(plannedMinor)} ${isIncome ? "received" : "used"}`
-              : "No budget set"}
-          </p>
-        </div>
+    <section className="rounded-xl border border-border bg-card p-5">
+      <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+        {plannedMinor <= 0 ? (isIncome ? "Received" : "Spent") : isIncome ? "Still expected" : over ? "Over budget" : "Left to spend"}
+      </p>
+      <p className="mt-1 font-heading text-4xl font-bold">
+        {plannedMinor <= 0 ? (
+          <Money minor={spentMinor} />
+        ) : (
+          <Money minor={Math.abs(diff)} tone={over ? "negative" : "default"} />
+        )}
+      </p>
 
-        <dl className="grid w-full flex-1 grid-cols-2 gap-x-6 gap-y-7">
-          <Stat label={isIncome ? "Received" : "Spent"} value={<Money minor={spentMinor} />} />
-          <Stat label="Budgeted" value={<Money minor={plannedMinor} tone={plannedMinor ? "default" : "muted"} />} />
-          <Stat label={isIncome ? "Received" : "Used"} value={plannedMinor > 0 ? `${pct}%` : "—"} sub={footnote} />
-          <Stat
-            label={isIncome ? "Still expected" : over ? "Over by" : "Remaining"}
-            value={<Money minor={Math.abs(diff)} tone={over ? "negative" : "default"} />}
-          />
-        </dl>
-      </div>
+      <dl className="mt-5 grid grid-cols-2 gap-4 border-t border-border pt-4 sm:grid-cols-4">
+        <Stat label={isIncome ? "Received" : "Spent"} value={<Money minor={spentMinor} tone={spentMinor ? "default" : "muted"} />} />
+        <Stat label="Budgeted" value={<Money minor={plannedMinor} tone={plannedMinor ? "default" : "muted"} />} />
+        <Stat label={isIncome ? "Received" : "Used"} value={plannedMinor > 0 ? `${pct}%` : "—"} />
+        <Stat
+          label={isIncome ? "Still expected" : over ? "Over by" : "Remaining"}
+          value={<Money minor={Math.abs(diff)} tone={over ? "negative" : plannedMinor ? "default" : "muted"} />}
+        />
+      </dl>
+      {footnote && <p className="mt-3 text-xs text-muted-foreground">{footnote}</p>}
     </section>
   );
 }

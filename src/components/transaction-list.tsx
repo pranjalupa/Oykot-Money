@@ -102,7 +102,7 @@ export function TransactionList({
               className="w-20 shrink-0 text-right text-sm font-semibold sm:w-28"
             />
 
-            <div className="flex shrink-0 items-center gap-0.5 border-l border-border pl-2 sm:pl-3">
+            <div className="flex shrink-0 items-center gap-0.5 pl-1">
               <EditTransactionDialog transaction={t} accounts={accounts} categories={categories} />
               <DeleteTransactionButton id={t.id} label={label} />
             </div>

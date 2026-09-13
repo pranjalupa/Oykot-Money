@@ -123,9 +123,9 @@ when you've navigated away) — or a **year switcher** on the Yearly tab — plu
 #### Daily (default)
 Answers "can I spend this today?"
 
-- **Today** — **safe to spend today** as one big number, one bar for how much of the
-  month's Needs + Wants budget is gone ("₹X spent of ₹Y · ₹Z left"), and one line of
-  context: days left and how far under or over pace.
+- **Today** — **safe to spend today** as one big number, and one bar for how much of the
+  month's Needs + Wants budget is gone ("₹X spent of ₹Y · ₹Z left"). Pace lives in the chart
+  below.
 - **Spending pace** — a line of spending so far against a dashed line to your budget at
   month's end. Assumed fixed costs count from day one. Daily's only chart: the transactions
   below already break the month down day by day.
@@ -138,14 +138,14 @@ Answers "how is this month going against the plan?"
 - **Empty state** when nothing is budgeted: *Set your budget* (goes to Needs) and
   *Copy last month*.
 - **Income · Expenses · Saved this month** — each against its budget.
-- **Your income split** — one bar across the width is the month's income (received, or
-  budgeted until any arrives), divided into Needs, Wants, Investments and Not spent. Marks on
-  the bar show where each group would end at its target share. Below it, a row per group:
-  share spent against its target (red when over), with amounts spent and budgeted, plus a
-  Not spent row. *Adjust split* opens the editor here (§6.7). Group names link to their pages.
-- **Where it goes** — a list, biggest first: each category's full name and amount ("of ₹X"
-  budgeted), with a bar underneath coloured by group and a mark at its budget. A bar past its
-  budget turns red. Top 8; each row opens the category.
+- **Your income split** — a donut of the month's income (received, or budgeted until any
+  arrives) split into Needs, Wants, Investments and Not spent, with the income total in the
+  middle. Beside it, a row per group: share spent against its target (red when over), with
+  amounts spent and budgeted, plus a Not spent row. *Adjust split* opens the editor here
+  (§6.7). Group names link to their pages.
+- **Where it goes** — a horizontal bar chart, biggest first: each category's full name above
+  its bar, the amount at the end, coloured by group and red when over budget. The tooltip shows
+  what was budgeted. Top 8.
 
 #### Yearly
 Answers "how did the year go?"
@@ -157,8 +157,8 @@ Answers "how did the year go?"
 
 ### 5.2 Group pages — Needs, Wants, Investments, Income
 
-- **Budget summary** — what's left (or how far over) as the headline, with Spent, Budgeted,
-  Used and Remaining beside it.
+- **Budget summary** — laid out like Money's Net worth card: what's left (or how far over) as
+  the headline, then Spent · Budgeted · Used · Remaining in one divided row.
 - **Last six months** — six columns, this month solid, with this month's budget as a dashed
   line and a comparison to your average.
 - **Category table** with columns **Category · Budgeted · Spent · Remaining**:

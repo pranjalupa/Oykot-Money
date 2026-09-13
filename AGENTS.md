@@ -133,6 +133,14 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   Teams and sharing are still out — don't build toward them without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
+- 2026-09-13 (late) — **Monthly charts back on Recharts, at Pranjal's request.** Your income
+  split is a **donut** (income total in the hole) with the group rows beside it; Where it goes
+  is a **horizontal bar chart** with each full name drawn *above* its bar via `LabelList`, so
+  nothing is clipped. Supersedes the plain-div stacked bar and list from earlier today.
+  - Group and category summaries (`BudgetSummary`) now copy the Net worth card: uppercase label,
+    one big figure, a divided row of four stats. Money's explainer line under Net worth is gone,
+    and so is Daily's days-left/pace line (pace is in the chart).
+  - Checked with sample data on a temporary page, desktop and 375px, then removed.
 - 2026-09-13 (later) — **Money with people counts in the monthly budget after all.** Pranjal
   budgets month to month: money lent is money you can't spend this month, and a loan is repaid
   out of monthly spending. Supersedes the "loans stay out of the budget" + Forgive design below.

@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { ChartCard } from "@/components/charts/chart-card";
+import { Bar, BarChart, Cell, LabelList, Pie, PieChart, Tooltip, XAxis, YAxis } from "recharts";
+import { ChartContainer } from "@/components/ui/chart";
+import { ChartCard, TooltipBox } from "@/components/charts/chart-card";
 import { useCurrency } from "@/components/currency-provider";
-import { formatMoney } from "@/lib/money";
+import { formatCompact, formatMoney } from "@/lib/money";
 
 const GROUPS = [
   { key: "needs", label: "Needs", color: "var(--chart-needs)" },
@@ -23,16 +25,12 @@ export type TargetRow = {
   actualMinor: number;
 };
 
+type Slice = { key: string; label: string; value: number; color: string };
+
 /**
- * Where this month's income went, against the split you aimed for — one card.
- *
- * It used to be two: a pie of the income split and a target card beside it,
- * both saying "Needs 33%". Now one bar across the whole width is the income,
- * divided by group, with a mark wherever a group would end if it spent exactly
- * its target share. The rows underneath carry the figures and the editor.
- *
- * Plain divs rather than Recharts: a single stacked bar has no axes, ticks or
- * tooltips worth a chart library.
+ * Where this month's income went, against the split you aimed for — one card:
+ * a donut of the income by group (plus what's not spent), with the income in
+ * the middle, and beside it a row per group with its share against target.
  */
 export function IncomeSplit({
   rows,
@@ -50,19 +48,14 @@ export function IncomeSplit({
   const money = (m: number) => formatMoney(m, { currency });
   const spent = rows.reduce((s, r) => s + r.actualMinor, 0);
   const left = Math.max(incomeMinor - spent, 0);
-  // Overspending still has to fit in the bar, so the whole is whichever is bigger.
-  const whole = Math.max(incomeMinor, spent);
-  const width = (v: number) => (whole > 0 ? `${(v / whole) * 100}%` : "0%");
   const shareOfIncome = (v: number) => (incomeMinor > 0 ? Math.round((v / incomeMinor) * 100) : 0);
 
-  let running = 0;
-  const marks =
-    incomeMinor > 0
-      ? rows.map((r) => {
-          running += r.targetPercent;
-          return { key: r.key, at: (running * incomeMinor) / whole };
-        })
-      : [];
+  const slices: Slice[] = [
+    ...rows.map((r) => ({ key: r.key, label: META[r.key].label, value: r.actualMinor, color: META[r.key].color })),
+    // Unspent money takes the neutral stone rather than a fourth group colour.
+    { key: "left", label: "Not spent", value: left, color: "var(--chart-neutral)" },
+  ];
+  const drawn = slices.filter((s) => s.value > 0);
 
   return (
     <ChartCard
@@ -76,53 +69,59 @@ export function IncomeSplit({
         ],
       }}
     >
-      {whole === 0 ? (
+      {drawn.length === 0 ? (
         <p className="py-8 text-center text-sm text-muted-foreground">Log some income and spending to see the split.</p>
       ) : (
-        <>
-          <div className="relative">
-            <div className="flex h-5 gap-0.5 overflow-hidden rounded-full bg-muted">
-              {rows.map(
-                (r) =>
-                  r.actualMinor > 0 && (
-                    <div
-                      key={r.key}
-                      title={`${META[r.key].label}: ${money(r.actualMinor)}`}
-                      className="h-full"
-                      style={{ width: width(r.actualMinor), background: META[r.key].color }}
-                    />
-                  ),
-              )}
-              {left > 0 && (
-                <div
-                  title={`Not spent: ${money(left)}`}
-                  className="h-full"
-                  style={{ width: width(left), background: "var(--chart-neutral)" }}
+        <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-center sm:gap-8">
+          <div className="relative size-[200px] shrink-0">
+            <ChartContainer
+              config={Object.fromEntries(slices.map((s) => [s.key, { label: s.label, color: s.color }]))}
+              className="aspect-square size-full"
+            >
+              <PieChart>
+                <Tooltip
+                  content={({ active, payload }) => {
+                    if (!active || !payload?.length) return null;
+                    const s = payload[0].payload as Slice;
+                    return (
+                      <TooltipBox
+                        title={s.label}
+                        rows={[{ label: `${shareOfIncome(s.value)}% of income`, value: money(s.value), color: s.color }]}
+                      />
+                    );
+                  }}
                 />
-              )}
+                <Pie
+                  data={drawn}
+                  dataKey="value"
+                  nameKey="label"
+                  innerRadius="64%"
+                  outerRadius="100%"
+                  paddingAngle={1.5}
+                  cornerRadius={4}
+                  stroke="var(--card)"
+                  strokeWidth={2}
+                  isAnimationActive={false}
+                >
+                  {drawn.map((s) => (
+                    <Cell key={s.key} fill={s.color} />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ChartContainer>
+            {/* The whole the slices are shares of, in the hole. */}
+            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
+              <span className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Income</span>
+              <span className="font-heading text-lg font-bold">{formatCompact(incomeMinor, currency)}</span>
             </div>
-            {marks
-              .filter((m) => m.at > 0 && m.at < 100)
-              .map((m) => (
-                <span
-                  key={m.key}
-                  aria-hidden
-                  title={`Where ${META[m.key].label} ends at its target`}
-                  className="absolute -top-1.5 -bottom-1.5 w-0.5 -translate-x-1/2 rounded-full bg-foreground/70"
-                  style={{ left: `${m.at}%` }}
-                />
-              ))}
           </div>
-          <p className="mt-2.5 text-xs text-muted-foreground">
-            The marks show where each group should end at your {rows.map((r) => r.targetPercent).join(" / ")} split.
-          </p>
 
-          <ul className="mt-4 flex flex-col divide-y divide-border">
+          <ul className="flex w-full flex-col divide-y divide-border">
             {rows.map((r) => {
               const isOver = r.actualPercent > r.targetPercent;
               return (
-                <li key={r.key} className="flex items-center gap-3 py-3">
-                  <span aria-hidden className="h-3 w-1.5 shrink-0 rounded-sm" style={{ background: META[r.key].color }} />
+                <li key={r.key} className="flex items-center gap-3 py-2.5">
+                  <span aria-hidden className="size-2.5 shrink-0 rounded-sm" style={{ background: META[r.key].color }} />
                   <Link href={r.href} className="flex-1 text-sm font-medium hover:underline">
                     {META[r.key].label}
                   </Link>
@@ -137,15 +136,15 @@ export function IncomeSplit({
                 </li>
               );
             })}
-            <li className="flex items-center gap-3 py-3">
-              <span aria-hidden className="h-3 w-1.5 shrink-0 rounded-sm" style={{ background: "var(--chart-neutral)" }} />
+            <li className="flex items-center gap-3 py-2.5">
+              <span aria-hidden className="size-2.5 shrink-0 rounded-sm" style={{ background: "var(--chart-neutral)" }} />
               <span className="flex-1 text-sm font-medium text-muted-foreground">Not spent</span>
               <span className="tabular text-sm font-semibold">
                 {money(left)} <span className="font-normal text-muted-foreground">· {shareOfIncome(left)}%</span>
               </span>
             </li>
           </ul>
-        </>
+        </div>
       )}
       {editor && <div className="mt-4 border-t border-border pt-4">{editor}</div>}
     </ChartCard>
@@ -161,20 +160,27 @@ export type CategorySpend = {
   href: string;
 };
 
+type RankedBar = CategorySpend & { color: string; over: boolean };
+
+/** Row height per category: room for the name above its bar. */
+const ROW = 46;
+
 /**
- * Which categories take the most — biggest first, coloured by group.
+ * Which categories take the most — a horizontal bar chart, biggest first,
+ * coloured by group (red when over budget).
  *
- * A list with a bar under each name rather than a bar chart with names in a
- * column beside it: that column capped names at 13 characters. A thin mark on
- * each bar is that category's budget; a bar past its mark turns red.
+ * Each category's full name sits above its bar rather than in an axis column
+ * beside it: that column capped names at 13 characters.
  */
 export function TopCategories({ rows }: { rows: CategorySpend[] }) {
   const currency = useCurrency();
   const money = (m: number) => formatMoney(m, { currency });
   const spending = rows.filter((r) => r.actualMinor > 0).sort((a, b) => b.actualMinor - a.actualMinor);
-  const shown = spending.slice(0, 8);
-  const scale = Math.max(1, ...shown.map((r) => Math.max(r.actualMinor, r.plannedMinor)));
-  const pct = (v: number) => `${(v / scale) * 100}%`;
+  const data: RankedBar[] = spending.slice(0, 8).map((r) => ({
+    ...r,
+    color: META[r.groupKey].color,
+    over: r.plannedMinor > 0 && r.actualMinor > r.plannedMinor,
+  }));
 
   return (
     <ChartCard
@@ -185,40 +191,56 @@ export function TopCategories({ rows }: { rows: CategorySpend[] }) {
         rows: spending.map((r) => [r.name, money(r.actualMinor), money(r.plannedMinor)]),
       }}
     >
-      {shown.length ? (
-        <ul className="flex flex-col gap-4">
-          {shown.map((r) => {
-            const over = r.plannedMinor > 0 && r.actualMinor > r.plannedMinor;
-            return (
-              <li key={r.id}>
-                <Link href={r.href} className="group block">
-                  <div className="flex items-baseline justify-between gap-3 text-sm">
-                    <span className="min-w-0 truncate font-medium group-hover:underline">{r.name}</span>
-                    <span className="tabular shrink-0 font-semibold">
-                      <span className={over ? "text-negative" : undefined}>{money(r.actualMinor)}</span>
-                      {r.plannedMinor > 0 && (
-                        <span className="text-xs font-normal text-muted-foreground"> of {money(r.plannedMinor)}</span>
-                      )}
-                    </span>
-                  </div>
-                  <div className="relative mt-1.5 h-2 rounded-full bg-muted">
-                    <div
-                      className="h-full rounded-full"
-                      style={{ width: pct(r.actualMinor), background: over ? "var(--negative)" : META[r.groupKey].color }}
-                    />
-                    {r.plannedMinor > 0 && (
-                      <span
-                        aria-hidden
-                        className="absolute -top-1 -bottom-1 w-0.5 -translate-x-1/2 rounded-full bg-foreground/60"
-                        style={{ left: pct(r.plannedMinor) }}
-                      />
-                    )}
-                  </div>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+      {data.length ? (
+        <ChartContainer
+          config={{ actualMinor: { label: "Spent", color: "var(--primary)" } }}
+          className="aspect-auto w-full"
+          style={{ height: data.length * ROW + 8 }}
+        >
+          <BarChart data={data} layout="vertical" margin={{ top: 18, right: 64, bottom: 0, left: 0 }} barCategoryGap={22}>
+            <XAxis type="number" hide domain={[0, "dataMax"]} />
+            <YAxis type="category" dataKey="name" hide />
+            <Tooltip
+              cursor={{ fill: "var(--muted)", opacity: 0.4 }}
+              content={({ active, payload }) => {
+                if (!active || !payload?.length) return null;
+                const r = payload[0].payload as RankedBar;
+                return (
+                  <TooltipBox
+                    title={r.name}
+                    rows={[
+                      { label: "spent", value: money(r.actualMinor), color: r.over ? "var(--negative)" : r.color },
+                      { label: "budgeted", value: r.plannedMinor > 0 ? money(r.plannedMinor) : "not budgeted" },
+                    ]}
+                  />
+                );
+              }}
+            />
+            <Bar dataKey="actualMinor" radius={6} barSize={14} isAnimationActive={false}>
+              {data.map((r) => (
+                <Cell key={r.id} fill={r.over ? "var(--negative)" : r.color} />
+              ))}
+              {/* Full name above the bar. */}
+              <LabelList
+                dataKey="name"
+                content={({ x, y, value }) => (
+                  <text x={Number(x)} y={Number(y) - 6} fill="var(--foreground)" fontSize={12} fontWeight={500}>
+                    {String(value)}
+                  </text>
+                )}
+              />
+              {/* Amount at the end of the bar. */}
+              <LabelList
+                dataKey="actualMinor"
+                position="right"
+                offset={8}
+                formatter={(v: unknown) => formatCompact(Number(v), currency)}
+                fill="var(--muted-foreground)"
+                fontSize={12}
+              />
+            </Bar>
+          </BarChart>
+        </ChartContainer>
       ) : (
         <p className="py-10 text-center text-sm text-muted-foreground">Log some spending to see where it goes.</p>
       )}

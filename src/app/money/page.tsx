@@ -68,10 +68,6 @@ export default async function MoneyPage() {
         <p className="mt-1 font-heading text-4xl font-bold">
           <Money minor={net.total} />
         </p>
-        <p className="accent-note mt-1.5 text-sm text-muted-foreground">
-          What you hold, plus what you&rsquo;re owed, minus what you owe.
-        </p>
-
         <dl className="mt-5 grid grid-cols-2 gap-4 border-t border-border pt-4 sm:grid-cols-4">
           <Stat label="Cash" minor={net.cash} />
           <Stat label="Assets" minor={net.assets} />

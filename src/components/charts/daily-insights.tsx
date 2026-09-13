@@ -14,13 +14,6 @@ const daysIn = (month: string) => {
   return new Date(Date.UTC(y, m, 0)).getUTCDate();
 };
 
-/** Where spending stands against a straight line from nothing to the budget. */
-function pace(budget: number, spent: number, throughDay: number, last: number) {
-  if (budget <= 0 || throughDay <= 0) return null;
-  const expected = Math.round((budget * Math.min(throughDay, last)) / last);
-  return { expected, diff: expected - spent };
-}
-
 /**
  * The question Daily exists to answer: how much can I spend today?
  *
@@ -28,14 +21,11 @@ function pace(budget: number, spent: number, throughDay: number, last: number) {
  * percentage didn't, and a grid of four stats beside the number repeated it.
  */
 export function DailyHero({
-  month,
   budgetMinor,
   spentMinor,
   remainingMinor,
   safePerDayMinor,
-  daysLeft,
   isCurrentMonth,
-  throughDay,
 }: {
   month: string;
   budgetMinor: number;
@@ -50,17 +40,8 @@ export function DailyHero({
   const money = (m: number) => formatMoney(m, { currency });
   const used = budgetMinor > 0 ? Math.round((spentMinor / budgetMinor) * 100) : 0;
   const over = remainingMinor < 0;
-  const p = pace(budgetMinor, spentMinor, throughDay, daysIn(month));
-
-  // One number that answers the question, one bar for how much is gone, one
-  // line of context. The four stat boxes that used to sit beside it said the
-  // same thing four ways.
-  const context = [
-    isCurrentMonth ? `${daysLeft} day${daysLeft === 1 ? "" : "s"} left` : `${daysLeft} days in the month`,
-    p ? (p.diff >= 0 ? `${money(p.diff)} under pace` : `${money(-p.diff)} over pace`) : null,
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  // One number that answers the question and one bar for how much is gone.
+  // Days left and pace live in the Spending pace chart below.
 
   return (
     <section className="rounded-2xl border border-border bg-card p-6 sm:p-8">
@@ -95,7 +76,6 @@ export function DailyHero({
               <span className="text-muted-foreground">{over ? "over" : "left"}</span>
             </span>
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">{context} · Needs and Wants</p>
         </>
       ) : (
         <p className="mt-3 text-sm text-muted-foreground">No Needs or Wants budget set for this month.</p>
