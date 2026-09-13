@@ -32,11 +32,14 @@ export function AccountsManager({
   title,
   blurb,
   empty,
+  action,
 }: {
   accounts: AccountBalance[];
   title: string;
   blurb: string;
   empty: string;
+  /** A button in the section header — Accounts puts "Move money" here. */
+  action?: React.ReactNode;
 }) {
   const byId = new Map(accounts.map((a) => [a.id, a]));
 
@@ -50,9 +53,12 @@ export function AccountsManager({
 
   return (
     <section className="overflow-hidden rounded-xl border border-border bg-card">
-      <div className="border-b border-border px-4 py-3">
-        <h2 className="font-heading text-base font-bold">{title}</h2>
-        <p className="text-xs text-muted-foreground">{blurb}</p>
+      <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+        <div className="min-w-0">
+          <h2 className="font-heading text-base font-bold">{title}</h2>
+          <p className="text-xs text-muted-foreground">{blurb}</p>
+        </div>
+        {action}
       </div>
 
       {accounts.length === 0 ? (

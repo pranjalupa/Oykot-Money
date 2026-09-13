@@ -32,6 +32,7 @@ import { toMinor } from "@/lib/money";
 import { isCurrency } from "@/lib/currency";
 import { isRegion, isTimeZone } from "@/lib/region";
 import { isValidDate, isValidMonth, SPEND_GROUPS } from "@/lib/targets";
+import { listPeople, listTransactions, type TransactionRow } from "@/lib/budget";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
@@ -755,6 +756,53 @@ export async function quickAddPerson(
   const id = await addPersonWithLedger(user.id, { name: clean, handle: null, kind: "person", icon: null });
   refresh();
   return { ok: true, account: { id, name: clean, kind: "loan" } };
+}
+
+/**
+ * Everything that moved a person's balance, newest first: money you gave
+ * (a transfer to their ledger), money you got (an inflow from it), and a
+ * forgiven debt (spending recorded on the ledger itself).
+ */
+export async function personHistory(personId: string): Promise<TransactionRow[]> {
+  const user = await requireUser();
+  const person = (await listPeople(user.id)).find((p) => p.id === personId);
+  if (!person?.accountId) return [];
+
+  const [withThem, onLedger] = await Promise.all([
+    listTransactions(user.id, { counterAccountId: person.accountId, limit: 100 }),
+    listTransactions(user.id, { accountId: person.accountId, limit: 100 }),
+  ]);
+  return [...withThem, ...onLedger].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 100);
+}
+
+/**
+ * Forgive what someone owes you. Lending isn't spending while you expect it
+ * back; once you don't, the loss is real — so the balance is cleared by a
+ * spending entry on their ledger, in the category you pick. Your own accounts
+ * don't move: the cash already left when you lent it.
+ */
+export async function forgiveDebt(personId: string, categoryId: string): Promise<ActionResult> {
+  const user = await requireWriter();
+  const person = (await listPeople(user.id)).find((p) => p.id === personId);
+  if (!person?.accountId) return fail("Person not found.");
+  if (person.balanceMinor <= 0) return fail(`${person.name} doesn't owe you anything.`);
+  if (!categoryId || !(await ownsCategory(user.id, categoryId))) return fail("Pick a category.");
+
+  const { timeZone } = await getUserPrefs();
+  await db.insert(transactions).values({
+    userId: user.id,
+    date: todayIn(timeZone),
+    amountMinor: person.balanceMinor,
+    direction: "outflow",
+    accountId: person.accountId,
+    counterAccountId: null,
+    categoryId,
+    merchant: `Forgave ${person.name}`,
+    source: "forgive",
+  });
+
+  refresh();
+  return { ok: true };
 }
 
 export async function updatePerson(

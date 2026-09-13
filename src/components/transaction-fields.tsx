@@ -25,28 +25,25 @@ export type PickerCategory = {
 };
 export type Direction = "outflow" | "inflow" | "transfer";
 
-const TABS = [
-  { key: "outflow", label: "Spent" },
-  { key: "inflow", label: "Received" },
-  { key: "transfer", label: "Settlement" },
-] as const;
-type Tab = (typeof TABS)[number]["key"];
-
 /**
- * The three things a settlement can be. Only two directions are stored:
- *   lent     → direction 'transfer', your account → person (they owe you more,
- *              or you owe them less — lending and paying back are the same move)
- *   borrowed → direction 'inflow',   person → your account (the reverse)
- *   move     → direction 'transfer', your account → your account
- * The person is always the counter-account, so the balance maths in
- * lib/budget.ts needs no special case.
+ * What the form is recording. Only three directions are stored:
+ *   outflow  Spent             your account, a spend category
+ *   inflow   Received          your account, an income category
+ *   person   You gave → 'transfer' your account → their ledger
+ *            You got  → 'inflow'   their ledger → your account
+ *   move     Move              'transfer' your account → your account
+ * Money with a person or between your own accounts never carries a category,
+ * so it never touches the budget (a forgiven debt is the one way a loan
+ * becomes spending — see forgiveDebt).
  */
-const KINDS = [
-  { key: "lent", label: "Money to them", hint: "Lending, or paying back what you owe." },
-  { key: "borrowed", label: "Money from them", hint: "Borrowing, or getting paid back." },
-  { key: "move", label: "Between my accounts", hint: "Between your own accounts — this won’t touch your budget." },
-] as const;
-type Kind = (typeof KINDS)[number]["key"];
+export type TransactionTab = "outflow" | "inflow" | "person" | "move";
+const TAB_LABEL: Record<TransactionTab, string> = {
+  outflow: "Spent",
+  inflow: "Received",
+  person: "Person",
+  move: "Move",
+};
+type PersonMode = "gave" | "got";
 
 const SPEND_GROUPS = [
   { key: "needs", label: "Needs" },
@@ -67,9 +64,6 @@ const SELECT =
  * Archived accounts, people and retired categories are left out of the
  * choices. An edit still keeps whatever the transaction already points at, so
  * opening an old entry never silently swaps its account.
- *
- * A person or category can be added from the dropdown itself: a small inline
- * field rather than a second dialog stacked on this one.
  */
 export function TransactionFields({
   idPrefix,
@@ -77,6 +71,7 @@ export function TransactionFields({
   categories,
   initial = {},
   showRepeat = false,
+  tabs: tabsProp,
 }: {
   idPrefix: string;
   accounts: PickerAccount[];
@@ -91,6 +86,8 @@ export function TransactionFields({
     merchant?: string | null;
   };
   showRepeat?: boolean;
+  /** Which tabs to offer. Move is hidden unless asked for, or already in use. */
+  tabs?: TransactionTab[];
 }) {
   // Added from this form but not yet back from the server's revalidation.
   const [addedAccounts, setAddedAccounts] = useState<PickerAccount[]>([]);
@@ -106,16 +103,20 @@ export function TransactionFields({
   const spending = usable.filter((a) => a.kind === "spending");
   const kindOf = (id: string | null | undefined) => usable.find((a) => a.id === id)?.kind;
 
+  const initialTab: TransactionTab = initial.counterAccountId
+    ? initial.direction === "inflow" || kindOf(initial.counterAccountId) !== "spending"
+      ? "person"
+      : "move"
+    : initial.direction === "transfer"
+      ? "move"
+      : (initial.direction ?? "outflow");
+  const tabs: TransactionTab[] =
+    tabsProp ?? (initialTab === "move" ? ["outflow", "inflow", "person", "move"] : ["outflow", "inflow", "person"]);
+
   // Initial values come from props once — no effect needed to pick a default.
-  const [tab, setTab] = useState<Tab>(
-    initial.direction === "inflow" && initial.counterAccountId ? "transfer" : (initial.direction ?? "outflow"),
-  );
-  const [kind, setKind] = useState<Kind>(
-    initial.direction === "inflow" && initial.counterAccountId
-      ? "borrowed"
-      : initial.direction === "transfer" && kindOf(initial.counterAccountId) === "spending"
-        ? "move"
-        : "lent",
+  const [tab, setTab] = useState<TransactionTab>(tabs.includes(initialTab) ? initialTab : tabs[0]);
+  const [personMode, setPersonMode] = useState<PersonMode>(
+    initial.direction === "inflow" && initial.counterAccountId ? "got" : "gave",
   );
   const [accountId, setAccountId] = useState(initial.accountId ?? spending[0]?.id ?? "");
   const [counterAccountId, setCounterAccountId] = useState(initial.counterAccountId ?? "");
@@ -125,39 +126,29 @@ export function TransactionFields({
   const [draftGroup, setDraftGroup] = useState<GroupKey>("needs");
   const [saving, startSaving] = useTransition();
 
-  const settlement = tab === "transfer";
-  const direction: Direction = settlement && kind === "borrowed" ? "inflow" : tab;
+  const direction: Direction =
+    tab === "person" ? (personMode === "got" ? "inflow" : "transfer") : tab === "move" ? "transfer" : tab;
+  const hasCategory = tab === "outflow" || tab === "inflow";
 
-  // Money going out can land in any spend group; money coming in is Income.
-  const groupsFor = (t: Tab): GroupKey[] => (t === "inflow" ? ["income"] : ["needs", "wants", "investments"]);
+  const groupsFor = (t: TransactionTab): GroupKey[] => (t === "inflow" ? ["income"] : ["needs", "wants", "investments"]);
   const relevant = usableCategories.filter((c) => groupsFor(tab).includes(c.groupKey));
 
-  // The far end: a person for money to or from them, your own account for a
-  // move. Assets hold a typed-in value, not a ledger, so they're never offered —
-  // unless an old entry already points at one.
-  const counterOptions = usable.filter((a) =>
-    a.id === accountId
-      ? false
-      : kind === "move"
-        ? a.kind === "spending"
-        : a.kind === "loan" || (a.kind === "asset" && keep.has(a.id)),
-  );
+  // The far end: a person, or your own account for a move. Assets hold a
+  // typed-in value, not a ledger, so they're never offered — unless an old
+  // entry already points at one.
+  const counterFits = (a: PickerAccount, t: TransactionTab) =>
+    t === "move" ? a.kind === "spending" : a.kind === "loan" || (a.kind === "asset" && keep.has(a.id));
+  const counterOptions = usable.filter((a) => a.id !== accountId && counterFits(a, tab));
 
-  function pickTab(next: Tab) {
+  function pickTab(next: TransactionTab) {
     setTab(next);
     setAdding(null);
+    if (counterAccountId && !usable.some((a) => a.id === counterAccountId && counterFits(a, next))) {
+      setCounterAccountId("");
+    }
     if (categoryId && !usableCategories.some((c) => c.id === categoryId && groupsFor(next).includes(c.groupKey))) {
       setCategoryId("");
     }
-  }
-
-  function pickKind(next: Kind) {
-    setKind(next);
-    setAdding(null);
-    const stillValid = usable.some(
-      (a) => a.id === counterAccountId && (next === "move" ? a.kind === "spending" : a.kind !== "spending"),
-    );
-    if (!stillValid) setCounterAccountId("");
   }
 
   function startAdding(what: "person" | "category") {
@@ -286,7 +277,7 @@ export function TransactionFields({
             {a.name}
           </option>
         ))}
-        {kind !== "move" && <option value={NEW}>+ Add person…</option>}
+        {tab === "person" && <option value={NEW}>+ Add person…</option>}
       </select>
       {adding === "person" && inlineAdd("person")}
     </div>
@@ -296,46 +287,48 @@ export function TransactionFields({
     <>
       <input type="hidden" name="direction" value={direction} />
 
-      <div className="flex gap-1 rounded-lg bg-muted p-1">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            type="button"
-            onClick={() => pickTab(t.key)}
-            aria-pressed={tab === t.key}
-            className={cn(
-              "flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-              tab === t.key
-                ? "bg-card text-foreground shadow-sm ring-1 ring-foreground/15"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      {tabs.length > 1 && (
+        <div className="flex gap-1 rounded-lg bg-muted p-1">
+          {tabs.map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => pickTab(t)}
+              aria-pressed={tab === t}
+              className={cn(
+                "flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                tab === t
+                  ? "bg-card text-foreground shadow-sm ring-1 ring-foreground/15"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {TAB_LABEL[t]}
+            </button>
+          ))}
+        </div>
+      )}
 
-      {settlement && (
-        <div className="flex flex-col gap-1.5">
-          <div className="flex flex-wrap gap-1.5">
-            {KINDS.map((k) => (
-              <button
-                key={k.key}
-                type="button"
-                onClick={() => pickKind(k.key)}
-                aria-pressed={kind === k.key}
-                className={cn(
-                  "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
-                  kind === k.key
-                    ? "border-foreground/20 bg-secondary text-secondary-foreground"
-                    : "border-border text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {k.label}
-              </button>
-            ))}
-          </div>
-          <p className="text-xs text-muted-foreground">{KINDS.find((k) => k.key === kind)?.hint}</p>
+      {tab === "person" && (
+        <div className="grid grid-cols-2 gap-2">
+          {(["gave", "got"] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => setPersonMode(m)}
+              aria-pressed={personMode === m}
+              className={cn(
+                "rounded-lg border px-3 py-2.5 text-left transition-colors",
+                personMode === m
+                  ? "border-foreground/25 bg-secondary text-secondary-foreground"
+                  : "border-border text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <span className="block text-sm font-semibold">{m === "gave" ? "You gave" : "You got"}</span>
+              <span className="block text-xs opacity-80">
+                {m === "gave" ? "Lent, or paid them back" : "Borrowed, or got paid back"}
+              </span>
+            </button>
+          ))}
         </div>
       )}
 
@@ -360,41 +353,41 @@ export function TransactionFields({
         </div>
       </div>
 
-      {!settlement && accountField(tab === "inflow" ? "Into account" : "From account")}
+      {tab === "outflow" && accountField("From account")}
+      {tab === "inflow" && accountField("Into account")}
 
-      {settlement && kind === "lent" && (
+      {tab === "person" && (
         <>
-          {accountField("From account")}
-          {counterField("To person")}
+          {counterField("Person")}
+          {accountField(personMode === "gave" ? "Paid from" : "Received into")}
+          <p className="-mt-2 text-xs text-muted-foreground">
+            Not counted as {personMode === "gave" ? "spending" : "income"} — it just changes what you and they owe.
+          </p>
         </>
       )}
-      {settlement && kind === "borrowed" && (
-        <>
-          {counterField("From person")}
-          {accountField("Into account")}
-        </>
-      )}
-      {settlement && kind === "move" && (
+
+      {tab === "move" && (
         <>
           {accountField("From account")}
           {counterField("To account")}
+          <p className="-mt-2 text-xs text-muted-foreground">
+            Between your own accounts — this won&rsquo;t touch your budget.
+          </p>
         </>
       )}
 
-      {/* Spent and Received always need a category. Money to a person may
-          count as spending if you pick one; money from them and moves never do. */}
-      {(!settlement || kind === "lent") && (
+      {hasCategory && (
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor={id("category")}>{settlement ? "Count as spending from" : "Category"}</Label>
+          <Label htmlFor={id("category")}>Category</Label>
           <select
             id={id("category")}
             name="categoryId"
-            required={!settlement}
+            required
             value={categoryId}
             onChange={(e) => (e.target.value === NEW ? startAdding("category") : setCategoryId(e.target.value))}
             className={SELECT}
           >
-            <option value="">{settlement ? "Don't count as spending" : "Choose…"}</option>
+            <option value="">Choose…</option>
             {relevant.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.parentId ? "— " : ""}
@@ -404,20 +397,15 @@ export function TransactionFields({
             <option value={NEW}>+ New category…</option>
           </select>
           {adding === "category" && inlineAdd("category")}
-          {settlement && adding !== "category" && (
-            <p className="text-xs text-muted-foreground">
-              Pick a category and it comes out of that budget, as well as your account.
-            </p>
-          )}
         </div>
       )}
 
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor={id("merchant")}>Merchant / note</Label>
+        <Label htmlFor={id("merchant")}>{tab === "outflow" || tab === "inflow" ? "Merchant / note" : "Note"}</Label>
         <Input
           id={id("merchant")}
           name="merchant"
-          placeholder="Blinkit, landlord, …"
+          placeholder={tab === "person" ? "Lunch, rent share, …" : "Blinkit, landlord, …"}
           defaultValue={initial.merchant ?? ""}
         />
       </div>

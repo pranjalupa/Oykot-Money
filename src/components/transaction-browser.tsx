@@ -13,7 +13,7 @@ const TYPES = [
   { key: "all", label: "All" },
   { key: "outflow", label: "Spent" },
   { key: "inflow", label: "Received" },
-  { key: "transfer", label: "Settlements" },
+  { key: "transfer", label: "People & moves" },
 ] as const;
 
 const SELECT =

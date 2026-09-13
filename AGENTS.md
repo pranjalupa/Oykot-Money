@@ -133,6 +133,18 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   Teams and sharing are still out — don't build toward them without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
+- 2026-09-13 — **Money with people starts from the person.** Researched Khatabook, Splitwise,
+  Wallet by BudgetBakers, YNAB and Monarch; all start from the person, use two buttons, and keep
+  loans out of the budget.
+  - Settlements rows open a **person panel**: You gave / You got / Settle up / Forgive, history,
+    manage. The Add form is **Spent · Received · Person**; **Move** only appears on Money →
+    Accounts → *Move money* (or when editing a move).
+  - **Lending no longer carries a category** — supersedes the "count as spending" option and the
+    sheet-era rule that lending counts against Wants. A loss is recorded by **forgiveDebt**: an
+    `outflow` on the person's *loan ledger* with a Needs/Wants category and `source='forgive'`.
+    The ledger balance drops to zero, spending accounts don't move, the budget counts it. Forgiven
+    rows aren't editable (the form can't pick a ledger as the account).
+  - Balances in words: You'll get / You'll give / Settled. No schema change.
 - 2026-09-13 — **Second annotation pass: navigation and Monthly reshaped.**
   - **People is gone as a page** — it's the Settlements section of Money (`/people`
     redirects to `/money#settlements`). Money reads: Net worth → Accounts → Settlements →

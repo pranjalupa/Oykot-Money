@@ -37,7 +37,11 @@ export function TransactionList({
         const route = borrowed
           ? `${t.counterAccountName ?? "?"} → ${t.accountName}`
           : `${t.accountName} → ${t.counterAccountName ?? "?"}`;
-        const label = t.merchant || t.categoryName || (borrowed ? "Borrowed" : "Settlement");
+        const forgiven = t.source === "forgive";
+        const label =
+          t.merchant ||
+          t.categoryName ||
+          (borrowed ? `Got from ${t.counterAccountName ?? "?"}` : `To ${t.counterAccountName ?? "?"}`);
 
         return (
           <li
@@ -100,7 +104,11 @@ export function TransactionList({
             />
 
             <div className="flex shrink-0 items-center gap-0.5 border-l border-border pl-2 sm:pl-3">
-              <EditTransactionDialog transaction={t} accounts={accounts} categories={categories} />
+              {/* A forgiven debt sits on the person's ledger, which the form
+                  can't pick — delete and forgive again instead of editing. */}
+              {!forgiven && (
+                <EditTransactionDialog transaction={t} accounts={accounts} categories={categories} />
+              )}
               <DeleteTransactionButton id={t.id} label={label} />
             </div>
           </li>

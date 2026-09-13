@@ -186,7 +186,7 @@ Top to bottom:
 - **Net worth** headline, broken down into **Cash · Assets · Owed to you · You owe**, with a
   *See who* link down to Settlements when anyone owes or is owed.
 - **Accounts** — your spending accounts, with balances and subtype (Bank, Cash, UPI wallet —
-  "Wallet" outside India — Credit card).
+  "Wallet" outside India — Credit card). **Move money** in the header moves between them.
 - **Settlements** (§5.5) — the people you lend to and borrow from.
 - **Assets** — with their value and when it was last updated.
 - **Net worth over time** — a line, one point per month. History starts 2026-09-11; it can't
@@ -200,9 +200,14 @@ Was the separate People page until 2026-09-13; `/people` redirects here.
 - **Owed to you** and **You owe** totals.
 - One row per person: icon, name, optional handle, **owes you / you owe / settled up**, and the
   amount.
-- Per row: **Settle up** (when a balance is open — opens Add prefilled with the amount and the
-  right direction), **+** (Add prefilled with that person), **drag to reorder**, **edit**,
-  **archive**, **delete**. A balance only ever changes through a transaction.
+- Rows are quiet — name, **You'll get / You'll give / Settled**, amount — and **tapping one opens
+  the person**. Rows can still be dragged to reorder.
+- **The person panel:** the balance in words; **You gave** and **You got** (amount, date, account
+  — the last one you used — and a note); **Settle up** (the same form with the full amount and
+  the right direction); **Forgive** when they owe you (clears it and records that amount as
+  spending in a Needs or Wants category you pick); their **history**; and edit, archive, delete.
+- A balance only ever changes through a transaction. Money you gave or got is **not** spending or
+  income — only a forgiven debt counts, because only then is the money actually gone.
 - **Add person** — name, optional handle ("@rahul" or a phone number, to tell two Rahuls
   apart), **A person** or **A lender**, and an icon. A note can be added when editing.
 - Archived people are hidden behind *Show N archived*.
@@ -284,32 +289,40 @@ Seeding runs once and is safe to repeat.
 ### 6.3 Logging a transaction — the Add dialog
 Available on Home, every group page and every category page.
 
-| Type | Account field | Category | Effect |
+| Tab | Asks for | Category | Effect |
 |---|---|---|---|
 | **Spent** | From account | Needs, Wants or Investments | Money leaves the account and counts against the category |
 | **Received** | Into account | Income | Money arrives and counts as income |
-| **Transfer** | From account → To account **or person** | Only if a person or asset is involved | Moves money between two places |
+| **Person → You gave** | Person, paid from | None | Your account goes down; they owe you more (or you owe them less) |
+| **Person → You got** | Person, received into | None | Your account goes up; they owe you less (or you owe them more) |
+| **Move** | From account → To account | None | Between your own accounts. Only on Money → Accounts → *Move money*, or when editing a move |
 
-Fields: amount (₹), date, account(s), category, merchant/note, and *Repeat every month*.
+Fields: amount (₹), date, account(s), category (Spent and Received only), note, and *Repeat every
+month*. The person and category dropdowns end with **+ Add person…** / **+ New category…**.
 
-**The transfer rule:** a transfer between two of your own spending accounts has **no
-category** and doesn't touch the budget (the dialog says so). A transfer that involves a
-person or an asset **still needs a category**, so lending money counts against your budget
-while also changing that person's balance.
+**The budget rule:** only Spent and Received touch the budget. Money with a person, or between
+your own accounts, never carries a category — lending isn't spending while you expect it back.
 
-**Validation:** date must be valid, amount greater than zero, an account must be picked, a
-transfer needs a different destination, and a category is required unless it's a pure
-transfer between your own accounts.
+**Validation:** date must be valid, amount greater than zero, an account must be one of yours,
+money from a person must come from a person, a move needs a different destination, and Spent or
+Received need a category.
 
 **Editing** changes anything, including the account and the type; both balances follow. Add and
 edit share the same fields and the same validation. Archived accounts, people and retired
 categories aren't offered — except those an entry being edited already uses.
 
 ### 6.4 Lending and borrowing
-Log a **Transfer** from your account to the person, with a category. Your account goes down,
-their balance goes up ("owes you"), and net worth doesn't change — you've swapped cash for
-money owed. When they pay you back, transfer from them to your account. Borrowing from a
-lender works the same way in reverse and shows as "you owe".
+Start from the person (Money → Settlements → tap them), or the **Person** tab in Add.
+- **You gave** — lending, or paying back what you owe. Your account goes down; net worth doesn't
+  change, because you've swapped cash for money owed.
+- **You got** — borrowing, or being paid back. Your account goes up.
+- **Settle up** — the same form, prefilled with the whole balance in the right direction.
+- **Forgive** — when you won't get it back: the balance clears and becomes spending in the
+  category you pick. Your accounts don't move; the cash already left when you lent it.
+
+Balances read in words: *You'll get ₹2,000* · *You'll give ₹500* · *Settled*. This follows how
+Khatabook ("You gave / You got"), Splitwise (Settle up) and Wallet by BudgetBakers (forgive a
+debt) do it, and how YNAB and Monarch keep loans and transfers out of the budget.
 
 ### 6.5 Recurring transactions
 Tick *Repeat every month* when adding a transaction. From then on:

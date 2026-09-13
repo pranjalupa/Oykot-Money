@@ -276,6 +276,8 @@ export async function listTransactions(
     to?: string;
     categoryId?: string;
     accountId?: string;
+    /** The far end — a person's ledger, for their history. */
+    counterAccountId?: string;
     limit?: number;
   } = {},
 ): Promise<TransactionRow[]> {
@@ -291,6 +293,7 @@ export async function listTransactions(
   if (opts.to) conds.push(lte(transactions.date, opts.to));
   if (opts.categoryId) conds.push(eq(transactions.categoryId, opts.categoryId));
   if (opts.accountId) conds.push(eq(transactions.accountId, opts.accountId));
+  if (opts.counterAccountId) conds.push(eq(transactions.counterAccountId, opts.counterAccountId));
 
   const rows = await db
     .with(counter)

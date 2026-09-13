@@ -17,6 +17,7 @@ import {
 import {
   TransactionFields,
   type Direction,
+  type TransactionTab,
   type PickerAccount,
   type PickerCategory,
 } from "@/components/transaction-fields";
@@ -32,6 +33,7 @@ export function TransactionDialog({
   initial,
   defaultOpen = false,
   title = "Add transaction",
+  tabs,
 }: {
   accounts: PickerAccount[];
   categories: PickerCategory[];
@@ -43,6 +45,8 @@ export function TransactionDialog({
   /** Open on arrival — the phone tab bar's "+" lands on /?add=1. */
   defaultOpen?: boolean;
   title?: string;
+  /** Limit the form to some tabs — Money's "Move money" shows only Move. */
+  tabs?: TransactionTab[];
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(defaultOpen);
@@ -84,8 +88,8 @@ export function TransactionDialog({
         <DialogHeader>
           <DialogTitle className="font-heading">{title}</DialogTitle>
           <DialogDescription>
-            Counts toward the category you pick. Moving money between your own
-            accounts doesn&rsquo;t touch the budget.
+            Spent and Received count toward a category. Money with a person, or
+            between your own accounts, doesn&rsquo;t touch the budget.
           </DialogDescription>
         </DialogHeader>
 
@@ -96,6 +100,7 @@ export function TransactionDialog({
             categories={categories}
             initial={{ date: defaultDate, categoryId: defaultCategoryId ?? null, ...initial }}
             showRepeat
+            tabs={tabs}
           />
 
           {state && !state.ok && (

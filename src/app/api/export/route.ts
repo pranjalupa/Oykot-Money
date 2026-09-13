@@ -19,10 +19,10 @@ import { toMajor } from "@/lib/money";
 
 export const dynamic = "force-dynamic";
 
-const TYPE = { outflow: "Spent", inflow: "Received", transfer: "Settlement" } as const;
-/** Borrowing is stored as an inflow with a person on the far end. */
-const typeOf = (t: { direction: keyof typeof TYPE; counterAccountId: string | null }) =>
-  t.direction === "inflow" && t.counterAccountId ? "Borrowed" : TYPE[t.direction];
+const TYPE = { outflow: "Spent", inflow: "Received", transfer: "Gave / moved" } as const;
+/** Money from a person is stored as an inflow with them on the far end. */
+const typeOf = (t: { direction: keyof typeof TYPE; counterAccountId: string | null; source: string }) =>
+  t.source === "forgive" ? "Forgiven" : t.direction === "inflow" && t.counterAccountId ? "Got" : TYPE[t.direction];
 
 /** RFC 4180: quote everything that could break a cell. */
 function csvCell(value: unknown) {

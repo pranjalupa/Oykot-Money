@@ -1,4 +1,7 @@
-import { ArrowDown } from "@phosphor-icons/react/dist/ssr";
+import { ArrowDown, ArrowsLeftRight } from "@phosphor-icons/react/dist/ssr";
+import { Button } from "@/components/ui/button";
+import { DialogTrigger } from "@/components/ui/dialog";
+import { TransactionDialog } from "@/components/transaction-dialog";
 import { Money } from "@/components/money";
 import { AccountsManager } from "@/components/accounts-manager";
 import { NewAccountDialog } from "@/components/account-dialogs";
@@ -72,8 +75,8 @@ export default async function MoneyPage() {
         <dl className="mt-5 grid grid-cols-2 gap-4 border-t border-border pt-4 sm:grid-cols-4">
           <Stat label="Cash" minor={net.cash} />
           <Stat label="Assets" minor={net.assets} />
-          <Stat label="Owed to you" minor={net.owedToYou} />
-          <Stat label="You owe" minor={net.youOwe} tone={net.youOwe ? "negative" : "muted"} />
+          <Stat label="You'll get" minor={net.owedToYou} />
+          <Stat label="You'll give" minor={net.youOwe} tone={net.youOwe ? "negative" : "muted"} />
         </dl>
 
         {(net.owedToYou > 0 || net.youOwe > 0) && (
@@ -92,6 +95,26 @@ export default async function MoneyPage() {
         title="Accounts"
         blurb="Bank, cash, wallets — money you spend from."
         empty="No accounts yet."
+        action={
+          // Moving your own money lives here rather than in the Add form:
+          // it's rare, and it's about accounts, not spending.
+          spending.length > 1 ? (
+            <TransactionDialog
+              accounts={accounts}
+              categories={categories}
+              defaultDate={todayIn(timeZone)}
+              tabs={["move"]}
+              title="Move money"
+              initial={{ direction: "transfer" }}
+              trigger={
+                <DialogTrigger render={<Button size="sm" variant="outline" className="shrink-0" />}>
+                  <ArrowsLeftRight size={14} weight="bold" />
+                  Move money
+                </DialogTrigger>
+              }
+            />
+          ) : undefined
+        }
       />
 
       <section id="settlements" className="flex scroll-mt-20 flex-col gap-4">
@@ -99,7 +122,7 @@ export default async function MoneyPage() {
           <div>
             <h2 className="font-heading text-lg font-bold">Settlements</h2>
             <p className="mt-0.5 text-sm text-muted-foreground">
-              Who owes you, and who you owe. Use + on a person to record money either way.
+              Tap a person to record money you gave or got, settle up, or see the history.
             </p>
           </div>
           {people.length > 0 && <PersonDialog />}
@@ -109,7 +132,7 @@ export default async function MoneyPage() {
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-xl border border-border bg-card p-4">
               <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
-                Owed to you
+                You&rsquo;ll get
               </p>
               <p className="mt-1 font-heading text-2xl font-bold">
                 <Money minor={owedToYou} tone={owedToYou ? "default" : "muted"} />
@@ -117,7 +140,7 @@ export default async function MoneyPage() {
             </div>
             <div className="rounded-xl border border-border bg-card p-4">
               <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
-                You owe
+                You&rsquo;ll give
               </p>
               <p className="mt-1 font-heading text-2xl font-bold">
                 <Money minor={youOwe} tone={youOwe ? "negative" : "muted"} />
