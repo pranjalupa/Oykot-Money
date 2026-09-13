@@ -313,6 +313,12 @@ export const categories = pgTable(
     icon: text("icon"),
     archived: boolean("archived").notNull().default(false),
     sortOrder: integer("sort_order").notNull().default(0),
+    /**
+     * Set on the four categories behind You gave / You got — lent, repaid_in,
+     * borrowed, repaid_out (lib/loan-categories.ts). They're found by this key,
+     * never by name, and locked in app/actions.ts. Null for everything else.
+     */
+    systemKey: text("system_key"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -321,6 +327,9 @@ export const categories = pgTable(
     index("categories_user_idx").on(t.userId),
     index("categories_user_group_idx").on(t.userId, t.groupKey),
     index("categories_parent_idx").on(t.parentId),
+    uniqueIndex("categories_user_system_key_idx")
+      .on(t.userId, t.systemKey)
+      .where(sql`${t.systemKey} is not null`),
   ],
 );
 

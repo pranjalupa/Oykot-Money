@@ -133,6 +133,20 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   Teams and sharing are still out — don't build toward them without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
+- 2026-09-13 (later) — **Money with people counts in the monthly budget after all.** Pranjal
+  budgets month to month: money lent is money you can't spend this month, and a loan is repaid
+  out of monthly spending. Supersedes the "loans stay out of the budget" + Forgive design below.
+  - **Four locked categories** carry it, found by `categories.system_key` (never by name):
+    `lent` Lent out (Wants) · `repaid_out` Paid back (Needs) · `borrowed` Borrowed (Income) ·
+    `repaid_in` Got paid back (Income). The spreadsheet's Money Lended / Debt (Repayment Given) /
+    Money Borrowed / Debt (Repayment Received) were adopted and renamed.
+  - **The user never picks them.** `personEntries` (lib/loan-ledger.ts) decides from the person's
+    balance before the payment and **splits a payment that crosses zero**. Hand-picking them in
+    Spent/Received is refused; rename, regroup, retire, delete and sub-categories are refused.
+  - `ensureLoanCategories` runs from `ensureUserSetup`, so every account has them. Forgive and
+    `forgiveDebt` are gone — lending was already counted when it happened.
+  - Per person: the locked categories' pages split by person (from `counterAccountId`) instead
+    of per-person sub-categories, which would have meant four sub-categories per person.
 - 2026-09-13 — **Money with people starts from the person.** Researched Khatabook, Splitwise,
   Wallet by BudgetBakers, YNAB and Monarch; all start from the person, use two buttons, and keep
   loans out of the budget.

@@ -33,6 +33,8 @@ import { isCurrency } from "@/lib/currency";
 import { isRegion, isTimeZone } from "@/lib/region";
 import { isValidDate, isValidMonth, SPEND_GROUPS } from "@/lib/targets";
 import { listPeople, listTransactions, type TransactionRow } from "@/lib/budget";
+import { personEntries } from "@/lib/loan-ledger";
+import { LOCKED_CATEGORY_NOTE } from "@/lib/loan-categories";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
@@ -52,6 +54,16 @@ async function ownsCategory(userId: string, id: string) {
     .where(and(eq(categories.id, id), eq(categories.userId, userId)))
     .limit(1);
   return !!row;
+}
+
+/** The four categories behind You gave / You got (lib/loan-categories.ts). */
+async function isLockedCategory(userId: string, id: string) {
+  const [row] = await db
+    .select({ systemKey: categories.systemKey })
+    .from(categories)
+    .where(and(eq(categories.id, id), eq(categories.userId, userId)))
+    .limit(1);
+  return !!row?.systemKey;
 }
 
 async function ownsAccount(userId: string, id: string) {
@@ -100,7 +112,7 @@ type TransactionInput = {
 async function readTransaction(
   userId: string,
   formData: FormData,
-): Promise<TransactionInput | { error: string }> {
+): Promise<(TransactionInput & { withPerson: boolean }) | { error: string }> {
   const date = String(formData.get("date") ?? "");
   const direction = String(formData.get("direction") ?? "outflow");
   const accountId = String(formData.get("accountId") ?? "");
@@ -125,8 +137,11 @@ async function readTransaction(
     return { error: "Pick two different accounts." };
 
   let categoryId = rawCategory || null;
+  let withPerson = false;
   if (categoryId && !(await ownsCategory(userId, categoryId)))
     return { error: "Pick a valid category." };
+  if (categoryId && !counterAccountId && (await isLockedCategory(userId, categoryId)))
+    return { error: "That category is filled in by You gave / You got on a person." };
 
   if (counterAccountId) {
     const kinds = await db
@@ -138,18 +153,18 @@ async function readTransaction(
     const to = kindOf(counterAccountId);
 
     if (from !== "spending") return { error: "Pick one of your own accounts." };
-    if (direction === "inflow") {
-      // Borrowing: the person's ledger goes negative (you owe them). It is
-      // never income, so it never carries a category.
-      if (to !== "loan") return { error: "Money can only be borrowed from a person." };
+    if (to === "loan") {
+      // You gave / You got: the category is decided from the person's balance
+      // when it's written (personEntries), never taken from the form.
+      withPerson = true;
       categoryId = null;
+    } else if (direction === "inflow") {
+      return { error: "Money can only come in from a person." };
     } else if (to === "spending") {
       categoryId = null; // your own accounts — invisible to the budget, by design
     } else if (to === "asset" && !categoryId) {
       return { error: "This transfer still needs a category." };
     }
-    // Lending to a person: the category is optional. Pick one and it counts
-    // as spending in that budget; leave it and only the balances move.
   } else if (direction === "transfer") {
     return { error: "Pick who or where the money went." };
   } else if (!categoryId) {
@@ -165,6 +180,7 @@ async function readTransaction(
     categoryId,
     merchant: String(formData.get("merchant") ?? "").trim() || null,
     note: String(formData.get("note") ?? "").trim() || null,
+    withPerson,
   };
 }
 
@@ -173,10 +189,14 @@ export async function createTransaction(
   formData: FormData,
 ): Promise<ActionResult> {
   const user = await requireWriter();
-  const tx = await readTransaction(user.id, formData);
-  if ("error" in tx) return fail(tx.error);
+  const parsed = await readTransaction(user.id, formData);
+  if ("error" in parsed) return fail(parsed.error);
+  const { withPerson, ...tx } = parsed;
 
-  await db.insert(transactions).values({ userId: user.id, ...tx });
+  // Money with a person takes its locked category from the balance before it,
+  // and splits in two if it crosses zero (lib/loan-ledger.ts).
+  const rows = withPerson ? await personEntries(user.id, tx) : [{ userId: user.id, ...tx }];
+  await db.insert(transactions).values(rows);
 
   // "Repeat monthly" saves a template alongside the transaction. It's marked
   // as already run for this month, so today's entry isn't duplicated.
@@ -187,7 +207,7 @@ export async function createTransaction(
       direction: tx.direction,
       accountId: tx.accountId,
       counterAccountId: tx.counterAccountId,
-      categoryId: tx.categoryId,
+      categoryId: rows[0].categoryId,
       merchant: tx.merchant,
       note: tx.note,
       dayOfMonth: Number(tx.date.slice(8, 10)) || 1,
@@ -218,13 +238,26 @@ export async function updateTransaction(
     .limit(1);
   if (!existing) return fail("Transaction not found.");
 
-  const tx = await readTransaction(user.id, formData);
-  if ("error" in tx) return fail(tx.error);
+  const parsed = await readTransaction(user.id, formData);
+  if ("error" in parsed) return fail(parsed.error);
+  const { withPerson, ...tx } = parsed;
 
-  await db
-    .update(transactions)
-    .set(tx)
-    .where(and(eq(transactions.id, id), eq(transactions.userId, user.id)));
+  if (withPerson) {
+    // Re-decided against the balance without this entry; a crossing splits it.
+    const [first, ...rest] = await personEntries(user.id, tx, id);
+    await db.transaction(async (t) => {
+      await t
+        .update(transactions)
+        .set(first)
+        .where(and(eq(transactions.id, id), eq(transactions.userId, user.id)));
+      if (rest.length) await t.insert(transactions).values(rest);
+    });
+  } else {
+    await db
+      .update(transactions)
+      .set(tx)
+      .where(and(eq(transactions.id, id), eq(transactions.userId, user.id)));
+  }
 
   refresh();
   return { ok: true };
@@ -400,6 +433,7 @@ export async function createCategory(
     if (!parent) return fail("Parent category not found.");
     // Two levels max — a child can't itself become a parent.
     if (parent.parentId) return fail("Subcategories can't be nested further.");
+    if (await isLockedCategory(user.id, parentId)) return fail("Locked categories can't have sub-categories.");
   }
 
   const [{ value: lastOrder }] = await db
@@ -463,6 +497,7 @@ export async function updateCategory(
   if (!name) return fail("Give the category a name.");
   if (!GROUP_KEYS.includes(groupKey)) return fail("Pick a group.");
   if (!(await ownsCategory(user.id, id))) return fail("Category not found.");
+  if (await isLockedCategory(user.id, id)) return fail(`This category is ${LOCKED_CATEGORY_NOTE.charAt(0).toLowerCase()}${LOCKED_CATEGORY_NOTE.slice(1)}`);
 
   await db
     .update(categories)
@@ -487,6 +522,7 @@ export async function setCategoryArchived(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const archived = formData.get("archived") === "true";
   if (!(await ownsCategory(user.id, id))) return;
+  if (await isLockedCategory(user.id, id)) return;
 
   await db
     .update(categories)
@@ -775,36 +811,6 @@ export async function personHistory(personId: string): Promise<TransactionRow[]>
   return [...withThem, ...onLedger].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 100);
 }
 
-/**
- * Forgive what someone owes you. Lending isn't spending while you expect it
- * back; once you don't, the loss is real — so the balance is cleared by a
- * spending entry on their ledger, in the category you pick. Your own accounts
- * don't move: the cash already left when you lent it.
- */
-export async function forgiveDebt(personId: string, categoryId: string): Promise<ActionResult> {
-  const user = await requireWriter();
-  const person = (await listPeople(user.id)).find((p) => p.id === personId);
-  if (!person?.accountId) return fail("Person not found.");
-  if (person.balanceMinor <= 0) return fail(`${person.name} doesn't owe you anything.`);
-  if (!categoryId || !(await ownsCategory(user.id, categoryId))) return fail("Pick a category.");
-
-  const { timeZone } = await getUserPrefs();
-  await db.insert(transactions).values({
-    userId: user.id,
-    date: todayIn(timeZone),
-    amountMinor: person.balanceMinor,
-    direction: "outflow",
-    accountId: person.accountId,
-    counterAccountId: null,
-    categoryId,
-    merchant: `Forgave ${person.name}`,
-    source: "forgive",
-  });
-
-  refresh();
-  return { ok: true };
-}
-
 export async function updatePerson(
   _prev: ActionResult | null,
   formData: FormData,
@@ -934,6 +940,7 @@ export async function deleteCategory(formData: FormData): Promise<ActionResult> 
   const user = await requireWriter();
   const id = String(formData.get("id") ?? "");
   if (!(await ownsCategory(user.id, id))) return fail("Category not found.");
+  if (await isLockedCategory(user.id, id)) return fail(`This category is ${LOCKED_CATEGORY_NOTE.charAt(0).toLowerCase()}${LOCKED_CATEGORY_NOTE.slice(1)}`);
 
   await db.delete(categories).where(and(eq(categories.id, id), eq(categories.userId, user.id)));
   refresh();

@@ -19,7 +19,6 @@ import {
   createTransaction,
   updatePerson,
   deletePerson,
-  forgiveDebt,
   personHistory,
   setPersonArchived,
   reorderPeople,
@@ -45,6 +44,7 @@ import { CurrencySymbol, LocalDate } from "@/components/currency-provider";
 import type { PickerAccount, PickerCategory } from "@/components/transaction-fields";
 import type { PersonRow, TransactionRow } from "@/lib/budget";
 import { toMajor } from "@/lib/money";
+import { LOAN_CATEGORIES } from "@/lib/loan-categories";
 import { cn } from "@/lib/utils";
 
 type Picker = { accounts: PickerAccount[]; categories: PickerCategory[]; defaultDate: string };
@@ -183,7 +183,7 @@ function PersonRowItem({ person, picker }: { person: PersonRow; picker: Picker }
   );
 }
 
-type View = { kind: "overview" } | { kind: "money"; mode: "gave" | "got"; amount?: string } | { kind: "forgive" };
+type View = { kind: "overview" } | { kind: "money"; mode: "gave" | "got"; amount?: string };
 
 /** Everything about one person: balance, the two buttons, history, and managing them. */
 function PersonPanel({
@@ -233,10 +233,6 @@ function PersonPanel({
         <MoneyForm person={person} mode={view.mode} amount={view.amount} picker={picker} onDone={done} onBack={() => setView({ kind: "overview" })} />
       )}
 
-      {view.kind === "forgive" && (
-        <ForgiveForm person={person} picker={picker} onDone={done} onBack={() => setView({ kind: "overview" })} />
-      )}
-
       {view.kind === "overview" && (
         <div className="flex flex-col gap-4">
           <div className="rounded-xl bg-muted/60 px-4 py-5 text-center">
@@ -269,16 +265,6 @@ function PersonPanel({
                   Settle up · <Money minor={Math.abs(b)} />
                 </Button>
               )}
-
-              {b > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setView({ kind: "forgive" })}
-                  className="self-center text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground"
-                >
-                  Not getting it back? Forgive it
-                </button>
-              )}
             </>
           )}
 
@@ -291,18 +277,16 @@ function PersonPanel({
             ) : (
               <ul className="divide-y divide-border">
                 {history.map((t) => {
-                  const forgiven = t.source === "forgive";
                   const got = t.direction === "inflow";
-                  const note = forgiven ? t.categoryName : t.merchant;
                   return (
                     <li key={t.id} className="flex items-center gap-3 py-2.5 text-sm">
                       <span className="w-14 shrink-0 text-xs text-muted-foreground">
                         <LocalDate date={t.date} options={{ day: "numeric", month: "short" }} />
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block font-medium">{forgiven ? "Forgiven" : got ? "You got" : "You gave"}</span>
+                        <span className="block font-medium">{got ? "You got" : "You gave"}</span>
                         <span className="block truncate text-xs text-muted-foreground">
-                          {[note, forgiven ? null : t.accountName].filter(Boolean).join(" · ")}
+                          {[t.categoryName, t.accountName, t.merchant].filter(Boolean).join(" · ")}
                         </span>
                       </span>
                       <Money
@@ -426,8 +410,20 @@ function MoneyForm({
         <Input id="person-note" name="merchant" placeholder="Lunch, rent share, …" />
       </div>
 
+      {/* Same rule as the server (planPersonEntries): the balance before
+          decides which locked category this lands in. */}
       <p className="text-xs text-muted-foreground">
-        Not counted as {mode === "gave" ? "spending" : "income"} — it only changes what you and {person.name} owe each other.
+        {mode === "gave" ? "Counts as spending this month in " : "Counts as money in this month in "}
+        <span className="font-medium text-foreground">
+          {(() => {
+            const key =
+              mode === "gave"
+                ? person.balanceMinor < 0 ? "repaid_out" : "lent"
+                : person.balanceMinor > 0 ? "repaid_in" : "borrowed";
+            return `${LOAN_CATEGORIES[key].groupLabel} · ${LOAN_CATEGORIES[key].name}`;
+          })()}
+        </span>
+        {person.balanceMinor !== 0 && " — anything beyond the balance is split off as a new loan."}
       </p>
 
       {state && !state.ok && (
@@ -447,70 +443,6 @@ function MoneyForm({
         </Button>
       </div>
     </form>
-  );
-}
-
-/** Clear what someone owes you and count it as spending, in a category you pick. */
-function ForgiveForm({
-  person,
-  picker,
-  onDone,
-  onBack,
-}: {
-  person: PersonRow;
-  picker: Picker;
-  onDone: () => void;
-  onBack: () => void;
-}) {
-  const options = picker.categories.filter((c) => !c.archived && (c.groupKey === "wants" || c.groupKey === "needs"));
-  const [categoryId, setCategoryId] = useState(options.find((c) => c.groupKey === "wants")?.id ?? options[0]?.id ?? "");
-  const [pending, start] = useTransition();
-
-  function confirm() {
-    start(async () => {
-      const res = await forgiveDebt(person.id, categoryId);
-      if (!res.ok) {
-        toast.error(res.error);
-        return;
-      }
-      toast.success(`Forgave ${person.name}`);
-      onDone();
-    });
-  }
-
-  return (
-    <div className="flex flex-col gap-4">
-      <p className="text-sm">
-        {person.name} still owes you <Money minor={person.balanceMinor} className="font-semibold" />. Forgiving clears
-        it, and counts that amount as spending today — the money isn&rsquo;t coming back, so it&rsquo;s a real cost.
-      </p>
-
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="forgive-category">Count it in</Label>
-        <select
-          id="forgive-category"
-          value={categoryId}
-          onChange={(e) => setCategoryId(e.target.value)}
-          className="h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
-        >
-          {options.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.groupKey === "wants" ? "Wants" : "Needs"} · {c.name}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div className="flex gap-2">
-        <Button type="button" variant="ghost" onClick={onBack} disabled={pending}>
-          <ArrowLeft size={14} weight="bold" />
-          Back
-        </Button>
-        <Button type="button" variant="destructive" className="flex-1" onClick={confirm} disabled={pending || !categoryId}>
-          {pending ? "Forgiving…" : <>Forgive <Money minor={person.balanceMinor} /></>}
-        </Button>
-      </div>
-    </div>
   );
 }
 

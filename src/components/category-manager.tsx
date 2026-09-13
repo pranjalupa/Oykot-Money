@@ -2,8 +2,10 @@
 
 import { useActionState, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { LOCKED_CATEGORY_NOTE } from "@/lib/loan-categories";
 import {
   ArrowCounterClockwise,
+  Lock,
   PencilSimple,
   Repeat,
   Trash,
@@ -46,6 +48,8 @@ type Cat = {
   archived: boolean;
   budgetsSeparately: boolean;
   assumeSpent: boolean;
+  /** Set on the four locked loan categories (lib/loan-categories.ts). */
+  systemKey: string | null;
 };
 
 export function CategoryManager({ categories }: { categories: Cat[] }) {
@@ -200,17 +204,30 @@ function CategoryRow({ cat }: { cat: Cat }) {
         </IconButton>
       )}
 
-      <EditCategoryDialog cat={cat} />
+      {cat.systemKey ? (
+        // Backs You gave / You got — only budgeting and reordering stay open.
+        <span
+          title={LOCKED_CATEGORY_NOTE}
+          className="flex h-8 shrink-0 items-center gap-1 rounded-md px-2 text-[11px] font-medium text-muted-foreground"
+        >
+          <Lock size={13} weight="bold" aria-hidden />
+          Locked
+        </span>
+      ) : (
+        <>
+          <EditCategoryDialog cat={cat} />
 
-      <IconButton
-        label={cat.archived ? `Restore ${cat.name}` : `Retire ${cat.name}`}
-        onClick={toggleArchive}
-        disabled={pending}
-      >
-        <ArrowCounterClockwise size={14} weight="bold" />
-      </IconButton>
+          <IconButton
+            label={cat.archived ? `Restore ${cat.name}` : `Retire ${cat.name}`}
+            onClick={toggleArchive}
+            disabled={pending}
+          >
+            <ArrowCounterClockwise size={14} weight="bold" />
+          </IconButton>
 
-      <DeleteCategoryButton cat={cat} disabled={pending} />
+          <DeleteCategoryButton cat={cat} disabled={pending} />
+        </>
+      )}
     </SortableRow>
   );
 }

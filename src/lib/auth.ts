@@ -9,6 +9,7 @@ import { db } from "@/db";
 import { accounts, categories, groupTargets, profiles, DEFAULT_MONTH } from "@/db/schema";
 import { DEFAULT_CATEGORIES, DEFAULT_ACCOUNTS } from "@/lib/defaults";
 import { DEFAULT_TARGETS } from "@/lib/targets";
+import { ensureLoanCategories } from "@/lib/loan-ledger";
 import {
   DEFAULT_CURRENCY,
   currencyForCountry,
@@ -66,7 +67,11 @@ export async function ensureUserSetup(userId: string) {
     .where(eq(categories.userId, userId))
     .limit(1);
 
-  if (existing.length > 0) return false;
+  if (existing.length > 0) {
+    // Older accounts get the locked loan categories on their next visit.
+    await ensureLoanCategories(userId);
+    return false;
+  }
 
   await db.transaction(async (tx) => {
     await tx.insert(accounts).values(
@@ -93,6 +98,7 @@ export async function ensureUserSetup(userId: string) {
     );
   });
 
+  await ensureLoanCategories(userId);
   return true;
 }
 

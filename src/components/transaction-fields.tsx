@@ -22,6 +22,8 @@ export type PickerCategory = {
   groupKey: GroupKey;
   parentId: string | null;
   archived?: boolean;
+  /** Set on the four locked loan categories, which are never picked by hand. */
+  systemKey?: string | null;
 };
 export type Direction = "outflow" | "inflow" | "transfer";
 
@@ -32,9 +34,9 @@ export type Direction = "outflow" | "inflow" | "transfer";
  *   person   You gave → 'transfer' your account → their ledger
  *            You got  → 'inflow'   their ledger → your account
  *   move     Move              'transfer' your account → your account
- * Money with a person or between your own accounts never carries a category,
- * so it never touches the budget (a forgiven debt is the one way a loan
- * becomes spending — see forgiveDebt).
+ * Money with a person counts in this month's budget, in one of four locked
+ * categories the server picks from their balance (lib/loan-categories.ts).
+ * A move between your own accounts has no category and never touches it.
  */
 export type TransactionTab = "outflow" | "inflow" | "person" | "move";
 const TAB_LABEL: Record<TransactionTab, string> = {
@@ -131,7 +133,7 @@ export function TransactionFields({
   const hasCategory = tab === "outflow" || tab === "inflow";
 
   const groupsFor = (t: TransactionTab): GroupKey[] => (t === "inflow" ? ["income"] : ["needs", "wants", "investments"]);
-  const relevant = usableCategories.filter((c) => groupsFor(tab).includes(c.groupKey));
+  const relevant = usableCategories.filter((c) => groupsFor(tab).includes(c.groupKey) && !c.systemKey);
 
   // The far end: a person, or your own account for a move. Assets hold a
   // typed-in value, not a ledger, so they're never offered — unless an old
@@ -361,7 +363,9 @@ export function TransactionFields({
           {counterField("Person")}
           {accountField(personMode === "gave" ? "Paid from" : "Received into")}
           <p className="-mt-2 text-xs text-muted-foreground">
-            Not counted as {personMode === "gave" ? "spending" : "income"} — it just changes what you and they owe.
+            {personMode === "gave"
+              ? "Counts as spending this month — in Lent out, or Paid back if you owed them."
+              : "Counts as money in this month — in Borrowed, or Got paid back if they owed you."}
           </p>
         </>
       )}

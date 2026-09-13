@@ -203,11 +203,11 @@ Was the separate People page until 2026-09-13; `/people` redirects here.
 - Rows are quiet — name, **You'll get / You'll give / Settled**, amount — and **tapping one opens
   the person**. Rows can still be dragged to reorder.
 - **The person panel:** the balance in words; **You gave** and **You got** (amount, date, account
-  — the last one you used — and a note); **Settle up** (the same form with the full amount and
-  the right direction); **Forgive** when they owe you (clears it and records that amount as
-  spending in a Needs or Wants category you pick); their **history**; and edit, archive, delete.
-- A balance only ever changes through a transaction. Money you gave or got is **not** spending or
-  income — only a forgiven debt counts, because only then is the money actually gone.
+  — the last one you used — and a note, with a line saying which category it will count in);
+  **Settle up** (the same form with the full amount and the right direction); their **history**;
+  and edit, archive, delete.
+- A balance only ever changes through a transaction, and **every payment also counts in that
+  month's budget** (§6.4).
 - **Add person** — name, optional handle ("@rahul" or a phone number, to tell two Rahuls
   apart), **A person** or **A lender**, and an icon. A note can be added when editing.
 - Archived people are hidden behind *Show N archived*.
@@ -293,15 +293,16 @@ Available on Home, every group page and every category page.
 |---|---|---|---|
 | **Spent** | From account | Needs, Wants or Investments | Money leaves the account and counts against the category |
 | **Received** | Into account | Income | Money arrives and counts as income |
-| **Person → You gave** | Person, paid from | None | Your account goes down; they owe you more (or you owe them less) |
-| **Person → You got** | Person, received into | None | Your account goes up; they owe you less (or you owe them more) |
+| **Person → You gave** | Person, paid from | Picked for you: Lent out or Paid back | Your account goes down; counts as spending; they owe you more (or you owe them less) |
+| **Person → You got** | Person, received into | Picked for you: Borrowed or Got paid back | Your account goes up; counts as money in; they owe you less (or you owe them more) |
 | **Move** | From account → To account | None | Between your own accounts. Only on Money → Accounts → *Move money*, or when editing a move |
 
 Fields: amount (₹), date, account(s), category (Spent and Received only), note, and *Repeat every
 month*. The person and category dropdowns end with **+ Add person…** / **+ New category…**.
 
-**The budget rule:** only Spent and Received touch the budget. Money with a person, or between
-your own accounts, never carries a category — lending isn't spending while you expect it back.
+**The budget rule:** everything that leaves or enters your hands this month counts — including
+money with a person, in its locked category (§6.4). Only a move between your own accounts has no
+category. The four locked categories can't be picked by hand in Spent or Received.
 
 **Validation:** date must be valid, amount greater than zero, an account must be one of yours,
 money from a person must come from a person, a move needs a different destination, and Spent or
@@ -313,16 +314,26 @@ categories aren't offered — except those an entry being edited already uses.
 
 ### 6.4 Lending and borrowing
 Start from the person (Money → Settlements → tap them), or the **Person** tab in Add.
-- **You gave** — lending, or paying back what you owe. Your account goes down; net worth doesn't
-  change, because you've swapped cash for money owed.
-- **You got** — borrowing, or being paid back. Your account goes up.
-- **Settle up** — the same form, prefilled with the whole balance in the right direction.
-- **Forgive** — when you won't get it back: the balance clears and becomes spending in the
-  category you pick. Your accounts don't move; the cash already left when you lent it.
+You only ever choose **You gave** or **You got**. Each payment moves your account, moves the
+person's balance, and counts in that month's budget in one of four **locked categories**, picked
+from the balance before it:
 
-Balances read in words: *You'll get ₹2,000* · *You'll give ₹500* · *Settled*. This follows how
-Khatabook ("You gave / You got"), Splitwise (Settle up) and Wallet by BudgetBakers (forgive a
-debt) do it, and how YNAB and Monarch keep loans and transfers out of the budget.
+| You tap | When | Category | Budget |
+|---|---|---|---|
+| You gave | They don't owe you / nothing open | **Lent out** (Wants) | Spending |
+| You gave | You owed them | **Paid back** (Needs) | Spending |
+| You got | You don't owe them / nothing open | **Borrowed** (Income) | Money in |
+| You got | They owed you | **Got paid back** (Income) | Money in |
+
+A payment that crosses zero is **split**: paying Rahul ₹3,000 when you owe him ₹1,000 records
+₹1,000 Paid back and ₹2,000 Lent out. **Settle up** is the same form, prefilled with the whole
+balance. A bank loan works the same way — take it as Borrowed, pay each EMI as Paid back.
+
+**Locked:** the four can be budgeted and reordered, but not renamed, moved, retired, deleted or
+given sub-categories. Their category pages show a **By person** breakdown instead.
+
+Balances read in words: *You'll get ₹2,000* · *You'll give ₹500* · *Settled*. The two-button,
+start-from-the-person flow follows Khatabook ("You gave / You got") and Splitwise (Settle up).
 
 ### 6.5 Recurring transactions
 Tick *Repeat every month* when adding a transaction. From then on:
@@ -362,6 +373,7 @@ percentages must add up to 100%, and *Reset this month to default* removes an ov
 | | Reorder | Archive | Delete |
 |---|---|---|---|
 | **Category** | Drag, within its group | *Retire* — hidden from new transactions, history kept | Transactions **stay** and count, but become uncategorised; sub-categories and its monthly repeats are deleted too. The confirm dialog shows the counts first |
+| **Locked category** (Lent out, Paid back, Borrowed, Got paid back) | Drag | No | No — they back You gave / You got |
 | **Account / asset** | Drag | Yes — asks first if it still holds money, because archived items leave net worth | **Only if it has no transactions** — otherwise refused, with a suggestion to archive |
 | **Person** | Drag | Yes — same warning if they still owe or are owed | **Only if they have no transactions** — otherwise refused |
 | **Transaction** | — | — | From the list, after a confirm — it can't be undone |

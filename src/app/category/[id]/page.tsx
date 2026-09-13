@@ -23,6 +23,7 @@ import {
 } from "@/lib/budget";
 import { monthBounds } from "@/lib/targets";
 import { formatMoney } from "@/lib/money";
+import { Money } from "@/components/money";
 import { requireUser, getUserCurrency, getUserPrefs } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
@@ -70,6 +71,15 @@ export default async function CategoryPage({
   const assumed = (row?.assumedMinor ?? 0) > 0;
   const isIncome = cat.groupKey === "income";
 
+  const byPerson = cat.systemKey
+    ? [
+        ...txs.reduce((m, t) => {
+          const who = t.counterAccountName ?? "Someone";
+          return m.set(who, (m.get(who) ?? 0) + t.amountMinor);
+        }, new Map<string, number>()),
+      ].sort((a, b) => b[1] - a[1])
+    : [];
+
   return (
     <div className="flex flex-col gap-6">
       <Link
@@ -92,6 +102,7 @@ export default async function CategoryPage({
             <p className="mt-0.5 text-sm text-muted-foreground">
               {GROUP_META[cat.groupKey].label}
               {cat.archived && " · retired"}
+              {cat.systemKey && " · filled in by You gave / You got on people"}
             </p>
           </div>
         </div>
@@ -103,10 +114,12 @@ export default async function CategoryPage({
             defaultDate={todayIn(timeZone)}
             defaultCategoryId={id}
           />
-          <DeleteCategoryButton
-            cat={{ id: cat.id, name: cat.name }}
-            redirectTo={`/${cat.groupKey}?month=${month}`}
-          />
+          {!cat.systemKey && (
+            <DeleteCategoryButton
+              cat={{ id: cat.id, name: cat.name }}
+              redirectTo={`/${cat.groupKey}?month=${month}`}
+            />
+          )}
         </div>
       </header>
 
@@ -118,6 +131,24 @@ export default async function CategoryPage({
       />
 
       <PeriodTrend title="Last six months" points={trend} color={groupColor(cat.groupKey)} isIncome={isIncome} />
+
+      {/* A loan category splits by person instead of by sub-category: the
+          person is already on every entry, so there's nothing to set up. */}
+      {byPerson.length > 0 && (
+        <section className="overflow-hidden rounded-2xl border border-border bg-card">
+          <div className="border-b border-border px-4 py-3">
+            <h2 className="font-heading text-base font-bold">By person</h2>
+          </div>
+          <ul className="divide-y divide-border">
+            {byPerson.map(([name, minor]) => (
+              <li key={name} className="flex items-center justify-between gap-3 px-4 py-3 text-sm">
+                <span className="font-medium">{name}</span>
+                <Money minor={minor} className="font-semibold" />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section className="overflow-hidden rounded-2xl border border-border bg-card">
         <div className="border-b border-border px-4 py-3">
