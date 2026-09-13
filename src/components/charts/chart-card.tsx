@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { cn } from "@/lib/utils";
 
 export type LegendItem = {
@@ -81,7 +81,7 @@ export function ChartCard({
 
       <div className="mt-5 flex-1">
         {asTable && table ? (
-          <div className="max-h-80 overflow-auto">
+          <ScrollHint>
             <table className="w-full text-sm">
               <thead className="sticky top-0 bg-card">
                 <tr className="border-b border-border text-xs text-muted-foreground">
@@ -105,12 +105,44 @@ export function ChartCard({
               </tbody>
             </table>
             {table.note && <p className="pt-3 text-xs text-muted-foreground">{table.note}</p>}
-          </div>
+          </ScrollHint>
         ) : (
           children
         )}
       </div>
     </section>
+  );
+}
+
+/**
+ * A capped-height scroller that says so. A table cut off at a row boundary
+ * looks finished, so while there's more below, the bottom fades out with a
+ * "Scroll for more" label; it disappears once you reach the end.
+ */
+function ScrollHint({ children }: { children: React.ReactNode }) {
+  const [more, setMore] = useState(false);
+  const check = (el: HTMLElement) => setMore(el.scrollTop + el.clientHeight < el.scrollHeight - 4);
+  const measure = useCallback((el: HTMLDivElement | null) => {
+    if (!el) return;
+    const observer = new ResizeObserver(() => check(el));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div className="relative">
+      <div ref={measure} onScroll={(e) => check(e.currentTarget)} className="max-h-80 overflow-auto">
+        {children}
+      </div>
+      {more && (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 bottom-0 flex h-14 items-end justify-center bg-gradient-to-t from-card via-card/80 to-transparent pb-1.5 text-[11px] font-medium text-muted-foreground"
+        >
+          Scroll for more ↓
+        </div>
+      )}
+    </div>
   );
 }
 

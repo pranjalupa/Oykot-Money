@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useRef } from "react";
 import { toast } from "sonner";
+import { PencilSimple } from "@phosphor-icons/react";
 import { setPlannedAmount } from "@/app/actions";
 import { formatMoney, toMajor } from "@/lib/money";
 import { useCurrency } from "@/components/currency-provider";
@@ -55,13 +56,19 @@ export function PlannedInput({
           setEditing(true);
           requestAnimationFrame(() => inputRef.current?.select());
         }}
+        // A pencil and a dashed underline, always visible: a plain number
+        // gave no hint it could be changed.
         className={cn(
-          "tabular rounded px-1.5 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+          "tabular group/edit inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
           pending && "opacity-50",
         )}
         title="Edit planned amount"
+        aria-label={`Edit planned amount, currently ${plannedMinor > 0 ? formatMoney(plannedMinor, { currency }) : "not set"}`}
       >
-        {plannedMinor > 0 ? formatMoney(plannedMinor, { currency }) : "set budget"}
+        <span className="border-b border-dashed border-muted-foreground/50 group-hover/edit:border-foreground/60">
+          {plannedMinor > 0 ? formatMoney(plannedMinor, { currency }) : "set budget"}
+        </span>
+        <PencilSimple size={11} weight="bold" aria-hidden className="shrink-0 opacity-60 group-hover/edit:opacity-100" />
       </button>
     );
   }
