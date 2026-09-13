@@ -88,10 +88,12 @@ Full detail in `src/db/schema.ts` comments. The decisions behind it:
     linked by `accounts.person_id`. Balance = transaction effects. Positive: they owe you.
   - `asset` — SIP, PF, Emergency Fund. **No transaction history**; balance is a manually
     entered `currentValueMinor`. Deliberately no returns or cost-basis tracking.
-- **A transaction skips categorization only when both ends are `spending` accounts.** Moving
-  your own money between your own accounts is invisible to the budget. Lending to a `loan`
-  account *still carries a category*, so it counts against Wants the way the sheet does, while
-  also moving that person's balance.
+- **Settlements (2026-09-13):** the person is always the counter-account. Lending is
+  `transfer` your account → person, with an *optional* category — pick one and it counts as
+  spending in that budget. Borrowing is `inflow` person → your account and never carries a
+  category, so it's never income. A move between two `spending` accounts has no category and
+  is invisible to the budget. Budget totals come from categories, so an uncategorised
+  settlement only moves balances.
 - **Categories are flat by default** (group → category), because the real sheet is flat across
   all 36 lines. `parentId` allows ONE optional level below (Subscriptions → Netflix) for
   categories that want the resolution. Two levels max — enforced in app code, not the schema.

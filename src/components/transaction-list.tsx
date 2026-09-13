@@ -30,8 +30,14 @@ export function TransactionList({
   return (
     <ul className="divide-y divide-border">
       {transactions.map((t) => {
-        const isTransfer = t.direction === "transfer" && !t.categoryId;
-        const label = t.merchant || t.categoryName || "Transfer";
+        // A settlement moves money between you and a person (or your own
+        // accounts). Borrowing is stored as an inflow, so the arrow flips.
+        const isTransfer = !!t.counterAccountId && !t.categoryId;
+        const borrowed = t.direction === "inflow" && !!t.counterAccountId;
+        const route = borrowed
+          ? `${t.counterAccountName ?? "?"} → ${t.accountName}`
+          : `${t.accountName} → ${t.counterAccountName ?? "?"}`;
+        const label = t.merchant || t.categoryName || (borrowed ? "Borrowed" : "Settlement");
 
         return (
           <li
@@ -72,8 +78,10 @@ export function TransactionList({
               </p>
               <p className="truncate text-xs text-muted-foreground">
                 {isTransfer
-                  ? `${t.accountName} → ${t.counterAccountName ?? "?"}`
-                  : `${t.categoryName ?? "Uncategorised"} · ${t.accountName}`}
+                  ? route
+                  : t.counterAccountId
+                    ? `${t.categoryName ?? "Uncategorised"} · ${route}`
+                    : `${t.categoryName ?? "Uncategorised"} · ${t.accountName}`}
               </p>
             </div>
 

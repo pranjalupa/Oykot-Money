@@ -25,8 +25,24 @@ export type Direction = "outflow" | "inflow" | "transfer";
 const TABS = [
   { key: "outflow", label: "Spent" },
   { key: "inflow", label: "Received" },
-  { key: "transfer", label: "Transfer" },
+  { key: "transfer", label: "Settlement" },
 ] as const;
+type Tab = (typeof TABS)[number]["key"];
+
+/**
+ * The three things a settlement can be. Only two directions are stored:
+ *   lent     → direction 'transfer', your account → person (they owe you)
+ *   borrowed → direction 'inflow',   person → your account (you owe them)
+ *   move     → direction 'transfer', your account → your account
+ * The person is always the counter-account, so the balance maths in
+ * lib/budget.ts needs no special case.
+ */
+const KINDS = [
+  { key: "lent", label: "I lent" },
+  { key: "borrowed", label: "I borrowed" },
+  { key: "move", label: "Between my accounts" },
+] as const;
+type Kind = (typeof KINDS)[number]["key"];
 
 const SELECT =
   "h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none";
@@ -66,25 +82,95 @@ export function TransactionFields({
   const usable = accounts.filter((a) => !a.archived || keep.has(a.id));
   const usableCategories = categories.filter((c) => !c.archived || keep.has(c.id));
   const spending = usable.filter((a) => a.kind === "spending");
+  const kindOf = (id: string | null | undefined) => usable.find((a) => a.id === id)?.kind;
 
   // Initial values come from props once — no effect needed to pick a default.
-  const [direction, setDirection] = useState<Direction>(initial.direction ?? "outflow");
+  const [tab, setTab] = useState<Tab>(
+    initial.direction === "inflow" && initial.counterAccountId ? "transfer" : (initial.direction ?? "outflow"),
+  );
+  const [kind, setKind] = useState<Kind>(
+    initial.direction === "inflow" && initial.counterAccountId
+      ? "borrowed"
+      : initial.direction === "transfer" && kindOf(initial.counterAccountId) === "spending"
+        ? "move"
+        : "lent",
+  );
   const [accountId, setAccountId] = useState(initial.accountId ?? spending[0]?.id ?? "");
   const [counterAccountId, setCounterAccountId] = useState(initial.counterAccountId ?? "");
 
+  const settlement = tab === "transfer";
+  const direction: Direction = settlement && kind === "borrowed" ? "inflow" : tab;
+
   // Money going out can land in any spend group; money coming in is Income.
   const relevant = useMemo(() => {
-    const wanted: GroupKey[] =
-      direction === "inflow" ? ["income"] : ["needs", "wants", "investments"];
+    const wanted: GroupKey[] = tab === "inflow" ? ["income"] : ["needs", "wants", "investments"];
     return usableCategories.filter((c) => wanted.includes(c.groupKey));
-  }, [usableCategories, direction]);
+  }, [usableCategories, tab]);
 
-  const kindOf = (id: string) => usable.find((a) => a.id === id)?.kind;
-  const isPureTransfer =
-    direction === "transfer" &&
-    kindOf(accountId) === "spending" &&
-    kindOf(counterAccountId) === "spending";
+  // The far end: a person for lending and borrowing, your own account for a move.
+  // Assets hold a typed-in value, not a ledger, so they're never offered —
+  // unless an old entry already points at one.
+  const counterOptions = usable.filter((a) =>
+    a.id === accountId
+      ? false
+      : kind === "move"
+        ? a.kind === "spending"
+        : a.kind === "loan" || (a.kind === "asset" && keep.has(a.id)),
+  );
+
+  function pickKind(next: Kind) {
+    setKind(next);
+    const stillValid = usable.some(
+      (a) => a.id === counterAccountId && (next === "move" ? a.kind === "spending" : a.kind !== "spending"),
+    );
+    if (!stillValid) setCounterAccountId("");
+  }
+
   const id = (name: string) => `${idPrefix}-${name}`;
+
+  const accountField = (label: string) => (
+    <div className="flex flex-col gap-1.5">
+      <Label htmlFor={id("account")}>{label}</Label>
+      <select
+        id={id("account")}
+        name="accountId"
+        required
+        value={accountId}
+        onChange={(e) => setAccountId(e.target.value)}
+        className={SELECT}
+      >
+        {spending.map((a) => (
+          <option key={a.id} value={a.id}>
+            {a.name}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+
+  const counterField = (label: string) => (
+    <div className="flex flex-col gap-1.5">
+      <Label htmlFor={id("counter")}>{label}</Label>
+      <select
+        id={id("counter")}
+        name="counterAccountId"
+        required
+        value={counterAccountId}
+        onChange={(e) => setCounterAccountId(e.target.value)}
+        className={SELECT}
+      >
+        <option value="">Choose…</option>
+        {counterOptions.map((a) => (
+          <option key={a.id} value={a.id}>
+            {a.name}
+          </option>
+        ))}
+      </select>
+      {kind !== "move" && counterOptions.length === 0 && (
+        <p className="text-xs text-muted-foreground">Add a person on the People page first.</p>
+      )}
+    </div>
+  );
 
   return (
     <>
@@ -95,11 +181,11 @@ export function TransactionFields({
           <button
             key={t.key}
             type="button"
-            onClick={() => setDirection(t.key)}
-            aria-pressed={direction === t.key}
+            onClick={() => setTab(t.key)}
+            aria-pressed={tab === t.key}
             className={cn(
               "flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-              direction === t.key
+              tab === t.key
                 ? "bg-card text-foreground shadow-sm ring-1 ring-foreground/15"
                 : "text-muted-foreground hover:text-foreground",
             )}
@@ -108,6 +194,27 @@ export function TransactionFields({
           </button>
         ))}
       </div>
+
+      {settlement && (
+        <div className="flex flex-wrap gap-1.5">
+          {KINDS.map((k) => (
+            <button
+              key={k.key}
+              type="button"
+              onClick={() => pickKind(k.key)}
+              aria-pressed={kind === k.key}
+              className={cn(
+                "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                kind === k.key
+                  ? "border-foreground/20 bg-secondary text-secondary-foreground"
+                  : "border-border text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {k.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-3">
         <div className="flex flex-col gap-1.5">
@@ -130,69 +237,44 @@ export function TransactionFields({
         </div>
       </div>
 
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor={id("account")}>
-          {direction === "inflow" ? "Into account" : "From account"}
-        </Label>
-        <select
-          id={id("account")}
-          name="accountId"
-          required
-          value={accountId}
-          onChange={(e) => setAccountId(e.target.value)}
-          className={SELECT}
-        >
-          {spending.map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.name}
-            </option>
-          ))}
-        </select>
-      </div>
+      {!settlement && accountField(tab === "inflow" ? "Into account" : "From account")}
 
-      {direction === "transfer" && (
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor={id("counter")}>To account or person</Label>
-          <select
-            id={id("counter")}
-            name="counterAccountId"
-            required
-            value={counterAccountId}
-            onChange={(e) => setCounterAccountId(e.target.value)}
-            className={SELECT}
-          >
-            <option value="">Choose…</option>
-            {/* Assets hold a typed-in value, not a ledger — money doesn't move into them here. */}
-            {usable
-              .filter((a) => a.id !== accountId && (a.kind !== "asset" || keep.has(a.id)))
-              .map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name}
-                  {a.kind === "loan" ? " (person)" : ""}
-                  {a.kind === "asset" ? " (asset)" : ""}
-                </option>
-              ))}
-          </select>
-          {isPureTransfer && (
-            <p className="text-xs text-muted-foreground">
-              Between your own accounts — this won&rsquo;t touch your budget.
-            </p>
-          )}
-        </div>
+      {settlement && kind === "lent" && (
+        <>
+          {accountField("From account")}
+          {counterField("To person")}
+        </>
+      )}
+      {settlement && kind === "borrowed" && (
+        <>
+          {counterField("From person")}
+          {accountField("Into account")}
+        </>
+      )}
+      {settlement && kind === "move" && (
+        <>
+          {accountField("From account")}
+          {counterField("To account")}
+          <p className="-mt-2 text-xs text-muted-foreground">
+            Between your own accounts — this won&rsquo;t touch your budget.
+          </p>
+        </>
       )}
 
-      {!isPureTransfer && (
+      {/* Spent and Received always need a category. Lending may count as
+          spending if you pick one; borrowing and moves never do. */}
+      {(!settlement || kind === "lent") && (
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor={id("category")}>Category</Label>
+          <Label htmlFor={id("category")}>{settlement ? "Count as spending from" : "Category"}</Label>
           <select
-            key={direction}
+            key={`${tab}-${kind}`}
             id={id("category")}
             name="categoryId"
-            required
+            required={!settlement}
             defaultValue={initial.categoryId ?? ""}
             className={SELECT}
           >
-            <option value="">Choose…</option>
+            <option value="">{settlement ? "Don't count as spending" : "Choose…"}</option>
             {relevant.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.parentId ? "— " : ""}
@@ -200,7 +282,17 @@ export function TransactionFields({
               </option>
             ))}
           </select>
+          {settlement && (
+            <p className="text-xs text-muted-foreground">
+              Pick a category and it comes out of that budget, as well as your account.
+            </p>
+          )}
         </div>
+      )}
+      {settlement && kind === "borrowed" && (
+        <p className="text-xs text-muted-foreground">
+          Not counted as income — it just adds to what you owe them.
+        </p>
       )}
 
       <div className="flex flex-col gap-1.5">

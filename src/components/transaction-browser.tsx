@@ -13,7 +13,7 @@ const TYPES = [
   { key: "all", label: "All" },
   { key: "outflow", label: "Spent" },
   { key: "inflow", label: "Received" },
-  { key: "transfer", label: "Transfers" },
+  { key: "transfer", label: "Settlements" },
 ] as const;
 
 const SELECT =
@@ -55,7 +55,10 @@ export function TransactionBrowser({
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase();
     return transactions.filter((t) => {
-      if (type !== "all" && t.direction !== type) return false;
+      // Settlements are anything with a far end — borrowing is stored as an
+      // inflow, but it belongs here, not under Received.
+      const kind = t.counterAccountId ? "transfer" : t.direction;
+      if (type !== "all" && kind !== type) return false;
       if (categoryId && t.categoryId !== categoryId) return false;
       if (!q) return true;
       return [

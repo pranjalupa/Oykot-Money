@@ -19,7 +19,10 @@ import { toMajor } from "@/lib/money";
 
 export const dynamic = "force-dynamic";
 
-const TYPE = { outflow: "Spent", inflow: "Received", transfer: "Transfer" } as const;
+const TYPE = { outflow: "Spent", inflow: "Received", transfer: "Settlement" } as const;
+/** Borrowing is stored as an inflow with a person on the far end. */
+const typeOf = (t: { direction: keyof typeof TYPE; counterAccountId: string | null }) =>
+  t.direction === "inflow" && t.counterAccountId ? "Borrowed" : TYPE[t.direction];
 
 /** RFC 4180: quote everything that could break a cell. */
 function csvCell(value: unknown) {
@@ -50,7 +53,7 @@ export async function GET(request: Request) {
       ...rows.map((t) =>
         [
           t.date,
-          TYPE[t.direction],
+          typeOf(t),
           toMajor(t.amountMinor).toFixed(2),
           currency,
           t.categoryName ?? "",

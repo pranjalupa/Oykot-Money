@@ -115,31 +115,42 @@ async function readTransaction(
   if (!accountId || !(await ownsAccount(userId, accountId)))
     return { error: "Pick an account." };
 
-  // Only a transfer has a far end; a stale value from a switched tab is dropped.
-  const counterAccountId = direction === "transfer" ? rawCounter || null : null;
+  // A far end exists for a settlement ('transfer') and for money borrowed from
+  // a person ('inflow'). Spending never has one; a stale value is dropped.
+  const counterAccountId = direction === "outflow" ? null : rawCounter || null;
   if (counterAccountId && !(await ownsAccount(userId, counterAccountId)))
-    return { error: "Pick a valid destination account." };
+    return { error: "Pick a valid person or account." };
   if (counterAccountId === accountId)
-    return { error: "Pick two different accounts for a transfer." };
+    return { error: "Pick two different accounts." };
 
   let categoryId = rawCategory || null;
   if (categoryId && !(await ownsCategory(userId, categoryId)))
     return { error: "Pick a valid category." };
 
-  // The rule from the data model: only a spending↔spending move skips a
-  // category. Anything else — including lending to a person — needs one.
-  if (direction === "transfer") {
-    if (!counterAccountId) return { error: "A transfer needs a destination account." };
+  if (counterAccountId) {
     const kinds = await db
       .select({ id: accounts.id, kind: accounts.kind })
       .from(accounts)
       .where(inArray(accounts.id, [accountId, counterAccountId]));
     const kindOf = (id: string) => kinds.find((k) => k.id === id)?.kind;
-    if (kindOf(accountId) === "spending" && kindOf(counterAccountId) === "spending") {
-      categoryId = null; // invisible to the budget, by design
-    } else if (!categoryId) {
+    const from = kindOf(accountId);
+    const to = kindOf(counterAccountId);
+
+    if (from !== "spending") return { error: "Pick one of your own accounts." };
+    if (direction === "inflow") {
+      // Borrowing: the person's ledger goes negative (you owe them). It is
+      // never income, so it never carries a category.
+      if (to !== "loan") return { error: "Money can only be borrowed from a person." };
+      categoryId = null;
+    } else if (to === "spending") {
+      categoryId = null; // your own accounts — invisible to the budget, by design
+    } else if (to === "asset" && !categoryId) {
       return { error: "This transfer still needs a category." };
     }
+    // Lending to a person: the category is optional. Pick one and it counts
+    // as spending in that budget; leave it and only the balances move.
+  } else if (direction === "transfer") {
+    return { error: "Pick who or where the money went." };
   } else if (!categoryId) {
     return { error: "Pick a category." };
   }
