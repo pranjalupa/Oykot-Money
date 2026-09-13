@@ -42,7 +42,7 @@ export function TransactionList({
         return (
           <li
             key={t.id}
-            className="group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/50"
+            className="group flex items-center gap-3 px-3 py-3 transition-colors hover:bg-muted/50 sm:gap-4 sm:px-4"
           >
             {isTransfer ? (
               <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
@@ -76,7 +76,9 @@ export function TransactionList({
               </p>
             </div>
 
-            <span className="flex w-10 shrink-0 flex-col items-center leading-none text-muted-foreground">
+            {/* Date, amount and actions are fixed-width columns, so they line
+                up from row to row whatever the name or amount length. */}
+            <span className="flex w-10 shrink-0 flex-col items-center leading-none text-muted-foreground sm:w-12">
               <span className="text-sm font-semibold text-foreground tabular-nums">
                 <LocalDate date={t.date} options={{ day: "numeric" }} />
               </span>
@@ -94,12 +96,13 @@ export function TransactionList({
                     ? "positive"
                     : "default"
               }
-              className="shrink-0 text-sm font-semibold"
+              className="w-20 shrink-0 text-right text-sm font-semibold sm:w-28"
             />
 
-            <EditTransactionDialog transaction={t} accounts={accounts} categories={categories} />
-
-            <DeleteTransactionButton id={t.id} label={label} />
+            <div className="flex shrink-0 items-center gap-0.5 border-l border-border pl-2 sm:pl-3">
+              <EditTransactionDialog transaction={t} accounts={accounts} categories={categories} />
+              <DeleteTransactionButton id={t.id} label={label} />
+            </div>
           </li>
         );
       })}
