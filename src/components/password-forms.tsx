@@ -10,6 +10,7 @@ import {
 } from "@/app/auth/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/password-input";
 import { Label } from "@/components/ui/label";
 
 function Header({ title, note }: { title: string; note: string }) {
@@ -81,11 +82,11 @@ export function ResetPasswordForm() {
       <form action={action} className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="password">New password</Label>
-          <Input id="password" name="password" type="password" autoComplete="new-password" required minLength={8} placeholder="At least 8 characters" />
+          <PasswordInput id="password" name="password" autoComplete="new-password" required minLength={8} placeholder="At least 8 characters" />
         </div>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="confirm">Type it again</Label>
-          <Input id="confirm" name="confirm" type="password" autoComplete="new-password" required minLength={8} />
+          <PasswordInput id="confirm" name="confirm" autoComplete="new-password" required minLength={8} />
         </div>
         <Feedback state={state} />
         <Button type="submit" disabled={pending} className="mt-1 w-full">
