@@ -4,7 +4,6 @@ import { Money } from "@/components/money";
 import { CopyPlanButton } from "@/components/copy-plan-button";
 import { TargetEditor } from "@/components/target-editor";
 import {
-  OverUnder,
   TargetCard,
   TopCategories,
   WhereMoneyWent,
@@ -21,9 +20,9 @@ import { prepareMonth } from "@/lib/month-setup";
 import { percentOf } from "@/lib/money";
 
 /**
- * Monthly answers "where did it go, and was that the plan?" — a donut for the
- * split of income, target bars for the split you aimed at, then which
- * categories take the most and which went over.
+ * Monthly answers "where did it go, and was that the plan?" — a pie of the
+ * income split, the target split beside it, then the categories that took
+ * the most.
  */
 export async function MonthView({ month }: { month: string }) {
   const user = await requireUser();
@@ -111,7 +110,6 @@ export async function MonthView({ month }: { month: string }) {
       </div>
 
       <TopCategories rows={categories} />
-      <OverUnder rows={categories} />
     </div>
   );
 }

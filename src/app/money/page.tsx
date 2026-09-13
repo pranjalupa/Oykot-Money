@@ -5,7 +5,7 @@ import { AccountsManager } from "@/components/accounts-manager";
 import { NewAccountDialog } from "@/components/account-dialogs";
 import { getNetWorth, getNetWorthHistory, saveNetWorthSnapshot } from "@/lib/budget";
 import { currentMonthIn } from "@/lib/dates";
-import { NetWorthMix, NetWorthTrend } from "@/components/charts/detail-insights";
+import { NetWorthTrend } from "@/components/charts/detail-insights";
 import { requireUser, getUserPrefs } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
@@ -71,18 +71,7 @@ export default async function MoneyPage() {
         )}
       </section>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <NetWorthTrend points={history} />
-        </div>
-        <NetWorthMix
-          cash={net.cash}
-          assets={net.assets}
-          owedToYou={net.owedToYou}
-          youOwe={net.youOwe}
-          total={net.total}
-        />
-      </div>
+      <NetWorthTrend points={history} />
 
       <AccountsManager
         accounts={spending}

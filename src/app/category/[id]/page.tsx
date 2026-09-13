@@ -7,7 +7,8 @@ import { db } from "@/db";
 import { categories } from "@/db/schema";
 import { CategoryIcon } from "@/components/category-icon";
 import { TransactionList } from "@/components/transaction-list";
-import { BudgetRing, MerchantBreakdown, PeriodTrend, groupColor } from "@/components/charts/detail-insights";
+import { BudgetSummary, PeriodTrend } from "@/components/charts/detail-insights";
+import { groupColor } from "@/lib/chart-colors";
 import { TransactionDialog } from "@/components/transaction-dialog";
 import { MonthSwitcher } from "@/components/month-switcher";
 import {
@@ -18,7 +19,6 @@ import {
   listCategories,
   listTransactions,
   getCategoryTrend,
-  getMerchantBreakdown,
 } from "@/lib/budget";
 import { monthBounds } from "@/lib/targets";
 import { formatMoney } from "@/lib/money";
@@ -49,14 +49,13 @@ export default async function CategoryPage({
   const month = isValidMonth(monthParam) ? monthParam : currentMonthIn(timeZone);
   const { start, end } = monthBounds(month);
 
-  const [summary, txs, accounts, allCategories, currency, trend, merchants] = await Promise.all([
+  const [summary, txs, accounts, allCategories, currency, trend] = await Promise.all([
     getMonthSummary(user.id, month),
     listTransactions(user.id, { from: start, to: end, categoryId: id }),
     listAccounts(user.id),
     listCategories(user.id),
     getUserCurrency(),
     getCategoryTrend(user.id, id, month),
-    getMerchantBreakdown(user.id, id, month),
   ]);
 
   // Find this category in the assembled tree — it may be a child.
@@ -106,8 +105,7 @@ export default async function CategoryPage({
         </div>
       </header>
 
-      <BudgetRing
-        groupKey={cat.groupKey}
+      <BudgetSummary
         spentMinor={actual}
         plannedMinor={planned}
         isIncome={isIncome}
@@ -115,10 +113,6 @@ export default async function CategoryPage({
       />
 
       <PeriodTrend title="Last six months" points={trend} color={groupColor(cat.groupKey)} isIncome={isIncome} />
-
-      {!isIncome && (
-        <MerchantBreakdown items={merchants} categoryName={cat.name} color={groupColor(cat.groupKey)} />
-      )}
 
       <section className="overflow-hidden rounded-2xl border border-border bg-card">
         <div className="border-b border-border px-4 py-3">

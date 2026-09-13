@@ -2,7 +2,8 @@ import { currentMonthIn, todayIn } from "@/lib/dates";
 import { notFound } from "next/navigation";
 import { MonthSwitcher } from "@/components/month-switcher";
 import { CategoryList } from "@/components/category-list";
-import { BudgetRing, PeriodTrend, groupColor } from "@/components/charts/detail-insights";
+import { BudgetSummary, PeriodTrend } from "@/components/charts/detail-insights";
+import { groupColor } from "@/lib/chart-colors";
 import { TransactionDialog } from "@/components/transaction-dialog";
 import { NewCategoryDialog } from "@/components/new-category-dialog";
 import {
@@ -72,8 +73,7 @@ export default async function GroupPage({
         </div>
       </header>
 
-      <BudgetRing
-        groupKey={groupKey}
+      <BudgetSummary
         spentMinor={g.actualMinor}
         plannedMinor={g.plannedMinor}
         isIncome={isIncome}

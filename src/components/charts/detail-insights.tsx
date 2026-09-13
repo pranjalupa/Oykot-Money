@@ -2,19 +2,11 @@
 
 import { Money } from "@/components/money";
 import { ChartCard } from "@/components/charts/chart-card";
-import { RadialProgress } from "@/components/charts/radial-progress";
-import { ColumnTrend } from "@/components/charts/column-trend";
-import { AreaTrend } from "@/components/charts/area-trend";
-import { RankedBars } from "@/components/charts/ranked-bars";
-import { DivergingBars } from "@/components/charts/diverging-bars";
-import { Donut } from "@/components/charts/donut";
+import { BarTrend } from "@/components/charts/bar-trend";
+import { LineTrend } from "@/components/charts/line-trend";
 import { useCurrency, useLocale } from "@/components/currency-provider";
 import { formatCompact, formatMoney } from "@/lib/money";
 import { formatMonthShort } from "@/lib/dates";
-
-type GroupKey = "needs" | "wants" | "investments" | "income";
-/** Chart colour for a group; Income isn't part of the stacked palette. */
-export const groupColor = (g: GroupKey) => (g === "income" ? "var(--primary)" : `var(--chart-${g})`);
 
 function Stat({ label, value, sub }: { label: string; value: React.ReactNode; sub?: React.ReactNode }) {
   return (
@@ -26,15 +18,19 @@ function Stat({ label, value, sub }: { label: string; value: React.ReactNode; su
   );
 }
 
-/** How much of a group's (or category's) budget is used — a ring in its colour. */
-export function BudgetRing({
-  groupKey,
+/**
+ * How a group or category stands against its budget: the headline figure,
+ * then the four numbers behind it.
+ *
+ * This was a dial. The dial drew one number — percent used — that the grid
+ * beside it already carried, so it went.
+ */
+export function BudgetSummary({
   spentMinor,
   plannedMinor,
   isIncome,
   footnote,
 }: {
-  groupKey: GroupKey;
   spentMinor: number;
   plannedMinor: number;
   isIncome: boolean;
@@ -48,29 +44,25 @@ export function BudgetRing({
 
   return (
     <section className="rounded-2xl border border-border bg-card p-6 sm:p-8">
-      <div className="flex flex-col items-center gap-8 sm:flex-row sm:gap-12">
-        <RadialProgress
-          percent={pct}
-          color={over ? "var(--negative)" : groupColor(groupKey)}
-          size={176}
-          label={`${pct}% of budget ${isIncome ? "received" : "used"}`}
-        >
-          {plannedMinor <= 0 ? (
-            <span className="text-sm text-muted-foreground">No budget set</span>
-          ) : isIncome ? (
-            <>
-              <span className="font-heading text-3xl font-bold">{pct}%</span>
-              <span className="mt-0.5 text-xs text-muted-foreground">received</span>
-            </>
-          ) : (
-            <>
-              <span className="font-heading text-2xl font-bold">
-                <Money minor={Math.abs(diff)} tone={over ? "negative" : "default"} />
-              </span>
-              <span className="mt-0.5 text-xs text-muted-foreground">{over ? "over budget" : "left"}</span>
-            </>
-          )}
-        </RadialProgress>
+      <div className="flex flex-col gap-8 sm:flex-row sm:items-center sm:gap-12">
+        <div className="shrink-0">
+          <p className="text-xs text-muted-foreground">
+            {plannedMinor <= 0 ? "Spent" : isIncome ? "Received" : over ? "Over budget" : "Left to spend"}
+          </p>
+          <p className="mt-1 font-heading text-4xl font-bold">
+            {plannedMinor <= 0 ? (
+              <Money minor={spentMinor} />
+            ) : (
+              <Money minor={Math.abs(diff)} tone={over ? "negative" : "default"} />
+            )}
+          </p>
+          <p className="mt-1.5 text-xs text-muted-foreground">
+            {plannedMinor > 0
+              ? `${pct}% of ${money(plannedMinor)} ${isIncome ? "received" : "used"}`
+              : "No budget set"}
+          </p>
+        </div>
+
         <dl className="grid w-full flex-1 grid-cols-2 gap-x-6 gap-y-7">
           <Stat label={isIncome ? "Received" : "Spent"} value={<Money minor={spentMinor} />} />
           <Stat label="Budgeted" value={<Money minor={plannedMinor} tone={plannedMinor ? "default" : "muted"} />} />
@@ -81,7 +73,6 @@ export function BudgetRing({
           />
         </dl>
       </div>
-      {plannedMinor > 0 && <p className="sr-only">{money(spentMinor)} of {money(plannedMinor)}</p>}
     </section>
   );
 }
@@ -129,13 +120,15 @@ export function PeriodTrend({
       }}
     >
       {any ? (
-        <ColumnTrend
+        <BarTrend
           data={points.map((p, i) => ({
             label: formatMonthShort(p.month, locale),
             value: p.spentMinor,
             highlight: i === points.length - 1,
-            tag: p.spentMinor > 0 ? formatCompact(p.spentMinor, currency) : undefined,
-            extra: [{ label: "budgeted", value: money(p.budgetedMinor) }, ...(p.assumed ? [{ label: "", value: "assumed" }] : [])],
+            extra: [
+              { label: "budgeted", value: money(p.budgetedMinor) },
+              ...(p.assumed ? [{ label: "", value: "assumed" }] : []),
+            ],
           }))}
           color={color}
           valueLabel={verb[0].toUpperCase() + verb.slice(1)}
@@ -150,46 +143,10 @@ export function PeriodTrend({
   );
 }
 
-/** Where a category's money actually goes, by merchant. */
-export function MerchantBreakdown({
-  items,
-  categoryName,
-  color,
-}: {
-  items: { label: string; totalMinor: number; count: number }[];
-  categoryName: string;
-  color: string;
-}) {
-  const currency = useCurrency();
-  const money = (m: number) => formatMoney(m, { currency });
-  const total = items.reduce((s, i) => s + i.totalMinor, 0);
-  const top = items[0];
-  return (
-    <ChartCard
-      title="Where it goes"
-      takeaway={top && total > 0 ? `${top.label} is ${Math.round((top.totalMinor / total) * 100)}% of ${categoryName} this month.` : `Nothing logged in ${categoryName} this month.`}
-      note={items.length ? "From the merchant or note on each transaction." : undefined}
-      table={{ head: ["Merchant", "Spent", "Transactions"], rows: items.map((i) => [i.label, money(i.totalMinor), String(i.count)]) }}
-    >
-      {items.length ? (
-        <RankedBars
-          items={items.map((i) => ({
-            key: i.label,
-            label: i.label,
-            value: i.totalMinor,
-            display: money(i.totalMinor),
-            color,
-            sub: `${i.count} transaction${i.count === 1 ? "" : "s"} · ${Math.round((i.totalMinor / total) * 100)}%`,
-          }))}
-        />
-      ) : (
-        <p className="py-10 text-center text-sm text-muted-foreground">Transactions you log here will be broken down by merchant.</p>
-      )}
-    </ChartCard>
-  );
-}
-
-/** Is net worth growing? One soft line of the monthly snapshots. */
+/**
+ * Is net worth growing? One line of the monthly snapshots — the only place
+ * those snapshots are read, and the only history the app can't recompute.
+ */
 export function NetWorthTrend({ points }: { points: { month: string; totalMinor: number }[] }) {
   const currency = useCurrency();
   const locale = useLocale();
@@ -200,6 +157,7 @@ export function NetWorthTrend({ points }: { points: { month: string; totalMinor:
   return (
     <ChartCard
       title="Net worth over time"
+      aside={last ? formatCompact(last.totalMinor, currency) : undefined}
       takeaway={
         points.length < 2
           ? "Your history starts this month."
@@ -215,95 +173,14 @@ export function NetWorthTrend({ points }: { points: { month: string; totalMinor:
           One point so far: <span className="ml-1 font-medium text-foreground">{last ? money(last.totalMinor) : "—"}</span>
         </div>
       ) : (
-        <AreaTrend
+        <LineTrend
           data={points.map((p) => ({ label: formatMonthShort(p.month, locale), value: p.totalMinor }))}
           color="var(--primary)"
           valueLabel="Net worth"
           format={money}
           fromZero={false}
-          height={220}
         />
       )}
-    </ChartCard>
-  );
-}
-
-/** What net worth is made of — what you hold, as a whole. */
-export function NetWorthMix({
-  cash,
-  assets,
-  owedToYou,
-  youOwe,
-  total,
-}: {
-  cash: number;
-  assets: number;
-  owedToYou: number;
-  youOwe: number;
-  total: number;
-}) {
-  const currency = useCurrency();
-  const money = (m: number) => formatMoney(m, { currency });
-  const parts = [
-    { key: "cash", label: "Cash", value: Math.max(cash, 0), color: "var(--chart-investments)" },
-    { key: "assets", label: "Assets", value: Math.max(assets, 0), color: "var(--chart-needs)" },
-    { key: "owed", label: "Owed to you", value: Math.max(owedToYou, 0), color: "var(--chart-wants)" },
-  ].map((p) => ({ ...p, display: money(p.value) }));
-  const held = parts.reduce((s, p) => s + p.value, 0);
-  const top = [...parts].sort((a, b) => b.value - a.value)[0];
-  const share = (v: number) => (held > 0 ? Math.round((v / held) * 100) : 0);
-
-  return (
-    <ChartCard
-      title="What it's made of"
-      takeaway={held > 0 ? `${top.label} is ${share(top.value)}% of what you hold.` : "Add an account or asset to see this."}
-      note={youOwe > 0 ? `Net worth is this, minus ${money(youOwe)} you owe.` : undefined}
-      table={{ head: ["", "Amount", "Share"], rows: [...parts.map((p) => [p.label, p.display, `${share(p.value)}%`]), ...(youOwe > 0 ? [["You owe", `−${money(youOwe)}`, ""]] : [])] }}
-    >
-      <div className="flex flex-col items-center gap-6">
-        <Donut slices={parts} size={180} thickness={22} label={`Net worth ${money(total)}`}>
-          <span className="text-xs text-muted-foreground">Net worth</span>
-          <span className="mt-1 font-heading text-lg font-bold"><Money minor={total} /></span>
-        </Donut>
-        <ul className="flex w-full flex-col gap-3 text-sm">
-          {parts.map((p) => (
-            <li key={p.key} className="flex items-center gap-3">
-              <span aria-hidden className="size-2.5 shrink-0 rounded-full" style={{ background: p.color }} />
-              <span className="flex-1">{p.label}</span>
-              <span className="tabular font-medium">{p.display}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </ChartCard>
-  );
-}
-
-/** Who owes whom — owed to you to the right, what you owe to the left. */
-export function PeopleBalances({ people }: { people: { id: string; name: string; balanceMinor: number }[] }) {
-  const currency = useCurrency();
-  const money = (m: number) => formatMoney(m, { currency });
-  const open = people.filter((p) => p.balanceMinor !== 0).sort((a, b) => Math.abs(b.balanceMinor) - Math.abs(a.balanceMinor));
-  if (!open.length) return null;
-  const top = open[0];
-  return (
-    <ChartCard
-      title="Balances"
-      takeaway={top.balanceMinor > 0 ? `${top.name} owes you the most — ${money(top.balanceMinor)}.` : `You owe ${top.name} the most — ${money(-top.balanceMinor)}.`}
-      table={{ head: ["Person", "Balance"], rows: open.map((p) => [p.name, p.balanceMinor > 0 ? `owes you ${money(p.balanceMinor)}` : `you owe ${money(-p.balanceMinor)}`]) }}
-    >
-      <DivergingBars
-        leftLabel="You owe"
-        rightLabel="Owes you"
-        leftColor="var(--negative)"
-        rightColor="var(--positive)"
-        items={open.slice(0, 8).map((p) => ({
-          key: p.id,
-          label: p.name,
-          value: p.balanceMinor,
-          display: money(Math.abs(p.balanceMinor)),
-        }))}
-      />
     </ChartCard>
   );
 }

@@ -7,13 +7,14 @@ import {
 } from "@/lib/budget";
 import { monthBounds } from "@/lib/targets";
 import { requireUser, getUserPrefs } from "@/lib/auth";
-import { currentMonthIn, dayOfMonthIn, todayIn } from "@/lib/dates";
-import { DailyHero, PaceCard, SpendingCalendar } from "@/components/charts/daily-insights";
+import { currentMonthIn, dayOfMonthIn } from "@/lib/dates";
+import { DailyHero, PaceCard } from "@/components/charts/daily-insights";
 import { prepareMonth } from "@/lib/month-setup";
 
 /**
- * Daily answers "can I spend this today?" first, then "am I on pace?", then
- * "which days were expensive?" — each with the picture that fits it.
+ * Daily answers "can I spend this today?" with figures, then "am I on pace?"
+ * with its one chart. The transactions underneath already show which days
+ * were expensive, so the calendar that used to sit between them is gone.
  */
 export async function DailyView({ month }: { month: string }) {
   const user = await requireUser();
@@ -57,8 +58,6 @@ export async function DailyView({ month }: { month: string }) {
         spentMinor={daily.dailySpent}
         throughDay={throughDay}
       />
-
-      <SpendingCalendar month={month} days={daily.days} today={todayIn(timeZone)} />
 
       <section className="overflow-hidden rounded-2xl border border-border bg-card">
         <div className="px-5 pt-5 pb-3 sm:px-6">

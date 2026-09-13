@@ -3,17 +3,11 @@ import { Money } from "@/components/money";
 import { getYearSummary } from "@/lib/budget";
 import { requireUser, getUserPrefs } from "@/lib/auth";
 import { formatMonthShort } from "@/lib/dates";
-import {
-  MonthlySavings,
-  SavingsGrowth,
-  SavingsRateCard,
-  SpendingMix,
-} from "@/components/charts/yearly-insights";
+import { MonthlySavings } from "@/components/charts/yearly-insights";
 
 /**
- * Yearly answers "am I building up?" — the savings rate and the running pot
- * first, then which months were good or bad, then how the mix is shifting.
- * The table at the bottom keeps every figure.
+ * Yearly answers "am I building up?" — three totals, one chart of which
+ * months were good or bad, and the table that keeps every figure.
  */
 export async function YearView({ year }: { year: number }) {
   const user = await requireUser();
@@ -37,15 +31,11 @@ export async function YearView({ year }: { year: number }) {
         <Stat label="Saved" minor={summary.totals.saved} tone="auto" />
       </section>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <SavingsRateCard income={summary.totals.income} saved={summary.totals.saved} />
-        <div className="lg:col-span-2">
-          <SavingsGrowth months={months} />
-        </div>
-      </div>
-
-      <MonthlySavings months={months} />
-      <SpendingMix months={months} />
+      <MonthlySavings
+        months={months}
+        incomeTotal={summary.totals.income}
+        savedTotal={summary.totals.saved}
+      />
 
       <section className="overflow-hidden rounded-2xl border border-border bg-card">
         <div className="px-5 pt-5 pb-3 sm:px-6">

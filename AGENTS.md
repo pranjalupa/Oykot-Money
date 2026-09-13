@@ -131,81 +131,42 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   Teams and sharing are still out — don't build toward them without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
-- 2026-09-11 (3) — **Charts rebuilt around the question each one answers.** The first set was
-  dense (side-by-side halves, 30- and 24-bar charts, heavy stone blocks, duplicated data).
-  - Form follows the question: ring (budget used), donut (split of income, net worth mix),
-    area (pace, savings, net worth), calendar heatmap (which days), bullet bars (target split),
-    ranked bars (categories, merchants), diverging bars (over/under, who owes whom).
-  - Building blocks in `components/charts/` (`radial-progress`, `donut`, `area-trend`,
-    `column-trend`, `ranked-bars`, `diverging-bars`, `bullet-bars`, `calendar-heatmap`);
-    screens compose them in `*-insights.tsx`, which also write the takeaway sentence.
-  - Label-heavy bars are plain HTML, not Recharts, so labels never crop on a phone.
-  - No y-axis anywhere; every `ChartCard` ends with a takeaway and a "View as table" link.
-  - Colour: group shades as before; single measures use `--primary` (supersedes the stone
-    accent); ranked category bars take their group's colour; unspent is `--muted` track.
-  - New queries: `getGroupTrend`, `getMerchantBreakdown`. Removed the target cards, per-group
-    breakdown, income-vs-spending chart and the yearly spending mini-bars (duplicates).
-  - Checked with sample data in light, dark and at phone width. Recharts draws nothing in a
-    hidden tab (no animation frames) — a blank chart in a background preview isn't a bug.
-- 2026-09-11 (2) — **Dates, charts, trial and pricing, legal, data rights, and the bug sweep.**
-  - **Time is the user's, not the server's.** The server runs on UTC. `lib/dates.ts`
-    (`todayIn`, `currentMonthIn`) takes the profile's timezone, which the browser reports via
-    `TimezoneSync`. Never call `new Date()` for "today". `formatDay` parses stored dates as UTC
-    so "2026-09-03" can't print as Sep 2. Region (date format) is separate from currency.
-  - **Transactions: one validator** (`readTransaction`) for add and edit, and one set of fields
-    (`TransactionFields`). Edit can move account and type. Carry-over never fills future months;
-    repeats skip archived accounts and categories.
-  - **Charts** are shadcn charts (Recharts) inside `ChartCard`, which always offers a Table view.
-    `--chart-needs/wants/investments` were computed with the dataviz palette validator in both
-    modes. Only those three stack (in that order); single series and budget-vs-spent use the
-    stone `--chart-accent`/`--chart-neutral`, because the brand primary collides with the
-    group hues.
-  - **Net worth history** comes from `net_worth_snapshots`, written by Money and by Home via
-    `after()`. It can't be backfilled.
-  - **Access:** `subscriptions` plus `getAccess()` in `lib/access.ts`. Every write action calls
-    `requireWriter()`, which redirects to `/pricing?trial=ended` when read-only. Profile,
-    timezone, export and delete never go through it. Enforcement is behind
-    `ACCESS_ENFORCED=true` — leave it off until checkout works.
-  - **Delete account** deletes rows in dependency order in one transaction (`transactions.
-    account_id` is RESTRICT, so don't rely on the auth.users cascade), then calls
-    `auth.admin.deleteUser` through `lib/supabase/admin.ts` (service role, server only).
-  - Public routes: `/` (landing when signed out, an exact match in middleware), `/pricing`,
-    `/legal/*`, `/auth/*`. Prices live in `lib/pricing.ts`, the legal contact in `lib/legal.ts`.
-  - Dialogs close from inside a wrapped `useActionState` action, never an effect. Lint is 0.
-- 2026-09-11 — **Profiles and per-user currency** (first slice of SaaS phase 1).
-  - `profiles` (name, currency), **created lazily** in `getProfile()`: a user arrives by the
-    email form, Google, or predating profiles, and all three pass through a render.
-  - Signup puts name + currency in `user_metadata`, because with email confirmation there's
-    no session — so no profile row — until the link is clicked. Google gets its name from
-    Google and currency from `x-vercel-ip-country`.
-  - `<Money>` is now a client component reading a context set in the root layout, so money
-    can be formatted deep inside client components without threading the profile through.
-  - RLS on 9/9 tables. Dates are still `en-IN` for everyone — known gap.
-- 2026-09-11 — **Going SaaS: paid-only with a trial, India and global from day one.**
-  Reverses Phase 2's "no billing". Detail in `PRODUCT.md` §13.
-  - **Two providers, one `subscriptions` table.** Razorpay (UPI Autopay, ₹) for India; a
-    Merchant of Record for everyone else. Not LemonSqueezy: no UPI, no INR settlement, and
-    it's being folded into Stripe Managed Payments.
-  - **Access is decided in one server-side check** and enforced in every write action, not
-    just the UI. Webhooks are the source of truth; the checkout return page is not.
-  - **After the trial: read-only, never locked out** — your history stays yours.
-  - Seller is an individual (no GST registration yet). Whether global sales through an MoR
-    force GST registration is an open question for a CA — don't treat it as settled.
-  - Phase 0 (the known gaps) done: the target-split editor moved to the Monthly tab, where
-    it sits next to the budget it shapes (Settings keeps a pointer); UI wording is
-    Budgeted · Spent · Remaining / Over budget everywhere; transaction delete confirms;
-    `createAccount` refuses `kind = loan`, since only `createPerson` may make a ledger.
-- Earlier entries (2026-09-01 → 2026-09-03, first build through multi-user launch) archived to `docs/decisions/2026-09.md`.
+- 2026-09-12 — **Charts cut from 15 to 6, and back to plain forms.** The rebuild the day
+  before was too much: rings, a calendar heatmap, diverging and bullet bars, and several
+  charts restating a number already on the page.
+  - **Only four chart types now** — line, column, horizontal bar, pie — all Recharts inside
+    `ChartContainer`. Primitives: `line-trend`, `bar-trend`, `bar-ranking`, `pie-split`.
+    The eight bespoke ones are deleted; don't reintroduce a hand-rolled SVG chart.
+  - **The bar for keeping a chart:** it must show something the figures beside it don't —
+    shape over time, or a ranking. That's what removed the rings (a dial of one percentage
+    the stat grid already prints), the calendar (the transaction list is grouped by day),
+    over/under (same rows as "Where it goes"), the net-worth donut and the People bars
+    (both lists sit right underneath), and the yearly savings-rate ring, running total and
+    spending mix (all restatements of "Saved each month").
+  - What's left: Daily → Spending pace. Monthly → Where your money went, Where it goes.
+    Yearly → Saved each month. Group + category → Last six months. Money → Net worth.
+  - `getMerchantBreakdown` went with its chart — merchant strings are parsed from
+    transaction notes, so it was the least trustworthy figure in the app.
+  - **Fixed a live bug in passing:** `groupColor` was exported from a `"use client"` module
+    and called from the group and category server components, so both pages had been
+    throwing since b2e9780. It now lives in `lib/chart-colors.ts`. **A plain function
+    exported from a client module can be rendered on the server, never called** — put
+    shared helpers in `lib/`.
+  - Checked in a browser with sample data, light and dark, desktop and 375px.
+- Earlier entries (2026-09-01 → 2026-09-11: first build, multi-user launch, profiles and
+  per-user currency, the SaaS decision, dates/timezone, access and legal, and the
+  first chart rebuild) archived to `docs/decisions/2026-09.md`.
+
 ## Status
 Fully workable and deployed at https://oykot-money.vercel.app. Home (Daily/Monthly/Yearly
 tabs) / group pages / category detail / Money / People / Settings all read and write against
 Supabase, with auth and per-user isolation. Archiving, deleting, drag reordering and the
-icon grid are wired everywhere they apply.
+icon grid are wired everywhere they apply. Six charts total, all plain Recharts forms.
 **Not built yet:** statement import or any automated entry (deliberately deferred; see the
 `merchant_rules` note above).
 **Next:** payments — Razorpay, then a Merchant of Record, in test mode (`PRODUCT.md` §13.6,
 phases 3–4). Turn on `ACCESS_ENFORCED` only once checkout works. Legal pages are drafts.
-**Lint:** clean.
+**Lint, typecheck and build:** clean.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

@@ -2,9 +2,7 @@
 
 import { Money } from "@/components/money";
 import { ChartCard } from "@/components/charts/chart-card";
-import { RadialProgress } from "@/components/charts/radial-progress";
-import { AreaTrend } from "@/components/charts/area-trend";
-import { CalendarHeatmap } from "@/components/charts/calendar-heatmap";
+import { LineTrend } from "@/components/charts/line-trend";
 import { useCurrency, useLocale } from "@/components/currency-provider";
 import { formatMoney } from "@/lib/money";
 import { formatDay } from "@/lib/dates";
@@ -33,7 +31,13 @@ function Stat({ label, value, sub }: { label: string; value: React.ReactNode; su
   );
 }
 
-/** The question Daily exists to answer: how much can I spend today? */
+/**
+ * The question Daily exists to answer: how much can I spend today?
+ *
+ * Plain figures, no dial. A ring around a percentage says nothing the
+ * percentage doesn't, and it pushed the numbers people came for off to
+ * one side.
+ */
 export function DailyHero({
   month,
   budgetMinor,
@@ -61,22 +65,18 @@ export function DailyHero({
 
   return (
     <section className="rounded-2xl border border-border bg-card p-6 sm:p-8">
-      <div className="flex flex-col items-center gap-8 sm:flex-row sm:gap-12">
-        <RadialProgress
-          percent={used}
-          color={over ? "var(--negative)" : "var(--primary)"}
-          label={`${used}% of this month's Needs and Wants budget used`}
-        >
-          <span className="text-xs text-muted-foreground">
+      <div className="flex flex-col gap-8 sm:flex-row sm:items-center sm:gap-12">
+        <div className="shrink-0">
+          <p className="text-xs text-muted-foreground">
             {isCurrentMonth ? "Safe to spend today" : "Per day"}
-          </span>
-          <span className="mt-1 font-heading text-3xl font-bold">
+          </p>
+          <p className="mt-1 font-heading text-4xl font-bold">
             <Money minor={safePerDayMinor} tone={over ? "negative" : "default"} />
-          </span>
-          <span className="mt-1 text-xs text-muted-foreground">
-            {budgetMinor > 0 ? `${used}% of budget used` : "No budget set"}
-          </span>
-        </RadialProgress>
+          </p>
+          <p className="mt-1.5 text-xs text-muted-foreground">
+            {budgetMinor > 0 ? `${used}% of your Needs and Wants budget used` : "No budget set"}
+          </p>
+        </div>
 
         <dl className="grid w-full flex-1 grid-cols-2 gap-x-6 gap-y-7">
           <Stat label="Remaining" value={<Money minor={remainingMinor} tone="auto" />} sub="Needs and Wants" />
@@ -100,6 +100,10 @@ export function DailyHero({
 /**
  * Spending so far against the budget's even pace. Fixed costs counted as
  * assumed-spent have no date, so they're counted from day one.
+ *
+ * Daily's only chart: the transaction list underneath already breaks the
+ * month down day by day, so what a chart can add is the shape — whether the
+ * gap to the budget line is opening or closing.
  */
 export function PaceCard({
   month,
@@ -161,42 +165,13 @@ export function PaceCard({
         rows: data.map((d) => [d.title, d.value === null ? "—" : money(d.value), money(d.reference)]),
       }}
     >
-      <AreaTrend data={data} color="var(--primary)" valueLabel="Spent so far" referenceLabel="Budget pace" format={money} />
-    </ChartCard>
-  );
-}
-
-/** Which days were expensive — the month as a calendar. */
-export function SpendingCalendar({
-  month,
-  days,
-  today,
-}: {
-  month: string;
-  days: Day[];
-  today: string;
-}) {
-  const currency = useCurrency();
-  const locale = useLocale();
-  const money = (m: number) => formatMoney(m, { currency });
-  const values = Object.fromEntries(days.map((d) => [d.date, d.totalMinor]));
-  const biggest = [...days].sort((a, b) => b.totalMinor - a.totalMinor)[0];
-  const last = daysIn(month);
-  const elapsed = Array.from({ length: last }, (_, i) => iso(month, i + 1)).filter((d) => d <= today);
-  const quiet = elapsed.filter((d) => !values[d]).length;
-
-  return (
-    <ChartCard
-      title="Spending calendar"
-      takeaway={biggest ? `Biggest day: ${formatDay(biggest.date, locale)}, ${money(biggest.totalMinor)}.` : "Nothing spent yet this month."}
-      note={elapsed.length ? `${quiet} no-spend day${quiet === 1 ? "" : "s"} so far. Needs and Wants only.` : undefined}
-      table={{
-        head: ["Day", "Spent"],
-        rows: [...days].sort((a, b) => a.date.localeCompare(b.date)).map((d) => [formatDay(d.date, locale), money(d.totalMinor)]),
-        note: "Days with no spending are left out.",
-      }}
-    >
-      <CalendarHeatmap month={month} values={values} format={money} locale={locale} today={today} />
+      <LineTrend
+        data={data}
+        color="var(--primary)"
+        valueLabel="Spent so far"
+        referenceLabel="Budget pace"
+        format={money}
+      />
     </ChartCard>
   );
 }

@@ -1,6 +1,5 @@
 import { Money } from "@/components/money";
 import { PeopleManager, PersonDialog } from "@/components/people-manager";
-import { PeopleBalances } from "@/components/charts/detail-insights";
 import { listPeople } from "@/lib/budget";
 import { requireUser } from "@/lib/auth";
 
@@ -50,10 +49,6 @@ export default async function PeoplePage() {
           </div>
         </section>
       )}
-
-      <PeopleBalances
-        people={active.map((p) => ({ id: p.id, name: p.name, balanceMinor: p.balanceMinor }))}
-      />
 
       <PeopleManager people={people} />
     </div>
