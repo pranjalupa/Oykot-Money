@@ -10,6 +10,8 @@ import { getAccess } from "@/lib/access";
 import { DEFAULT_REGION } from "@/lib/region";
 import { CurrencyProvider } from "@/components/currency-provider";
 import { DEFAULT_CURRENCY } from "@/lib/currency";
+import { Annotator } from "@/components/annotator";
+import { isAnnotator } from "@/lib/annotator";
 import "./globals.css";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
@@ -70,6 +72,7 @@ export default async function RootLayout({
               >
                 {children}
               </AppShell>
+              {user && isAnnotator(user.email) && <Annotator />}
             </CurrencyProvider>
           </TooltipProvider>
           <Toaster position="bottom-center" />

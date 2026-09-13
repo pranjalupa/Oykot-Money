@@ -131,6 +131,17 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   Teams and sharing are still out — don't build toward them without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
+- 2026-09-13 — **In-app annotation tool, for Pranjal and the coding agent only.** Point at any
+  element (or select text) on any page, write a note; saved to `annotations` with the path,
+  a CSS selector, and the element's text as a fallback when the selector stops matching.
+  - Gated by an email list in `lib/annotator.ts`, checked in the layout *and* in every
+    action (`app/annotation-actions.ts`). Not a product feature — don't surface it to users.
+  - **"Check the annotations" means run `npx tsx scripts/annotations.mts list`.** `show`,
+    `reply`, `resolve <id> "what changed"`, `reopen`, `delete` also work; the reply shows
+    under the note in the app.
+  - Undo/redo covers add, edit, resolve/reopen and delete for the session; delete is undone
+    by re-inserting the same row.
+  - Table created by hand (SQL matching `schema.ts`) plus a re-run of `drizzle/rls.sql`.
 - 2026-09-12 — **Charts cut from 15 to 6, and back to plain forms.** The rebuild the day
   before was too much: rings, a calendar heatmap, diverging and bullet bars, and several
   charts restating a number already on the page.
@@ -162,6 +173,7 @@ Fully workable and deployed at https://oykot-money.vercel.app. Home (Daily/Month
 tabs) / group pages / category detail / Money / People / Settings all read and write against
 Supabase, with auth and per-user isolation. Archiving, deleting, drag reordering and the
 icon grid are wired everywhere they apply. Six charts total, all plain Recharts forms.
+Annotation tool (owner-only) live since 2026-09-13.
 **Not built yet:** statement import or any automated entry (deliberately deferred; see the
 `merchant_rules` note above).
 **Next:** payments — Razorpay, then a Merchant of Record, in test mode (`PRODUCT.md` §13.6,

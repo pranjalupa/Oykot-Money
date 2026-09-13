@@ -590,3 +590,45 @@ export type GroupTarget = typeof groupTargets.$inferSelect;
 export { sql };
 
 export type RecurringRule = typeof recurringRules.$inferSelect;
+
+/* -------------------------------------------------------------------------- */
+/* Annotations                                                                 */
+/* -------------------------------------------------------------------------- */
+
+export const ANNOTATION_STATUSES = ["open", "resolved"] as const;
+export type AnnotationStatus = (typeof ANNOTATION_STATUSES)[number];
+
+/**
+ * Notes pinned to a spot in the UI — a feedback channel between Pranjal and
+ * the coding agent, gated by lib/annotator.ts, not a product feature.
+ *
+ * The target is saved three ways because the page it points at keeps
+ * changing: `selector` to find it again, `elementText`/`selectedText` so the
+ * note still reads when the selector stops matching, and `path` for where.
+ * `reply` is written from scripts/annotations.mts and shown under the note.
+ */
+export const annotations = pgTable(
+  "annotations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => authUsers.id, { onDelete: "cascade" }),
+    /** Pathname plus query string, e.g. /needs?month=2026-09. */
+    path: text("path").notNull(),
+    pageTitle: text("page_title"),
+    selector: text("selector").notNull(),
+    tagName: text("tag_name"),
+    elementText: text("element_text"),
+    selectedText: text("selected_text"),
+    note: text("note").notNull(),
+    reply: text("reply"),
+    status: text("status", { enum: ANNOTATION_STATUSES }).notNull().default("open"),
+    viewportWidth: integer("viewport_width"),
+    theme: text("theme"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  },
+  (t) => [index("annotations_user_status_idx").on(t.userId, t.status)],
+);
