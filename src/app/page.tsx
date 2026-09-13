@@ -41,7 +41,7 @@ const TAB_LABEL: Record<View, string> = {
 export default async function HomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string; month?: string; year?: string }>;
+  searchParams: Promise<{ view?: string; month?: string; year?: string; add?: string }>;
 }) {
   const user = await getUser();
   // Signed out, "/" is the front door rather than a redirect to login.
@@ -101,7 +101,11 @@ export default async function HomePage({
           ) : (
             <MonthSwitcher month={month} basePath={`/?view=${view}`} />
           )}
+          {/* The phone tab bar's "+" lands on /?add=1. Keyed so arriving there
+              while already on Home remounts it open. */}
           <TransactionDialog
+            key={params.add === "1" ? "add" : "idle"}
+            defaultOpen={params.add === "1"}
             accounts={accounts}
             categories={categories}
             defaultDate={todayIn(timeZone)}

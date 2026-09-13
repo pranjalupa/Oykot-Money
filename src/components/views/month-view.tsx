@@ -4,9 +4,8 @@ import { Money } from "@/components/money";
 import { CopyPlanButton } from "@/components/copy-plan-button";
 import { TargetEditor } from "@/components/target-editor";
 import {
-  TargetCard,
+  IncomeSplit,
   TopCategories,
-  WhereMoneyWent,
 } from "@/components/charts/monthly-insights";
 import {
   getMonthSummary,
@@ -20,9 +19,8 @@ import { prepareMonth } from "@/lib/month-setup";
 import { percentOf } from "@/lib/money";
 
 /**
- * Monthly answers "where did it go, and was that the plan?" — a pie of the
- * income split, the target split beside it, then the categories that took
- * the most.
+ * Monthly answers "where did it go, and was that the plan?" — the income
+ * split against its targets in one card, then the categories that took the most.
  */
 export async function MonthView({ month }: { month: string }) {
   const user = await requireUser();
@@ -83,12 +81,8 @@ export async function MonthView({ month }: { month: string }) {
         <StatCard label="Saved this month" actualMinor={summary.actualSaved} plannedMinor={summary.plannedSaved} tone="auto" />
       </section>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <WhereMoneyWent
+      <IncomeSplit
           incomeMinor={summary.actualIncome > 0 ? summary.actualIncome : summary.plannedIncome}
-          spent={{ needs: g.needs.actualMinor, wants: g.wants.actualMinor, investments: g.investments.actualMinor }}
-        />
-        <TargetCard
           rows={targetRows}
           custom={overridden}
           editor={
@@ -106,7 +100,6 @@ export async function MonthView({ month }: { month: string }) {
             </details>
           }
         />
-      </div>
 
       <TopCategories rows={categories} />
     </div>

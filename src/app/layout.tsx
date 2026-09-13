@@ -78,7 +78,8 @@ export default async function RootLayout({
               {user && isAnnotator(user.email) && <Annotator />}
             </CurrencyProvider>
           </TooltipProvider>
-          <Toaster position="bottom-center" />
+          {/* Clear of the bottom tab bar on phones. */}
+          <Toaster position="bottom-center" mobileOffset={{ bottom: 88 }} />
         </ThemeProvider>
       </body>
     </html>

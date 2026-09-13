@@ -133,6 +133,23 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   Teams and sharing are still out — don't build toward them without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
+- 2026-09-13 — **Second annotation pass: navigation and Monthly reshaped.**
+  - **People is gone as a page** — it's the Settlements section of Money (`/people`
+    redirects to `/money#settlements`). Money reads: Net worth → Accounts → Settlements →
+    Assets → trend. Each person has "+" and "Settle up", which open the Add form prefilled;
+    balances only ever change through transactions.
+  - **Phones get a bottom tab bar** (Home, Groups sheet, + Add → `/?add=1`, Money, Settings)
+    instead of the ≡ drawer. Toaster and the annotation launcher sit above it.
+  - **Monthly: one "Your income split" card** replaces the pie and the target card, which
+    both said "Needs 33%". "Where it goes" is a list with a bar under each name (names were
+    clipped at 13 chars beside the chart). Both are plain divs — `pie-split` and
+    `bar-ranking` are deleted, so Recharts is now line and column only.
+  - Daily hero: one number, one bar, one line. Category rows lost their progress bar.
+  - The Add form can create a person or category inline (`quickAddPerson`,
+    `quickAddCategory`). Settlement chips read "Money to them / Money from them" so
+    repaying and being repaid fit the same two moves.
+  - Kept Accounts on Money rather than moving them to Income: Income is a budget group,
+    accounts are where money sits.
 - 2026-09-13 — **First annotation pass (13 fixes).** Charts lost their caption sentences and
   "View as table" link; `ChartCard` now has a Chart / Table switch top right and no
   `takeaway`/`note` props. Group colour dots removed from headings and labels. Whole

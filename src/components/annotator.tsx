@@ -493,7 +493,7 @@ export function Annotator() {
 
       {/* List */}
       {panelOpen && (
-        <aside className="fixed right-3 bottom-20 z-[75] flex max-h-[min(640px,calc(100svh-7rem))] w-[380px] max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-2xl">
+        <aside className="fixed right-3 bottom-40 z-[75] flex lg:bottom-20 max-h-[min(640px,calc(100svh-7rem))] w-[380px] max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-2xl">
           <header className="flex items-center justify-between gap-2 border-b border-border px-3 py-2.5">
             <p className="font-heading text-sm font-semibold">Annotations</p>
             <div className="flex items-center gap-0.5">
@@ -592,7 +592,7 @@ export function Annotator() {
       )}
 
       {/* Launcher */}
-      <div className="fixed right-3 bottom-3 z-[75] flex items-center gap-1 rounded-full border border-border bg-card p-1 text-card-foreground shadow-lg">
+      <div className="fixed right-3 bottom-24 z-[75] flex lg:bottom-3 items-center gap-1 rounded-full border border-border bg-card p-1 text-card-foreground shadow-lg">
         <button
           type="button"
           onClick={() => {

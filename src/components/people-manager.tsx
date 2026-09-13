@@ -34,10 +34,21 @@ import { IconButton } from "@/components/icon-button";
 import { ArchiveButton } from "@/components/archive-button";
 import { SortableList, SortableRow } from "@/components/sortable-list";
 import { Money } from "@/components/money";
+import { TransactionDialog } from "@/components/transaction-dialog";
+import type { PickerAccount, PickerCategory } from "@/components/transaction-fields";
 import type { PersonRow } from "@/lib/budget";
+import { toMajor } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
-export function PeopleManager({ people }: { people: PersonRow[] }) {
+type Picker = { accounts: PickerAccount[]; categories: PickerCategory[]; defaultDate: string };
+
+export function PeopleManager({
+  people,
+  accounts,
+  categories,
+  defaultDate,
+}: { people: PersonRow[] } & Picker) {
+  const picker = { accounts, categories, defaultDate };
   const [showArchived, setShowArchived] = useState(false);
   const visible = people.filter((p) => showArchived || !p.archived);
   const archivedCount = people.filter((p) => p.archived).length;
@@ -74,7 +85,7 @@ export function PeopleManager({ people }: { people: PersonRow[] }) {
       >
         {(id) => {
           const person = byId.get(id);
-          return person ? <PersonRowItem key={id} person={person} /> : null;
+          return person ? <PersonRowItem key={id} person={person} picker={picker} /> : null;
         }}
       </SortableList>
 
@@ -93,7 +104,7 @@ export function PeopleManager({ people }: { people: PersonRow[] }) {
   );
 }
 
-function PersonRowItem({ person }: { person: PersonRow }) {
+function PersonRowItem({ person, picker }: { person: PersonRow; picker: Picker }) {
   const [pending, start] = useTransition();
 
   function toggleArchive() {
@@ -147,6 +158,43 @@ function PersonRowItem({ person }: { person: PersonRow }) {
         tone={owed ? "negative" : person.balanceMinor === 0 ? "muted" : "default"}
         className="shrink-0 text-sm font-semibold"
       />
+
+      {/* Money moves through transactions, never a typed-in balance — so
+          your account changes too and the history says why. */}
+      {person.accountId && !person.archived && person.balanceMinor !== 0 && (
+        <TransactionDialog
+          {...picker}
+          title={`Settle up with ${person.name}`}
+          initial={{
+            // They owe you → money comes from them; you owe → money goes to them.
+            direction: person.balanceMinor > 0 ? "inflow" : "transfer",
+            counterAccountId: person.accountId,
+            amount: String(toMajor(Math.abs(person.balanceMinor))),
+          }}
+          trigger={
+            <DialogTrigger render={<Button size="sm" variant="outline" className="h-7 shrink-0 px-2 text-xs" />}>
+              Settle up
+            </DialogTrigger>
+          }
+        />
+      )}
+
+      {person.accountId && !person.archived && (
+        <TransactionDialog
+          {...picker}
+          title={`Money with ${person.name}`}
+          initial={{ direction: "transfer", counterAccountId: person.accountId }}
+          trigger={
+            <DialogTrigger
+              render={
+                <IconButton label={`Record money with ${person.name}`}>
+                  <Plus size={14} weight="bold" />
+                </IconButton>
+              }
+            />
+          }
+        />
+      )}
 
       <PersonDialog person={person} />
 

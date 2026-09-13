@@ -199,26 +199,6 @@ function Row({
               />
             )}
           </div>
-          {/* A thin bar under the name: how much of this line is used. */}
-          {cat.plannedMinor > 0 && (
-            <div
-              className="mt-2 h-1 overflow-hidden rounded-full bg-muted"
-              style={{ marginLeft: nested ? depth * 20 : 38 }}
-            >
-              <div
-                className="h-full rounded-full"
-                style={{
-                  width: `${Math.min((cat.actualMinor / cat.plannedMinor) * 100, 100)}%`,
-                  background:
-                    !isIncome && cat.actualMinor > cat.plannedMinor
-                      ? "var(--negative)"
-                      : isIncome
-                        ? "var(--primary)"
-                        : `var(--chart-${groupKey})`,
-                }}
-              />
-            </div>
-          )}
         </td>
 
         <td className="px-3 py-3.5 text-right">

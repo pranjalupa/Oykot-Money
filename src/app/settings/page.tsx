@@ -117,7 +117,7 @@ export default async function SettingsPage() {
         <h2 className="font-heading text-lg font-bold">Money and people</h2>
         <p className="mt-0.5 text-sm text-muted-foreground">
           Accounts and assets live on Money; anyone you lend to or borrow from
-          lives on People.
+          lives in Settlements, on Money.
         </p>
         <div className="mt-3 flex flex-wrap gap-4">
           <Link
@@ -128,10 +128,10 @@ export default async function SettingsPage() {
             <ArrowSquareOut size={14} weight="bold" />
           </Link>
           <Link
-            href="/people"
+            href="/money#settlements"
             className="inline-flex items-center gap-1.5 text-sm font-medium underline underline-offset-4"
           >
-            People
+            Settlements
             <ArrowSquareOut size={14} weight="bold" />
           </Link>
         </div>

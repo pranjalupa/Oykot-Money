@@ -8,15 +8,15 @@ import {
   ChartPieSlice,
   Gear,
   House,
-  List,
   Money,
   Moon,
+  Plus,
   ShoppingBag,
   SidebarSimple,
   SignOut,
+  SquaresFour,
   Sun,
   TrendUp,
-  Users,
   Wallet,
   type Icon,
 } from "@phosphor-icons/react";
@@ -85,15 +85,33 @@ const SECTIONS: { heading: string | null; items: NavItem[] }[] = [
   {
     heading: null,
     items: [
+      // People live inside Money now, as Settlements.
       { href: "/money", label: "Money", icon: Wallet },
-      { href: "/people", label: "People", icon: Users },
       { href: "/settings", label: "Settings", icon: Gear },
     ],
   },
 ];
 
+const GROUP_ITEMS = SECTIONS[1].items;
+
 function isActive(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
+}
+
+const tabClass = (active: boolean) =>
+  cn(
+    "flex min-w-14 flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium transition-colors",
+    active ? "text-foreground" : "text-muted-foreground hover:text-foreground",
+  );
+
+/** One bottom tab on phones. */
+function TabLink({ href, label, icon: Icon, active }: NavItem & { active: boolean }) {
+  return (
+    <Link href={href} aria-current={active ? "page" : undefined} className={tabClass(active)}>
+      <Icon size={22} weight={active ? "fill" : "regular"} />
+      <span>{label}</span>
+    </Link>
+  );
 }
 
 function ThemeToggle({ expanded = false }: { expanded?: boolean }) {
@@ -203,7 +221,7 @@ export function AppNav({
   /** From the `sidebar` cookie, so the first paint already has the right width. */
   collapsed?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [groupsOpen, setGroupsOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(initialCollapsed);
 
   // The content's left offset follows <html data-sidebar> in CSS (see AppShell),
@@ -216,14 +234,15 @@ export function AppNav({
   }
   const pathname = usePathname();
 
-  // A drawer that stays open after you navigate hides the page you asked for.
-  // Close the drawer when the route changes — adjusted during render, so
-  // there is no frame where the new page shows under an open drawer.
+  // A sheet that stays open after you navigate hides the page you asked for.
+  // Close it when the route changes — adjusted during render, so there is no
+  // frame where the new page shows under an open sheet.
   const [lastPath, setLastPath] = useState(pathname);
   if (pathname !== lastPath) {
     setLastPath(pathname);
-    setOpen(false);
+    setGroupsOpen(false);
   }
+  const groupActive = GROUP_ITEMS.some((i) => isActive(pathname, i.href));
 
   return (
     <>
@@ -271,47 +290,67 @@ export function AppNav({
         </div>
       </aside>
 
-      {/* Mobile bar + drawer ---------------------------------------------- */}
+      {/* Mobile: a slim top bar, and the main tabs at the bottom where a thumb
+          reaches. The old ≡ drawer hid every destination behind one icon. */}
       <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur lg:hidden">
-        <div className="flex items-center gap-2 px-4 py-3">
-          <Sheet open={open} onOpenChange={setOpen}>
-            <SheetTrigger
-              aria-label="Open menu"
-              title="Open menu"
-              className="flex size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-            >
-              <List size={19} weight="bold" />
-            </SheetTrigger>
+        <div className="flex items-center justify-between gap-2 px-4 py-2.5">
+          <Link href="/" className="font-heading text-lg font-extrabold">
+            Oykot
+          </Link>
+          <div className="flex items-center gap-1">
+            <ThemeToggle />
+            <SignOutButton />
+          </div>
+        </div>
+      </header>
 
-            <SheetContent side="left" className="p-0">
-              <div className="flex h-full flex-col px-3 py-4">
-                <SheetTitle className="mb-6 px-2.5 font-heading text-lg font-extrabold">
-                  Oykot
-                </SheetTitle>
-                <NavLinks onNavigate={() => setOpen(false)} />
-                <div className="mt-4 flex flex-col gap-0.5 border-t border-border pt-3">
-                  <ThemeToggle expanded />
-                  <SignOutButton expanded />
-                  {(name || email) && (
-                    <div className="min-w-0 px-2.5 pt-2">
-                      {name && (
-                        <p className="truncate text-xs font-medium text-foreground">{name}</p>
+      <nav
+        aria-label="Main"
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
+      >
+        <div className="mx-auto flex max-w-md items-stretch justify-around px-2">
+          <TabLink href="/" label="Home" icon={House} active={isActive(pathname, "/")} />
+
+          <Sheet open={groupsOpen} onOpenChange={setGroupsOpen}>
+            <SheetTrigger className={tabClass(groupActive)}>
+              <SquaresFour size={22} weight={groupActive ? "fill" : "regular"} />
+              <span>Groups</span>
+            </SheetTrigger>
+            <SheetContent side="bottom" className="rounded-t-2xl pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
+              <SheetTitle className="px-5 pt-5 font-heading text-base font-bold">Groups</SheetTitle>
+              <div className="grid grid-cols-2 gap-2 px-4">
+                {GROUP_ITEMS.map(({ href, label, icon: Icon }) => {
+                  const active = isActive(pathname, href);
+                  return (
+                    <Link
+                      key={href}
+                      href={href}
+                      onClick={() => setGroupsOpen(false)}
+                      aria-current={active ? "page" : undefined}
+                      className={cn(
+                        "flex items-center gap-2.5 rounded-xl border border-border px-3 py-3 text-sm font-medium transition-colors",
+                        active ? "bg-secondary text-secondary-foreground" : "hover:bg-muted",
                       )}
-                      {email && (
-                        <p className="truncate text-[11px] text-muted-foreground">{email}</p>
-                      )}
-                    </div>
-                  )}
-                </div>
+                    >
+                      <Icon size={18} weight={active ? "fill" : "regular"} />
+                      {label}
+                    </Link>
+                  );
+                })}
               </div>
             </SheetContent>
           </Sheet>
 
-          <Link href="/" className="font-heading text-lg font-extrabold">
-            Oykot
+          <Link href="/?add=1" aria-label="Add transaction" className="flex items-center justify-center px-2">
+            <span className="flex size-12 -translate-y-2.5 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg ring-4 ring-background">
+              <Plus size={22} weight="bold" />
+            </span>
           </Link>
+
+          <TabLink href="/money" label="Money" icon={Wallet} active={isActive(pathname, "/money")} />
+          <TabLink href="/settings" label="Settings" icon={Gear} active={isActive(pathname, "/settings")} />
         </div>
-      </header>
+      </nav>
     </>
   );
 }

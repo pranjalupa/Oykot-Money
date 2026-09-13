@@ -420,6 +420,36 @@ export async function createCategory(
   return { ok: true };
 }
 
+/**
+ * Add a top-level category without leaving the transaction form. Returns it so
+ * the form can select it straight away.
+ */
+export async function quickAddCategory(
+  name: string,
+  groupKey: GroupKey,
+): Promise<
+  | { ok: true; category: { id: string; name: string; groupKey: GroupKey; parentId: null } }
+  | { ok: false; error: string }
+> {
+  const user = await requireWriter();
+  const clean = String(name ?? "").trim().slice(0, 80);
+  if (!clean) return { ok: false, error: "Give the category a name." };
+  if (!GROUP_KEYS.includes(groupKey)) return { ok: false, error: "Pick a group." };
+
+  const [{ value: lastOrder }] = await db
+    .select({ value: max(categories.sortOrder) })
+    .from(categories)
+    .where(eq(categories.userId, user.id));
+
+  const [row] = await db
+    .insert(categories)
+    .values({ userId: user.id, name: clean, groupKey, parentId: null, sortOrder: (lastOrder ?? 0) + 1 })
+    .returning({ id: categories.id });
+
+  refresh();
+  return { ok: true, category: { id: row.id, name: clean, groupKey, parentId: null } };
+}
+
 export async function updateCategory(
   _prev: ActionResult | null,
   formData: FormData,
@@ -551,7 +581,7 @@ export async function createAccount(
   // People own their loan ledgers — createPerson makes both together. A loan
   // account made here would belong to nobody: invisible on Money and People,
   // yet still counted in net worth and offered in the transfer picker.
-  if (kind === "loan") return fail("Add people from the People page.");
+  if (kind === "loan") return fail("Add people from Settlements on the Money page.");
 
   const opening = parseAmount(formData.get("openingBalance")) ?? 0;
   const value = parseAmount(formData.get("currentValue")) ?? 0;
@@ -681,36 +711,50 @@ export async function createPerson(
     ? (kindRaw as PersonKind)
     : "person";
 
-  await db.transaction(async (tx) => {
-    const [{ next }] = await tx
-      .select({ next: sql<number>`coalesce(max(${people.sortOrder}), 0) + 1` })
-      .from(people)
-      .where(eq(people.userId, user.id));
-
-    const [person] = await tx
-      .insert(people)
-      .values({
-        userId: user.id,
-        name,
-        handle: handle || null,
-        kind,
-        icon: icon || null,
-        sortOrder: next,
-      })
-      .returning({ id: people.id });
-
-    await tx.insert(accounts).values({
-      userId: user.id,
-      name,
-      kind: "loan",
-      personId: person.id,
-      icon: icon || null,
-      sortOrder: next,
-    });
-  });
+  await addPersonWithLedger(user.id, { name, handle: handle || null, kind, icon: icon || null });
 
   refresh();
   return { ok: true };
+}
+
+/** A person and the loan ledger that carries their balance, in one step. Returns the ledger's id. */
+async function addPersonWithLedger(
+  userId: string,
+  p: { name: string; handle: string | null; kind: PersonKind; icon: string | null },
+) {
+  return db.transaction(async (tx) => {
+    const [{ next }] = await tx
+      .select({ next: sql<number>`coalesce(max(${people.sortOrder}), 0) + 1` })
+      .from(people)
+      .where(eq(people.userId, userId));
+
+    const [person] = await tx
+      .insert(people)
+      .values({ userId, name: p.name, handle: p.handle, kind: p.kind, icon: p.icon, sortOrder: next })
+      .returning({ id: people.id });
+
+    const [ledger] = await tx
+      .insert(accounts)
+      .values({ userId, name: p.name, kind: "loan", personId: person.id, icon: p.icon, sortOrder: next })
+      .returning({ id: accounts.id });
+    return ledger.id;
+  });
+}
+
+/**
+ * Add someone without leaving the transaction form. Returns their ledger so
+ * the form can select it straight away.
+ */
+export async function quickAddPerson(
+  name: string,
+): Promise<{ ok: true; account: { id: string; name: string; kind: "loan" } } | { ok: false; error: string }> {
+  const user = await requireWriter();
+  const clean = String(name ?? "").trim().slice(0, 80);
+  if (!clean) return { ok: false, error: "Give them a name." };
+
+  const id = await addPersonWithLedger(user.id, { name: clean, handle: null, kind: "person", icon: null });
+  refresh();
+  return { ok: true, account: { id, name: clean, kind: "loan" } };
 }
 
 export async function updatePerson(

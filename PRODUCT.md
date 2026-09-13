@@ -81,8 +81,12 @@ becomes **Over budget**, in red, once it goes below zero.
 
 ## 4. Navigation and routes
 
-**Sidebar:** Home · *Groups:* Needs, Wants, Investments, Income · Money · People · Settings.
-Theme toggle and Sign out sit at the bottom, with your name and email.
+**Sidebar (desktop):** Home · *Groups:* Needs, Wants, Investments, Income · Money · Settings.
+Theme toggle and Sign out sit at the bottom, with your name and email. A button at the top
+collapses it to icons; the choice is remembered.
+
+**Phones:** a slim top bar (logo, theme, sign out) and a **bottom tab bar** — Home · Groups
+(opens a sheet with the four groups) · **+** (Add transaction) · Money · Settings.
 
 | Route | Screen | Signed out? |
 |---|---|---|
@@ -90,8 +94,8 @@ Theme toggle and Sign out sit at the bottom, with your name and email.
 | `/?view=month` · `/?view=year` | Home, **Monthly** · **Yearly** tab | |
 | `/needs` `/wants` `/investments` `/income` | Group pages | |
 | `/category/[id]` | One category's detail, trend and transactions | |
-| `/money` | Accounts, assets, net worth and its history | |
-| `/people` | People and loan balances | |
+| `/money` | Net worth, accounts, settlements (people), assets, net worth history | |
+| `/?add=1` | Home with the Add transaction form open (the phone **+** tab) | |
 | `/settings` | Profile, billing, repeats, categories, your data | |
 | `/pricing` | Plans, trial and FAQ | ✓ |
 | `/legal/privacy` · `/legal/terms` · `/legal/refunds` | Legal pages | ✓ |
@@ -102,7 +106,8 @@ Theme toggle and Sign out sit at the bottom, with your name and email.
 **Period in the URL.** Month and year are URL parameters (`?month=2026-09`, `?year=2026`),
 so every view is linkable and survives a reload. Switching tabs keeps the period you were on.
 
-**Old routes redirect:** `/daily` → Daily tab, `/year` → Yearly tab, `/accounts` → `/money`.
+**Old routes redirect:** `/daily` → Daily tab, `/year` → Yearly tab, `/accounts` → `/money`,
+`/people` → `/money#settlements`.
 Signed-out visitors to any other page go to `/login?next=…`.
 
 ---
@@ -118,9 +123,9 @@ when you've navigated away) — or a **year switcher** on the Yearly tab — plu
 #### Daily (default)
 Answers "can I spend this today?"
 
-- **Today** — **safe to spend today** as the headline, the share of the month's Needs +
-  Wants budget used underneath, and beside it Remaining, Spent, Days left and **Pace**
-  (under or over, and by how much).
+- **Today** — **safe to spend today** as one big number, one bar for how much of the
+  month's Needs + Wants budget is gone ("₹X spent of ₹Y · ₹Z left"), and one line of
+  context: days left and how far under or over pace.
 - **Spending pace** — a line of spending so far against a dashed line to your budget at
   month's end. Assumed fixed costs count from day one. Daily's only chart: the transactions
   below already break the month down day by day.
@@ -133,14 +138,14 @@ Answers "how is this month going against the plan?"
 - **Empty state** when nothing is budgeted: *Set your budget* (goes to Needs) and
   *Copy last month*.
 - **Income · Expenses · Saved this month** — each against its budget.
-- **Where your money went** — a pie of Needs, Wants, Investments and what's not spent, with
-  each group's amount and share listed beside it.
-- **Your target split** — a row per group: share spent against its target, with the amounts
-  spent and budgeted. Over-target shares show red. *Adjust split* opens the editor here
-  (§6.7). Group names link to their pages.
-- **Where it goes** — a horizontal bar per category that has spending, biggest first,
-  coloured by its group, with the amount at the end of each bar. Top 8, and a note of how
-  many are over budget.
+- **Your income split** — one bar across the width is the month's income (received, or
+  budgeted until any arrives), divided into Needs, Wants, Investments and Not spent. Marks on
+  the bar show where each group would end at its target share. Below it, a row per group:
+  share spent against its target (red when over), with amounts spent and budgeted, plus a
+  Not spent row. *Adjust split* opens the editor here (§6.7). Group names link to their pages.
+- **Where it goes** — a list, biggest first: each category's full name and amount ("of ₹X"
+  budgeted), with a bar underneath coloured by group and a mark at its budget. A bar past its
+  budget turns red. Top 8; each row opens the category.
 
 #### Yearly
 Answers "how did the year go?"
@@ -157,9 +162,10 @@ Answers "how did the year go?"
 - **Last six months** — six columns, this month solid, with this month's budget as a dashed
   line and a comparison to your average.
 - **Category table** with columns **Category · Budgeted · Spent · Remaining**:
-  - **Budgeted edits inline** — click the figure, type, Enter or click away to save.
+  - **Budgeted edits inline** — the figure shows a pencil and a dashed underline; click it,
+    type, Enter or click away to save.
   - Sub-categories are indented under their parent.
-  - A thin bar under each name shows how much of that line is used; it turns red when over.
+  - Remaining turns red when a line is over.
   - A **Total** row at the bottom.
   - Categories with nothing budgeted and nothing spent are hidden behind
     *Show N untouched categories*.
@@ -176,22 +182,27 @@ transaction and the real figure replaces it."*
 The same **budget summary** and **Last six months** chart as the group pages.
 
 ### 5.4 Money — `/money`
+Top to bottom:
 - **Net worth** headline, broken down into **Cash · Assets · Owed to you · You owe**, with a
-  *See who* link to People when anyone owes or is owed.
-- **Net worth over time** — a line, one point per month, with the change since the first
-  month. History starts 2026-09-11; it can't be rebuilt backwards because assets keep no history.
+  *See who* link down to Settlements when anyone owes or is owed.
 - **Accounts** — your spending accounts, with balances and subtype (Bank, Cash, UPI wallet —
   "Wallet" outside India — Credit card).
+- **Settlements** (§5.5) — the people you lend to and borrow from.
 - **Assets** — with their value and when it was last updated.
-- Per row: **drag to reorder**, **edit**, **archive**, **delete**.
+- **Net worth over time** — a line, one point per month. History starts 2026-09-11; it can't
+  be rebuilt backwards because assets keep no history.
+- Per account row: **drag to reorder**, **edit**, **archive**, **delete**.
 - **Add account** — Spending (name, type, current balance) or Asset (name, current value).
-  People are added from the People page. Spending accounts can be excluded from net worth.
+  People are added in Settlements. Spending accounts can be excluded from net worth.
 
-### 5.5 People — `/people`
+### 5.5 Settlements — `/money#settlements`
+Was the separate People page until 2026-09-13; `/people` redirects here.
 - **Owed to you** and **You owe** totals.
 - One row per person: icon, name, optional handle, **owes you / you owe / settled up**, and the
   amount.
-- Per row: **drag to reorder**, **edit**, **archive**, **delete**.
+- Per row: **Settle up** (when a balance is open — opens Add prefilled with the amount and the
+  right direction), **+** (Add prefilled with that person), **drag to reorder**, **edit**,
+  **archive**, **delete**. A balance only ever changes through a transaction.
 - **Add person** — name, optional handle ("@rahul" or a phone number, to tell two Rahuls
   apart), **A person** or **A lender**, and an icon. A note can be added when editing.
 - Archived people are hidden behind *Show N archived*.
@@ -204,7 +215,7 @@ The same **budget summary** and **Last six months** chart as the group pages.
 - **Categories** — all categories by group: drag to reorder, edit (name, group, parent,
   icon), assume-spent toggle (Needs only), retire/restore, delete. Retired ones are hidden
   behind a toggle.
-- **Money and people** — links to both pages.
+- **Money and settlements** — links to Money and its Settlements section.
 - **Billing** — trial or plan status, a link to pricing, and a note that payments aren't live.
 - **Your data** — download transactions (CSV) or everything (JSON), and **delete your account**
   (type DELETE to confirm). Both work whatever your plan.

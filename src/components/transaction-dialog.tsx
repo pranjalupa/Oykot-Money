@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Plus, Warning } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { createTransaction, type ActionResult } from "@/app/actions";
@@ -15,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import {
   TransactionFields,
+  type Direction,
   type PickerAccount,
   type PickerCategory,
 } from "@/components/transaction-fields";
@@ -27,21 +29,42 @@ export function TransactionDialog({
   defaultDate,
   defaultCategoryId,
   trigger,
+  initial,
+  defaultOpen = false,
+  title = "Add transaction",
 }: {
   accounts: PickerAccount[];
   categories: PickerCategory[];
   defaultDate: string;
   defaultCategoryId?: string;
   trigger?: React.ReactNode;
+  /** Prefill — e.g. a settlement with one person, from their row on Money. */
+  initial?: { direction?: Direction; counterAccountId?: string; amount?: string };
+  /** Open on arrival — the phone tab bar's "+" lands on /?add=1. */
+  defaultOpen?: boolean;
+  title?: string;
 }) {
-  const [open, setOpen] = useState(false);
+  const router = useRouter();
+  const [open, setOpen] = useState(defaultOpen);
+
+  // Drop ?add=1 on close, so a reload or Back doesn't pop the form open again.
+  function changeOpen(next: boolean) {
+    setOpen(next);
+    if (next) return;
+    const url = new URL(window.location.href);
+    if (url.searchParams.has("add")) {
+      url.searchParams.delete("add");
+      router.replace(url.pathname + url.search, { scroll: false });
+    }
+  }
+
   // Close from inside the action rather than an effect watching `state`.
   const [state, action, pending] = useActionState<ActionResult | null, FormData>(
     async (prev, fd) => {
       const res = await createTransaction(prev, fd);
       if (res.ok) {
         toast.success("Transaction saved");
-        setOpen(false);
+        changeOpen(false);
       }
       return res;
     },
@@ -49,7 +72,7 @@ export function TransactionDialog({
   );
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={changeOpen}>
       {trigger ?? (
         <DialogTrigger render={<Button size="sm" />}>
           <Plus size={16} weight="bold" />
@@ -59,7 +82,7 @@ export function TransactionDialog({
 
       <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="font-heading">Add transaction</DialogTitle>
+          <DialogTitle className="font-heading">{title}</DialogTitle>
           <DialogDescription>
             Counts toward the category you pick. Moving money between your own
             accounts doesn&rsquo;t touch the budget.
@@ -71,7 +94,7 @@ export function TransactionDialog({
             idPrefix="new"
             accounts={accounts}
             categories={categories}
-            initial={{ date: defaultDate, categoryId: defaultCategoryId ?? null }}
+            initial={{ date: defaultDate, categoryId: defaultCategoryId ?? null, ...initial }}
             showRepeat
           />
 

@@ -21,22 +21,11 @@ function pace(budget: number, spent: number, throughDay: number, last: number) {
   return { expected, diff: expected - spent };
 }
 
-function Stat({ label, value, sub }: { label: string; value: React.ReactNode; sub?: React.ReactNode }) {
-  return (
-    <div>
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="mt-1 font-heading text-xl font-semibold">{value}</dd>
-      {sub && <dd className="mt-0.5 text-xs text-muted-foreground">{sub}</dd>}
-    </div>
-  );
-}
-
 /**
  * The question Daily exists to answer: how much can I spend today?
  *
- * Plain figures, no dial. A ring around a percentage says nothing the
- * percentage doesn't, and it pushed the numbers people came for off to
- * one side.
+ * One number, one bar, one line. A ring around a percentage said nothing the
+ * percentage didn't, and a grid of four stats beside the number repeated it.
  */
 export function DailyHero({
   month,
@@ -63,36 +52,54 @@ export function DailyHero({
   const over = remainingMinor < 0;
   const p = pace(budgetMinor, spentMinor, throughDay, daysIn(month));
 
+  // One number that answers the question, one bar for how much is gone, one
+  // line of context. The four stat boxes that used to sit beside it said the
+  // same thing four ways.
+  const context = [
+    isCurrentMonth ? `${daysLeft} day${daysLeft === 1 ? "" : "s"} left` : `${daysLeft} days in the month`,
+    p ? (p.diff >= 0 ? `${money(p.diff)} under pace` : `${money(-p.diff)} over pace`) : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
   return (
     <section className="rounded-2xl border border-border bg-card p-6 sm:p-8">
-      <div className="flex flex-col gap-8 sm:flex-row sm:items-center sm:gap-12">
-        <div className="shrink-0">
-          <p className="text-xs text-muted-foreground">
-            {isCurrentMonth ? "Safe to spend today" : "Per day"}
-          </p>
-          <p className="mt-1 font-heading text-4xl font-bold">
-            <Money minor={safePerDayMinor} tone={over ? "negative" : "default"} />
-          </p>
-          <p className="mt-1.5 text-xs text-muted-foreground">
-            {budgetMinor > 0 ? `${used}% of your Needs and Wants budget used` : "No budget set"}
-          </p>
-        </div>
+      <p className="text-sm text-muted-foreground">{isCurrentMonth ? "Safe to spend today" : "Per day"}</p>
+      <p className="mt-1 font-heading text-5xl font-bold tracking-tight">
+        <Money minor={safePerDayMinor} tone={over ? "negative" : "default"} />
+        <span className="ml-1.5 font-sans text-base font-medium tracking-normal text-muted-foreground">/ day</span>
+      </p>
 
-        <dl className="grid w-full flex-1 grid-cols-2 gap-x-6 gap-y-7">
-          <Stat label="Remaining" value={<Money minor={remainingMinor} tone="auto" />} sub="Needs and Wants" />
-          <Stat label="Spent" value={<Money minor={spentMinor} />} sub={`of ${money(budgetMinor)} budgeted`} />
-          <Stat
-            label={isCurrentMonth ? "Days left" : "Days in month"}
-            value={daysLeft}
-            sub={isCurrentMonth ? "including today" : undefined}
-          />
-          <Stat
-            label="Pace"
-            value={!p ? "—" : p.diff >= 0 ? "Under pace" : "Over pace"}
-            sub={!p ? undefined : p.diff >= 0 ? `${money(p.diff)} to spare` : `${money(-p.diff)} more than planned by now`}
-          />
-        </dl>
-      </div>
+      {budgetMinor > 0 ? (
+        <>
+          <div
+            role="progressbar"
+            aria-label="Needs and Wants budget used"
+            aria-valuenow={used}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            className="mt-6 h-2.5 overflow-hidden rounded-full bg-muted"
+          >
+            <div
+              className={`h-full rounded-full ${over ? "bg-negative" : "bg-primary"}`}
+              style={{ width: `${Math.min(used, 100)}%` }}
+            />
+          </div>
+          <p className="mt-2.5 flex flex-wrap justify-between gap-x-4 gap-y-1 text-sm">
+            <span>
+              <Money minor={spentMinor} className="font-semibold" />{" "}
+              <span className="text-muted-foreground">spent of {money(budgetMinor)}</span>
+            </span>
+            <span>
+              <Money minor={Math.abs(remainingMinor)} tone={over ? "negative" : "default"} className="font-semibold" />{" "}
+              <span className="text-muted-foreground">{over ? "over" : "left"}</span>
+            </span>
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">{context} · Needs and Wants</p>
+        </>
+      ) : (
+        <p className="mt-3 text-sm text-muted-foreground">No Needs or Wants budget set for this month.</p>
+      )}
     </section>
   );
 }
