@@ -11,6 +11,7 @@ import { BudgetSummary, PeriodTrend } from "@/components/charts/detail-insights"
 import { groupColor } from "@/lib/chart-colors";
 import { TransactionDialog } from "@/components/transaction-dialog";
 import { MonthSwitcher } from "@/components/month-switcher";
+import { DeleteCategoryButton } from "@/components/category-manager";
 import {
   getMonthSummary,
   GROUP_META,
@@ -101,6 +102,10 @@ export default async function CategoryPage({
             categories={allCategories}
             defaultDate={todayIn(timeZone)}
             defaultCategoryId={id}
+          />
+          <DeleteCategoryButton
+            cat={{ id: cat.id, name: cat.name }}
+            redirectTo={`/${cat.groupKey}?month=${month}`}
           />
         </div>
       </header>

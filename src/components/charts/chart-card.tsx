@@ -12,20 +12,15 @@ export type LegendItem = {
 /**
  * The frame every chart sits in — deliberately quiet.
  *
- * Title on top, the visual with room around it, and underneath one plain
- * sentence saying what it means. The takeaway is the point: a regular user
- * shouldn't have to decode axes to learn "you're ₹2,300 under pace".
- *
- * The table is one small link at the bottom rather than a toggle competing
- * with the title, but it's always there — the chart alone gates numbers
+ * Title on top with a Chart / Table switch at the top right, and the visual
+ * with room around it. No caption underneath — the figures beside each chart
+ * already say it. The table is always offered: the chart alone gates numbers
  * behind colour and hover.
  */
 export function ChartCard({
   title,
   aside,
   legend,
-  takeaway,
-  note,
   table,
   children,
   className,
@@ -34,8 +29,6 @@ export function ChartCard({
   /** Right side of the header — a headline figure, a period label. */
   aside?: React.ReactNode;
   legend?: LegendItem[];
-  takeaway?: React.ReactNode;
-  note?: React.ReactNode;
   table?: { head: string[]; rows: React.ReactNode[][]; note?: string };
   children: React.ReactNode;
   className?: string;
@@ -44,9 +37,35 @@ export function ChartCard({
 
   return (
     <section className={cn("flex flex-col rounded-2xl border border-border bg-card p-5 sm:p-6", className)}>
-      <header className="flex items-start justify-between gap-4">
+      <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
         <h2 className="font-heading text-base font-semibold">{title}</h2>
-        {aside && <div className="shrink-0 text-right text-sm text-muted-foreground">{aside}</div>}
+        <div className="flex shrink-0 items-center gap-3">
+          {aside && <div className="text-right text-sm text-muted-foreground">{aside}</div>}
+          {table && (
+            <div role="tablist" aria-label={`${title} view`} className="flex rounded-lg bg-muted p-0.5">
+              {(["Chart", "Table"] as const).map((v) => {
+                const active = (v === "Table") === asTable;
+                return (
+                  <button
+                    key={v}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    onClick={() => setAsTable(v === "Table")}
+                    className={cn(
+                      "h-7 rounded-md px-2.5 text-xs font-medium transition-colors",
+                      active
+                        ? "bg-card text-foreground shadow-sm ring-1 ring-foreground/10"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {v}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </header>
 
       {!asTable && legend && legend.length > 1 && (
@@ -91,24 +110,6 @@ export function ChartCard({
           children
         )}
       </div>
-
-      {(takeaway || note || table) && (
-        <footer className="mt-5 flex items-end justify-between gap-4">
-          <div className="min-w-0">
-            {takeaway && <p className="text-sm font-medium text-foreground">{takeaway}</p>}
-            {note && <p className="mt-0.5 text-xs text-muted-foreground">{note}</p>}
-          </div>
-          {table && (
-            <button
-              type="button"
-              onClick={() => setAsTable((v) => !v)}
-              className="shrink-0 text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-            >
-              {asTable ? "View as chart" : "View as table"}
-            </button>
-          )}
-        </footer>
-      )}
     </section>
   );
 }

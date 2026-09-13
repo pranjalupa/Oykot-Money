@@ -23,7 +23,7 @@ const active = (m: YearMonth) => m.income !== 0 || m.expense !== 0;
  *
  * A running total of the same figures, a savings-rate dial and a per-month
  * group mix all used to sit alongside it. They were the same story told
- * three more times; the savings rate now rides along as the takeaway.
+ * three more times; the savings rate now rides along in the header.
  */
 export function MonthlySavings({
   months,
@@ -39,8 +39,6 @@ export function MonthlySavings({
   const money = (m: number) => formatMoney(m, { currency, signed: true });
   const plain = (m: number) => formatMoney(m, { currency });
   const seen = months.filter(active);
-  const best = [...seen].sort((a, b) => b.saved - a.saved)[0];
-  const overspent = seen.filter((m) => m.saved < 0).length;
   const rate = incomeTotal > 0 ? Math.round((savedTotal / incomeTotal) * 100) : null;
 
   return (
@@ -51,23 +49,6 @@ export function MonthlySavings({
         { label: "Saved", color: "var(--positive)" },
         { label: "Overspent", color: "var(--negative)" },
       ]}
-      takeaway={
-        !seen.length
-          ? "Nothing logged this year yet."
-          : rate === null
-            ? `Best month: ${formatMonthShort(best.month, locale)}, ${money(best.saved)}.`
-            : `You kept ${plain(savedTotal)} of ${plain(incomeTotal)} — ${rate}% of your income.`
-      }
-      note={
-        !seen.length
-          ? undefined
-          : [
-              best ? `Best month: ${formatMonthShort(best.month, locale)}, ${money(best.saved)}.` : null,
-              overspent ? `${overspent} month${overspent === 1 ? "" : "s"} spent more than came in.` : "No month spent more than came in.",
-            ]
-              .filter(Boolean)
-              .join(" ")
-      }
       table={{
         head: ["Month", "Income", "Spent", "Saved"],
         rows: seen.map((m) => [formatMonthShort(m.month, locale), plain(m.income), plain(m.expense), money(m.saved)]),

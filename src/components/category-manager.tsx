@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import {
   ArrowCounterClockwise,
   PencilSimple,
@@ -60,12 +61,7 @@ export function CategoryManager({ categories }: { categories: Cat[] }) {
 
         return (
           <div key={g}>
-            <p className="mb-1.5 flex items-center gap-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-              <span
-                aria-hidden
-                className="size-2 rounded-full"
-                style={{ backgroundColor: `var(--${g})` }}
-              />
+            <p className="mb-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
               {GROUP_META[g].label}
             </p>
             <SortableGroup cats={inGroup} />
@@ -325,13 +321,17 @@ function EditCategoryDialog({ cat }: { cat: Cat }) {
  * your data", and the count is fetched on open so the confirm can be specific
  * instead of hedging.
  */
-function DeleteCategoryButton({
+export function DeleteCategoryButton({
   cat,
-  disabled,
+  disabled = false,
+  redirectTo,
 }: {
-  cat: Cat;
-  disabled: boolean;
+  cat: Pick<Cat, "id" | "name">;
+  disabled?: boolean;
+  /** Where to go afterwards — needed when deleting from the category's own page. */
+  redirectTo?: string;
 }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [impact, setImpact] = useState<{
     transactions: number;
@@ -357,6 +357,7 @@ function DeleteCategoryButton({
       }
       toast.success(`${cat.name} deleted`);
       setOpen(false);
+      if (redirectTo) router.replace(redirectTo);
     });
   }
 

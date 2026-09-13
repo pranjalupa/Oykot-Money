@@ -96,24 +96,11 @@ export function PeriodTrend({
   const money = (m: number) => formatMoney(m, { currency });
   const verb = isIncome ? "received" : "spent";
   const current = points[points.length - 1];
-  const earlier = points.slice(0, -1).filter((p) => p.spentMinor > 0);
-  const avg = earlier.length ? Math.round(earlier.reduce((s, p) => s + p.spentMinor, 0) / earlier.length) : null;
   const any = points.some((p) => p.spentMinor || p.budgetedMinor);
-  const delta = avg === null || !current ? null : current.spentMinor - avg;
 
   return (
     <ChartCard
       title={title}
-      takeaway={
-        !any
-          ? "No history yet."
-          : delta === null
-            ? "Your history starts here — next month adds a comparison."
-            : delta === 0
-              ? `Right on your ${earlier.length}-month average.`
-              : `This month is ${money(Math.abs(delta))} ${delta < 0 ? "below" : "above"} your ${earlier.length}-month average.`
-      }
-      note={current && current.budgetedMinor > 0 ? `Dashed line: this month's budget, ${money(current.budgetedMinor)}.` : undefined}
       table={{
         head: ["Month", "Budgeted", isIncome ? "Received" : "Spent"],
         rows: points.map((p) => [formatMonthShort(p.month, locale), money(p.budgetedMinor), `${money(p.spentMinor)}${p.assumed ? " (assumed)" : ""}`]),
@@ -151,21 +138,11 @@ export function NetWorthTrend({ points }: { points: { month: string; totalMinor:
   const currency = useCurrency();
   const locale = useLocale();
   const money = (m: number) => formatMoney(m, { currency });
-  const first = points[0];
   const last = points[points.length - 1];
-  const change = first && last ? last.totalMinor - first.totalMinor : 0;
   return (
     <ChartCard
       title="Net worth over time"
       aside={last ? formatCompact(last.totalMinor, currency) : undefined}
-      takeaway={
-        points.length < 2
-          ? "Your history starts this month."
-          : change === 0
-            ? `Unchanged since ${formatMonthShort(first.month, locale)}.`
-            : `${change > 0 ? "Up" : "Down"} ${money(Math.abs(change))} since ${formatMonthShort(first.month, locale)}.`
-      }
-      note={points.length < 2 ? "Each month is recorded as you use the app — check back next month for the line." : "Each point is the last value seen that month."}
       table={{ head: ["Month", "Net worth"], rows: points.map((p) => [formatMonthShort(p.month, locale), money(p.totalMinor)]) }}
     >
       {points.length < 2 ? (

@@ -38,6 +38,15 @@ export function TransactionList({
             key={t.id}
             className="group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/50"
           >
+            <span className="flex w-8 shrink-0 flex-col items-center leading-none text-muted-foreground">
+              <span className="text-base font-semibold text-foreground tabular-nums">
+                <LocalDate date={t.date} options={{ day: "numeric" }} />
+              </span>
+              <span className="mt-0.5 text-[10px] uppercase">
+                <LocalDate date={t.date} options={{ month: "short" }} />
+              </span>
+            </span>
+
             {isTransfer ? (
               <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
                 <ArrowsLeftRight size={16} weight="duotone" />
@@ -62,8 +71,6 @@ export function TransactionList({
                 )}
               </p>
               <p className="truncate text-xs text-muted-foreground">
-                <LocalDate date={t.date} />
-                {" · "}
                 {isTransfer
                   ? `${t.accountName} → ${t.counterAccountName ?? "?"}`
                   : `${t.categoryName ?? "Uncategorised"} · ${t.accountName}`}

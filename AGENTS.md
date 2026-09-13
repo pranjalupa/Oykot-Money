@@ -131,6 +131,14 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   Teams and sharing are still out — don't build toward them without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
+- 2026-09-13 — **First annotation pass (13 fixes).** Charts lost their caption sentences and
+  "View as table" link; `ChartCard` now has a Chart / Table switch top right and no
+  `takeaway`/`note` props. Group colour dots removed from headings and labels. Whole
+  category rows click through. Native `<select>`s get one drawn chevron (unlayered rule in
+  `globals.css`). Desktop sidebar collapses to icons — state in a `sidebar` cookie mirrored
+  on `<html data-sidebar>`, which the content offset follows in CSS. Settings Save appears
+  only when something changed. Transactions show the date in its own column. Categories
+  can be deleted from their own page. Assets are no longer offered as a transfer target.
 - 2026-09-13 — **In-app annotation tool, for Pranjal and the coding agent only.** Point at any
   element (or select text) on any page, write a note; saved to `annotations` with the path,
   a CSS selector, and the element's text as a fallback when the selector stops matching.

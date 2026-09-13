@@ -61,8 +61,8 @@ function selectorFor(el: Element): string {
   const parts: string[] = [];
   let node: Element | null = el;
   while (node && node !== document.body && node !== document.documentElement) {
-    // React's useId values change between renders of different trees; skip them.
-    if (node.id && /^[A-Za-z][\w-]*$/.test(node.id)) {
+    // Generated ids (React's useId, Base UI, Radix) change between loads; skip them.
+    if (node.id && /^[A-Za-z][\w-]*$/.test(node.id) && !GENERATED_ID.test(node.id)) {
       parts.unshift(`#${CSS.escape(node.id)}`);
       return parts.join(" > ");
     }
@@ -79,15 +79,26 @@ function selectorFor(el: Element): string {
   return ["body", ...parts].join(" > ");
 }
 
-function findTarget(selector: string): Element | null {
-  try {
-    return document.querySelector(selector);
-  } catch {
-    return null;
-  }
-}
+const GENERATED_ID = /^(base-ui-|radix-)|_[rR]_/;
 
 const textOf = (el: Element) => (el as HTMLElement).innerText?.replace(/\s+/g, " ").trim().slice(0, 500) || null;
+
+/** By selector first; if the page has shifted, the same tag with the same text. */
+function findTarget(a: Pick<Annotation, "selector" | "tagName" | "elementText">): Element | null {
+  try {
+    const el = document.querySelector(a.selector);
+    if (el) return el;
+  } catch {
+    // An old selector can be invalid CSS; fall through to the text match.
+  }
+  if (!a.tagName || !a.elementText) return null;
+  const want = a.elementText.slice(0, 80);
+  return (
+    Array.from(document.querySelectorAll(a.tagName)).find(
+      (el) => !el.closest(ROOT) && textOf(el)?.startsWith(want),
+    ) ?? null
+  );
+}
 const pathOnly = (p: string) => p.split("?")[0];
 const inTool = (el: EventTarget | null) => el instanceof Element && !!el.closest(ROOT);
 
@@ -299,7 +310,7 @@ export function Annotator() {
       frame = requestAnimationFrame(() => {
         setPins(
           openHere.flatMap((a) => {
-            const el = findTarget(a.selector);
+            const el = findTarget(a);
             if (!el) return [];
             const r = el.getBoundingClientRect();
             if (r.width === 0 && r.height === 0) return [];
@@ -333,7 +344,7 @@ export function Annotator() {
     let tries = 0;
     let clear = 0;
     const attempt = window.setInterval(() => {
-      const el = findTarget(pendingShow.selector);
+      const el = findTarget(pendingShow);
       if (el || ++tries > 30) {
         window.clearInterval(attempt);
         setPendingShow(null);

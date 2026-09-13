@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { Archivo, Inter, Instrument_Serif } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -43,9 +44,10 @@ export default async function RootLayout({
   const prefs = user ? await getUserPrefs() : null;
   const access = user ? await getAccess() : null;
   const name = user ? ((await getProfile())?.displayName ?? null) : null;
+  const sidebarCollapsed = (await cookies()).get("sidebar")?.value === "collapsed";
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" data-sidebar={sidebarCollapsed ? "collapsed" : "expanded"} suppressHydrationWarning>
       <body
         className={`${inter.variable} ${archivo.variable} ${instrumentSerif.variable} antialiased`}
       >
@@ -69,6 +71,7 @@ export default async function RootLayout({
                 email={user?.email ?? null}
                 name={name}
                 trial={access ? { state: access.state, daysLeft: access.daysLeft, enforced: access.enforced } : null}
+                sidebarCollapsed={sidebarCollapsed}
               >
                 {children}
               </AppShell>

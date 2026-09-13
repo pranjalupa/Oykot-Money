@@ -12,6 +12,7 @@ import {
   Money,
   Moon,
   ShoppingBag,
+  SidebarSimple,
   SignOut,
   Sun,
   TrendUp,
@@ -131,14 +132,14 @@ function ThemeToggle({ expanded = false }: { expanded?: boolean }) {
   );
 }
 
-function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
+function NavLinks({ onNavigate, compact = false }: { onNavigate?: () => void; compact?: boolean }) {
   const pathname = usePathname();
 
   return (
-    <nav className="flex flex-1 flex-col gap-5 overflow-y-auto">
+    <nav className={cn("flex flex-1 flex-col gap-5 overflow-y-auto", compact && "items-center")}>
       {SECTIONS.map((section, i) => (
         <div key={i} className="flex flex-col gap-0.5">
-          {section.heading && (
+          {section.heading && !compact && (
             <p className="mb-1 px-2.5 text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
               {section.heading}
             </p>
@@ -146,21 +147,24 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
           {section.items.map(({ href, label, icon: Icon }) => {
             const active = isActive(pathname, href);
             return (
-              <Link
-                key={href}
-                href={href}
-                onClick={onNavigate}
-                aria-current={active ? "page" : undefined}
-                className={cn(
-                  "flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium transition-colors",
-                  active
-                    ? "bg-secondary text-secondary-foreground"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                )}
-              >
-                <Icon size={17} weight={active ? "fill" : "regular"} />
-                {label}
-              </Link>
+              <MaybeTooltip key={href} show={compact} label={label}>
+                <Link
+                  href={href}
+                  onClick={onNavigate}
+                  aria-current={active ? "page" : undefined}
+                  aria-label={compact ? label : undefined}
+                  className={cn(
+                    "flex items-center gap-2.5 rounded-md text-sm font-medium transition-colors",
+                    compact ? "size-10 justify-center" : "px-2.5 py-2",
+                    active
+                      ? "bg-secondary text-secondary-foreground"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  )}
+                >
+                  <Icon size={17} weight={active ? "fill" : "regular"} />
+                  {!compact && label}
+                </Link>
+              </MaybeTooltip>
             );
           })}
         </div>
@@ -192,11 +196,24 @@ function SignOutButton({ expanded = false }: { expanded?: boolean }) {
 export function AppNav({
   email,
   name,
+  collapsed: initialCollapsed = false,
 }: {
   email: string | null;
   name: string | null;
+  /** From the `sidebar` cookie, so the first paint already has the right width. */
+  collapsed?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(initialCollapsed);
+
+  // The content's left offset follows <html data-sidebar> in CSS (see AppShell),
+  // so it moves with the sidebar without a server round-trip.
+  function toggleCollapsed() {
+    const next = collapsed ? "expanded" : "collapsed";
+    setCollapsed(!collapsed);
+    document.documentElement.dataset.sidebar = next;
+    document.cookie = `sidebar=${next}; path=/; max-age=31536000; samesite=lax`;
+  }
   const pathname = usePathname();
 
   // A drawer that stays open after you navigate hides the page you asked for.
@@ -211,20 +228,37 @@ export function AppNav({
   return (
     <>
       {/* Desktop sidebar -------------------------------------------------- */}
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-56 flex-col border-r border-border bg-card px-3 py-4 lg:flex">
-        <Link
-          href="/"
-          className="mb-6 px-2.5 font-heading text-lg font-extrabold"
-        >
-          Oykot
-        </Link>
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-40 hidden flex-col border-r border-border bg-card py-4 transition-[width] duration-200 lg:flex",
+          collapsed ? "w-16 px-2" : "w-56 px-3",
+        )}
+      >
+        <div className={cn("mb-6 flex items-center", collapsed ? "justify-center" : "justify-between")}>
+          {!collapsed && (
+            <Link href="/" className="px-2.5 font-heading text-lg font-extrabold">
+              Oykot
+            </Link>
+          )}
+          <MaybeTooltip show label={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
+            <button
+              type="button"
+              onClick={toggleCollapsed}
+              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+              aria-expanded={!collapsed}
+              className="flex size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+            >
+              <SidebarSimple size={18} weight="bold" />
+            </button>
+          </MaybeTooltip>
+        </div>
 
-        <NavLinks />
+        <NavLinks compact={collapsed} />
 
-        <div className="mt-4 flex flex-col gap-0.5 border-t border-border pt-3">
-          <ThemeToggle expanded />
-          <SignOutButton expanded />
-          {(name || email) && (
+        <div className={cn("mt-4 flex flex-col gap-0.5 border-t border-border pt-3", collapsed && "items-center")}>
+          <ThemeToggle expanded={!collapsed} />
+          <SignOutButton expanded={!collapsed} />
+          {!collapsed && (name || email) && (
             <div className="min-w-0 px-2.5 pt-2">
               {name && (
                 <p className="truncate text-xs font-medium text-foreground">{name}</p>

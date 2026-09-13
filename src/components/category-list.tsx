@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { CaretRight, Repeat } from "@phosphor-icons/react";
 import { Money } from "@/components/money";
 import { CategoryIcon } from "@/components/category-icon";
@@ -154,10 +155,20 @@ function Row({
   const editablePlan = !nested || cat.budgetsSeparately;
   // Every rupee here came from the assumption rather than the ledger.
   const assumed = cat.assumedMinor > 0 && cat.assumedMinor === cat.actualMinor;
+  const router = useRouter();
+  const href = `/category/${cat.id}?month=${month}`;
 
   return (
     <>
-      <tr className={cn("group hover:bg-muted/60", nested && "bg-muted/20")}>
+      {/* The whole row opens the category. Links and the planned input keep
+          their own behaviour, and stay the keyboard route in. */}
+      <tr
+        onClick={(e) => {
+          if ((e.target as Element).closest("a, button, input, select, textarea, label")) return;
+          router.push(href);
+        }}
+        className={cn("group cursor-pointer hover:bg-muted/60", nested && "bg-muted/20")}
+      >
         <td className="px-4 py-3.5">
           <div
             className="flex items-center gap-2.5"

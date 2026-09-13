@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowCounterClockwise } from "@phosphor-icons/react";
+import { Archive, ArrowCounterClockwise } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -43,7 +43,7 @@ export function ArchiveButton({
         onClick={() => (needsConfirm ? setOpen(true) : onToggle())}
         disabled={disabled}
       >
-        <ArrowCounterClockwise size={14} weight="bold" />
+        {archived ? <ArrowCounterClockwise size={14} weight="bold" /> : <Archive size={14} weight="bold" />}
       </IconButton>
 
       {needsConfirm && (

@@ -90,7 +90,7 @@ export default async function HomePage({
           </h1>
           <p className="mt-0.5 text-sm text-muted-foreground">
             {view === "daily" && "Day by day, and what's safe to spend from here."}
-            {view === "month" && "Planned against actual, the way the sheet does it."}
+            {view === "month" && "What you planned, next to what you actually spent."}
             {view === "year" && "Month by month, across the whole year."}
           </p>
         </div>

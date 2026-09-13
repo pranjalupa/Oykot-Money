@@ -24,12 +24,26 @@ export function ProfileForm({
     updateProfile,
     null,
   );
-  // Tracked only to show the warning below before you save — not to submit.
-  const [picked, setPicked] = useState<CurrencyCode>(currency);
+  // Tracked only to decide what to show — the currency warning and whether
+  // there's anything to save. The form still submits its own fields.
+  const [values, setValues] = useState({ name, currency, region });
+  const picked = values.currency;
   const changing = picked !== currency;
+  const dirty = values.name.trim() !== name || changing || values.region !== region;
 
   return (
-    <form action={action} className="flex flex-col gap-4">
+    <form
+      action={action}
+      onChange={(e) => {
+        const f = new FormData(e.currentTarget);
+        setValues({
+          name: String(f.get("name") ?? ""),
+          currency: String(f.get("currency")) as CurrencyCode,
+          region: String(f.get("region")) as RegionCode,
+        });
+      }}
+      className="flex flex-col gap-4"
+    >
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-1.5 sm:col-span-2">
           <Label htmlFor="profile-name">Name</Label>
@@ -44,11 +58,7 @@ export function ProfileForm({
         </div>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="profile-currency">Currency</Label>
-          <CurrencySelect
-            id="profile-currency"
-            defaultValue={currency}
-            onChange={(e) => setPicked(e.target.value as CurrencyCode)}
-          />
+          <CurrencySelect id="profile-currency" defaultValue={currency} />
         </div>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="profile-region">Date format</Label>
@@ -82,16 +92,19 @@ export function ProfileForm({
           {state.error}
         </p>
       )}
-      {state?.ok && !changing && (
+      {state?.ok && !dirty && (
         <p className="flex items-center gap-2 text-sm text-muted-foreground">
           <CheckCircle size={16} weight="fill" className="shrink-0" />
           Saved.
         </p>
       )}
 
-      <Button type="submit" disabled={pending} className="self-start">
-        {pending ? "Saving…" : "Save"}
-      </Button>
+      {/* Only offered once there's something to save. */}
+      {(dirty || pending) && (
+        <Button type="submit" disabled={pending} className="self-start">
+          {pending ? "Saving…" : "Save"}
+        </Button>
+      )}
     </form>
   );
 }

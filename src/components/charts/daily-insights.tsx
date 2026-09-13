@@ -143,7 +143,6 @@ export function PaceCard({
     value: i + 1 <= throughDay ? total : null,
     reference: Math.round((budgetMinor * (i + 1)) / last),
   }));
-  const p = pace(budgetMinor, spentMinor, throughDay, last);
 
   return (
     <ChartCard
@@ -152,14 +151,6 @@ export function PaceCard({
         { label: "Spent so far", color: "var(--primary)", kind: "line" },
         { label: "Budget pace", color: "var(--muted-foreground)", kind: "dashed" },
       ]}
-      takeaway={
-        !p
-          ? "The month hasn't started yet."
-          : p.diff >= 0
-            ? `You're ${money(p.diff)} under your budget pace.`
-            : `You're ${money(-p.diff)} over your budget pace.`
-      }
-      note={assumed > 0 ? `Starts at ${money(assumed)} of fixed costs you assume are spent.` : "Under the dashed line means on track."}
       table={{
         head: ["Day", "Spent so far", "Budget pace"],
         rows: data.map((d) => [d.title, d.value === null ? "—" : money(d.value), money(d.reference)]),

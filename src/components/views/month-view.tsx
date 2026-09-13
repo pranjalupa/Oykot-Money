@@ -86,7 +86,6 @@ export async function MonthView({ month }: { month: string }) {
       <div className="grid gap-6 lg:grid-cols-2">
         <WhereMoneyWent
           incomeMinor={summary.actualIncome > 0 ? summary.actualIncome : summary.plannedIncome}
-          incomeIsBudgeted={summary.actualIncome <= 0}
           spent={{ needs: g.needs.actualMinor, wants: g.wants.actualMinor, investments: g.investments.actualMinor }}
         />
         <TargetCard

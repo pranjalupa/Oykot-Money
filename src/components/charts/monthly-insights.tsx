@@ -17,11 +17,9 @@ type SpendGroup = (typeof GROUPS)[number]["key"];
 /** Where this month's income went — part of a whole, four slices. */
 export function WhereMoneyWent({
   incomeMinor,
-  incomeIsBudgeted,
   spent,
 }: {
   incomeMinor: number;
-  incomeIsBudgeted: boolean;
   spent: Record<SpendGroup, number>;
 }) {
   const currency = useCurrency();
@@ -36,21 +34,10 @@ export function WhereMoneyWent({
     // spending, but --muted would vanish against a white card.
     { key: "left", label: "Not spent", value: left, display: money(left), color: "var(--chart-neutral)" },
   ];
-  const top = [...GROUPS].sort((a, b) => spent[b.key] - spent[a.key])[0];
 
   return (
     <ChartCard
       title="Where your money went"
-      takeaway={
-        total === 0
-          ? "Nothing spent yet this month."
-          : incomeMinor <= 0
-            ? `${top.label} is your biggest group so far.`
-            : left > 0
-              ? `${money(left)} of your income is still unspent.`
-              : `You've spent ${money(total - incomeMinor)} more than you earned.`
-      }
-      note={total > 0 && incomeMinor > 0 ? `${top.label} took the most — ${share(spent[top.key])}% of income.` : incomeIsBudgeted ? "Shares are of your budgeted income until income arrives." : undefined}
       table={{ head: ["", "Amount", "Of income"], rows: slices.map((s) => [s.label, s.display, `${share(s.value)}%`]) }}
     >
       {total === 0 && left === 0 ? (
@@ -91,20 +78,10 @@ export function TargetCard({
 }) {
   const currency = useCurrency();
   const money = (m: number) => formatMoney(m, { currency });
-  const over = rows.filter((r) => r.actualPercent > r.targetPercent);
   const meta = Object.fromEntries(GROUPS.map((g) => [g.key, g]));
 
   return (
-    <ChartCard
-      title="Your target split"
-      aside={custom ? "Custom this month" : "Default split"}
-      takeaway={
-        over.length === 0
-          ? "Every group is within its target so far."
-          : `${over.map((r) => meta[r.key].label).join(" and ")} ${over.length === 1 ? "is" : "are"} over target.`
-      }
-      note="Shares of income."
-    >
+    <ChartCard title="Your target split" aside={custom ? "Custom this month" : "Default split"}>
       <ul className="flex flex-col divide-y divide-border">
         {rows.map((r) => {
           const isOver = r.actualPercent > r.targetPercent;
@@ -151,23 +128,13 @@ export function TopCategories({ rows }: { rows: CategorySpend[] }) {
   const currency = useCurrency();
   const money = (m: number) => formatMoney(m, { currency });
   const spending = rows.filter((r) => r.actualMinor > 0).sort((a, b) => b.actualMinor - a.actualMinor);
-  const total = spending.reduce((s, r) => s + r.actualMinor, 0);
   const shown = spending.slice(0, 8);
   const color = Object.fromEntries(GROUPS.map((g) => [g.key, g.color]));
-  const over = spending.filter((r) => r.plannedMinor > 0 && r.actualMinor > r.plannedMinor);
 
   return (
     <ChartCard
       title="Where it goes"
-      takeaway={shown[0] ? `${shown[0].name} is your biggest line — ${Math.round((shown[0].actualMinor / total) * 100)}% of spending.` : "Nothing spent yet this month."}
-      note={
-        [
-          spending.length > 8 ? `Top 8 of ${spending.length} categories.` : null,
-          over.length ? `${over.length} over budget.` : null,
-        ]
-          .filter(Boolean)
-          .join(" ") || undefined
-      }
+      aside={spending.length > 8 ? `Top 8 of ${spending.length}` : undefined}
       table={{
         head: ["Category", "Spent", "Budgeted"],
         rows: spending.map((r) => [r.name, money(r.actualMinor), money(r.plannedMinor)]),

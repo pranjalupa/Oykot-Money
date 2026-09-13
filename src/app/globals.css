@@ -130,6 +130,7 @@
   --secondary-foreground: #004437;
   --muted: #efefed;
   --muted-foreground: #6d6a5f;
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath fill='none' stroke='%236d6a5f' stroke-linecap='round' stroke-linejoin='round' stroke-width='24' d='M208 96l-80 80-80-80'/%3E%3C/svg%3E");
   --accent: #daf546;
   --accent-foreground: #004437;
   --destructive: #c1543f;
@@ -187,6 +188,7 @@
   --secondary-foreground: #f7f7f7;
   --muted: #38362e;
   --muted-foreground: #adaaa0;
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath fill='none' stroke='%23adaaa0' stroke-linecap='round' stroke-linejoin='round' stroke-width='24' d='M208 96l-80 80-80-80'/%3E%3C/svg%3E");
   --accent: #daf546;
   --accent-foreground: #171716;
   --destructive: #e2988a;
@@ -243,6 +245,18 @@
   .tabular {
     font-variant-numeric: tabular-nums;
   }
+}
+
+/* Native selects: each browser draws its own arrow with its own uneven inset.
+   One drawn chevron sits as far from the right edge as the text sits from the
+   left. Unlayered on purpose, so it wins over the px-3 utility on the element. */
+select:not([multiple]):not([size]) {
+  appearance: none;
+  background-image: var(--select-chevron);
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 0.875rem;
+  padding-right: 2.25rem;
 }
 
 @utility accent-note {

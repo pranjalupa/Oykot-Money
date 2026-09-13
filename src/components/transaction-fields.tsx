@@ -162,8 +162,9 @@ export function TransactionFields({
             className={SELECT}
           >
             <option value="">Choose…</option>
+            {/* Assets hold a typed-in value, not a ledger — money doesn't move into them here. */}
             {usable
-              .filter((a) => a.id !== accountId)
+              .filter((a) => a.id !== accountId && (a.kind !== "asset" || keep.has(a.id)))
               .map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.name}

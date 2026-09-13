@@ -74,12 +74,7 @@ export function TargetEditor({
       <div className="grid gap-3 sm:grid-cols-3">
         {SPEND_GROUPS.map((g) => (
           <div key={g} className="flex flex-col gap-1.5">
-            <Label htmlFor={g} className="flex items-center gap-2">
-              <span
-                aria-hidden
-                className="size-2.5 rounded-full"
-                style={{ backgroundColor: `var(--${g})` }}
-              />
+            <Label htmlFor={g}>
               {GROUP_META[g].label}
             </Label>
             <div className="relative">
