@@ -6,6 +6,7 @@ import { BudgetSummary, PeriodTrend } from "@/components/charts/detail-insights"
 import { groupColor } from "@/lib/chart-colors";
 import { TransactionDialog } from "@/components/transaction-dialog";
 import { NewCategoryDialog } from "@/components/new-category-dialog";
+import { FlowGuide } from "@/components/flow-guide";
 import {
   getMonthSummary,
   getGroupTrend,
@@ -65,6 +66,8 @@ export default async function GroupPage({
           />
         </div>
       </header>
+
+      <FlowGuide id="group" />
 
       <BudgetSummary
         spentMinor={g.actualMinor}

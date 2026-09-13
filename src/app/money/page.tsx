@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { DialogTrigger } from "@/components/ui/dialog";
 import { TransactionDialog } from "@/components/transaction-dialog";
 import { Money } from "@/components/money";
+import { FlowGuide } from "@/components/flow-guide";
 import { AccountsManager } from "@/components/accounts-manager";
 import { NewAccountDialog } from "@/components/account-dialogs";
 import { PeopleManager, PersonDialog } from "@/components/people-manager";
@@ -60,6 +61,8 @@ export default async function MoneyPage() {
         </div>
         <NewAccountDialog />
       </header>
+
+      <FlowGuide id="money" />
 
       <section className="rounded-xl border border-border bg-card p-5">
         <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
@@ -123,6 +126,8 @@ export default async function MoneyPage() {
           </div>
           {people.length > 0 && <PersonDialog />}
         </div>
+
+        <FlowGuide id="settlements" />
 
         {active.length > 0 && (
           <div className="grid grid-cols-2 gap-3">

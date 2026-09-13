@@ -133,6 +133,17 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   Teams and sharing are still out — don't build toward them without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
+- 2026-09-14 — **Onboarding.** A setup wizard at `/welcome` (accounts + balances → monthly
+  income → target split → this month's budget suggested from income × split, unticked starter
+  categories retired) and a dismissible **first-use guide on every major flow** (Daily, Monthly,
+  Yearly, group pages, Money, Settlements, the Add form, Settings → Categories).
+  - `profiles.onboarded_at`: Home redirects to `/welcome` while null; skipping sets it too.
+    Profiles existing before this were backfilled, so only new signups see the wizard.
+  - `profiles.dismissed_guides` (text[]) holds dismissed guide ids; content lives in
+    `lib/guides.ts`, the card in `components/flow-guide.tsx`. The provider keeps dismissals in
+    client state because the layout doesn't re-render on navigation. Settings → Show tips again.
+  - Pranjal's account was reset to brand new the same day (all budget data deleted; login,
+    profile, plan and annotations kept) so it goes through the wizard.
 - 2026-09-13 (late) — **Monthly charts back on Recharts, at Pranjal's request.** Your income
   split is a **donut** (income total in the hole) with the group rows beside it; Where it goes
   is a **horizontal bar chart** with each full name drawn *above* its bar via `LabelList`, so
@@ -234,7 +245,8 @@ Fully workable and deployed at https://oykot-money.vercel.app. Home (Daily/Month
 tabs) / group pages / category detail / Money / People / Settings all read and write against
 Supabase, with auth and per-user isolation. Archiving, deleting, drag reordering and the
 icon grid are wired everywhere they apply. Six charts total, all plain Recharts forms.
-Annotation tool (owner-only) live since 2026-09-13.
+Annotation tool (owner-only) live since 2026-09-13. Onboarding wizard and first-use guides
+live since 2026-09-14.
 **Not built yet:** statement import or any automated entry (deliberately deferred; see the
 `merchant_rules` note above).
 **Next:** payments — Razorpay, then a Merchant of Record, in test mode (`PRODUCT.md` §13.6,

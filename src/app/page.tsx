@@ -15,7 +15,9 @@ import {
   listCategories,
   monthLabel,
 } from "@/lib/budget";
-import { getUser, ensureUserSetup, getUserPrefs } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { getUser, ensureUserSetup, getProfile, getUserPrefs } from "@/lib/auth";
+import { FlowGuide } from "@/components/flow-guide";
 import { cn } from "@/lib/utils";
 import { Landing } from "@/components/landing";
 
@@ -55,6 +57,8 @@ export default async function HomePage({
     ),
   );
   await ensureUserSetup(user.id);
+  // A new account sets itself up first (skippable) — see app/welcome.
+  if (!(await getProfile())?.onboardedAt) redirect("/welcome");
 
   const params = await searchParams;
   const view: View = (VIEWS as readonly string[]).includes(params.view ?? "")
@@ -136,6 +140,8 @@ export default async function HomePage({
           </Link>
         ))}
       </nav>
+
+      <FlowGuide id={view === "daily" ? "home-daily" : view === "month" ? "home-month" : "home-year"} />
 
       {view === "daily" && <DailyView month={month} />}
       {view === "month" && <MonthView month={month} />}

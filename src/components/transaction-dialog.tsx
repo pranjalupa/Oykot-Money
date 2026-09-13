@@ -6,6 +6,7 @@ import { Plus, Warning } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { createTransaction, type ActionResult } from "@/app/actions";
 import { Button } from "@/components/ui/button";
+import { FlowGuide } from "@/components/flow-guide";
 import {
   Dialog,
   DialogContent,
@@ -94,6 +95,7 @@ export function TransactionDialog({
         </DialogHeader>
 
         <form action={action} className="flex flex-col gap-4">
+          <FlowGuide id="add" compact />
           <TransactionFields
             idPrefix="new"
             accounts={accounts}

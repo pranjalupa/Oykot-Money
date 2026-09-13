@@ -111,6 +111,13 @@ export const profiles = pgTable("profiles", {
   region: text("region").notNull().default("IN"),
   /** IANA zone reported by the browser. Null until first seen; see lib/dates.ts. */
   timezone: text("timezone"),
+  /**
+   * When the setup wizard (/welcome) was finished or skipped. Null means Home
+   * sends you there. Accounts that existed before the wizard were backfilled.
+   */
+  onboardedAt: timestamp("onboarded_at", { withTimezone: true }),
+  /** Ids from lib/guides.ts whose first-use guide was dismissed ("Got it"). */
+  dismissedGuides: text("dismissed_guides").array().notNull().default(sql`'{}'::text[]`),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

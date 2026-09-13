@@ -12,6 +12,7 @@ import { DEFAULT_REGION } from "@/lib/region";
 import { CurrencyProvider } from "@/components/currency-provider";
 import { DEFAULT_CURRENCY } from "@/lib/currency";
 import { Annotator } from "@/components/annotator";
+import { GuidesProvider } from "@/components/flow-guide";
 import { isAnnotator } from "@/lib/annotator";
 import "./globals.css";
 
@@ -43,7 +44,8 @@ export default async function RootLayout({
   const user = await getUser();
   const prefs = user ? await getUserPrefs() : null;
   const access = user ? await getAccess() : null;
-  const name = user ? ((await getProfile())?.displayName ?? null) : null;
+  const profile = user ? await getProfile() : null;
+  const name = profile?.displayName ?? null;
   const sidebarCollapsed = (await cookies()).get("sidebar")?.value === "collapsed";
 
   return (
@@ -66,6 +68,7 @@ export default async function RootLayout({
               timeZone={prefs?.timeZone}
             >
               {user && <TimezoneSync saved={prefs?.savedTimeZone ?? null} />}
+              <GuidesProvider dismissed={profile ? profile.dismissedGuides : null}>
               <AppShell
                 signedIn={!!user}
                 email={user?.email ?? null}
@@ -76,6 +79,7 @@ export default async function RootLayout({
                 {children}
               </AppShell>
               {user && isAnnotator(user.email) && <Annotator />}
+              </GuidesProvider>
             </CurrencyProvider>
           </TooltipProvider>
           {/* Clear of the bottom tab bar on phones. */}

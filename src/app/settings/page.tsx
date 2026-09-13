@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowSquareOut } from "@phosphor-icons/react/dist/ssr";
 import { CategoryManager } from "@/components/category-manager";
+import { FlowGuide, ResetGuidesButton } from "@/components/flow-guide";
 import { RecurringList } from "@/components/recurring-list";
 import {
   listCategories,
@@ -43,6 +44,9 @@ export default async function SettingsPage() {
         <p className="mt-0.5 text-sm text-muted-foreground">
           Signed in as {user.email}.
         </p>
+        <div className="mt-2 text-muted-foreground">
+          <ResetGuidesButton />
+        </div>
       </header>
 
       <section className="rounded-xl border border-border bg-card p-5">
@@ -110,6 +114,7 @@ export default async function SettingsPage() {
           Rename, re-group, or retire any of them. Retiring keeps past
           transactions intact — it just stops the category appearing in new ones.
         </p>
+        <FlowGuide id="categories" className="mb-4" />
         <CategoryManager categories={categories} />
       </section>
 

@@ -264,6 +264,16 @@ paid or complimentary. It never blocks the page.
 
 ## 6. How things work
 
+### 6.0 Onboarding
+- **Setup wizard** (`/welcome`) — Home sends a new account here until it's finished or skipped.
+  Four steps: **accounts** (name, type, current balance), **monthly income**, **target split**
+  (presets or custom, must total 100%), and **this month's budget** — the starter categories
+  with amounts suggested from income × split, split evenly within each group and rounded to
+  100. Unticked categories are retired, not deleted.
+- **First-use guides** — a short card (three steps at most) the first time you open Daily,
+  Monthly, Yearly, a group page, Money, Settlements, the Add form and Settings → Categories.
+  *Got it* hides it everywhere; **Settings → Show tips again** brings them all back.
+
 ### 6.1 A new account
 On first load a new user gets:
 - **13 categories**, nothing budgeted —
