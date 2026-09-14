@@ -133,6 +133,10 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   Teams and sharing are still out — don't build toward them without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
+- 2026-09-14 — **Annotation tool disabled, not deleted.** `ANNOTATIONS_ENABLED = false` in
+  `lib/annotator.ts` hides the launcher and refuses every annotation action; the code, the
+  `annotations` table and saved notes stay. Flip it to true to bring it back. Pranjal's account
+  was reset to fresh again the same day (demo data removed, onboarding restarts).
 - 2026-09-14 — **Mobile first, end to end.** Below `sm` nothing is a table and nothing needs hover.
   - **Every `DialogContent` is a bottom sheet on phones** (`ui/dialog.tsx`), centred from sm up —
     one change covers every form and confirm in the app.
@@ -257,7 +261,7 @@ Fully workable and deployed at https://oykot-money.vercel.app. Home (Daily/Month
 tabs) / group pages / category detail / Money / People / Settings all read and write against
 Supabase, with auth and per-user isolation. Archiving, deleting, drag reordering and the
 icon grid are wired everywhere they apply. Six charts total, all plain Recharts forms.
-Annotation tool (owner-only) live since 2026-09-13. Onboarding wizard and first-use guides
+Annotation tool (owner-only) disabled since 2026-09-14 (`ANNOTATIONS_ENABLED`). Onboarding wizard and first-use guides
 live since 2026-09-14.
 **Not built yet:** statement import or any automated entry (deliberately deferred; see the
 `merchant_rules` note above).

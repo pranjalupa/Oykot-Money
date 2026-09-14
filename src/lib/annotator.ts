@@ -6,6 +6,12 @@
  */
 export const ANNOTATOR_EMAILS = ["pranjalupa@gmail.com"];
 
+/**
+ * Off since 2026-09-14 — the tool is kept, just not rendered or accepted.
+ * Flip to true to bring it back; the code, table and saved notes are intact.
+ */
+export const ANNOTATIONS_ENABLED = false;
+
 export function isAnnotator(email: string | null | undefined) {
-  return !!email && ANNOTATOR_EMAILS.includes(email.toLowerCase());
+  return ANNOTATIONS_ENABLED && !!email && ANNOTATOR_EMAILS.includes(email.toLowerCase());
 }
