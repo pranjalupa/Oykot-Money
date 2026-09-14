@@ -22,6 +22,7 @@ import { ArchiveButton } from "@/components/archive-button";
 import { SortableList, SortableRow } from "@/components/sortable-list";
 import { Money } from "@/components/money";
 import { EditAccountDialog } from "@/components/account-dialogs";
+import { RowActions } from "@/components/row-actions";
 import type { AccountBalance } from "@/lib/budget";
 import { cn } from "@/lib/utils";
 import { useLocale } from "@/components/currency-provider";
@@ -99,7 +100,7 @@ function Row({ account }: { account: AccountBalance }) {
     <SortableRow
       id={account.id}
       handleLabel={`Reorder ${account.name}`}
-      className={cn("gap-3 px-3 py-3", pending && "opacity-40")}
+      className={cn("flex-wrap gap-3 px-3 py-3", pending && "opacity-40")}
     >
       <CategoryIcon
         name={account.icon}
@@ -128,18 +129,18 @@ function Row({ account }: { account: AccountBalance }) {
         className="shrink-0 text-sm font-semibold"
       />
 
-      <EditAccountDialog account={account} />
-
-      <ArchiveButton
-        label={`Archive ${account.name}`}
-        name={account.name}
-        balanceMinor={account.balanceMinor}
-        archived={false}
-        onToggle={archive}
-        disabled={pending}
-      />
-
-      <DeleteAccountButton account={account} disabled={pending} />
+      <RowActions label={account.name}>
+        <EditAccountDialog account={account} />
+        <ArchiveButton
+          label={`Archive ${account.name}`}
+          name={account.name}
+          balanceMinor={account.balanceMinor}
+          archived={false}
+          onToggle={archive}
+          disabled={pending}
+        />
+        <DeleteAccountButton account={account} disabled={pending} />
+      </RowActions>
     </SortableRow>
   );
 }

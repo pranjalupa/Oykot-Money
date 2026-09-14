@@ -2,6 +2,8 @@
 
 import { useCallback, useState } from "react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export type LegendItem = {
   label: string;
@@ -34,15 +36,16 @@ export function ChartCard({
   className?: string;
 }) {
   const [asTable, setAsTable] = useState(false);
+  const [sheet, setSheet] = useState(false);
 
   return (
-    <section className={cn("flex flex-col rounded-2xl border border-border bg-card p-5 sm:p-6", className)}>
+    <section className={cn("flex flex-col rounded-2xl border border-border bg-card p-4 sm:p-6", className)}>
       <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
         <h2 className="font-heading text-base font-semibold">{title}</h2>
         <div className="flex shrink-0 items-center gap-3">
           {aside && <div className="text-right text-sm text-muted-foreground">{aside}</div>}
           {table && (
-            <div role="tablist" aria-label={`${title} view`} className="flex rounded-lg bg-muted p-0.5">
+            <div role="tablist" aria-label={`${title} view`} className="hidden rounded-lg bg-muted p-0.5 sm:flex">
               {(["Chart", "Table"] as const).map((v) => {
                 const active = (v === "Table") === asTable;
                 return (
@@ -110,6 +113,47 @@ export function ChartCard({
           children
         )}
       </div>
+
+      {/* Phones: no Chart / Table switch — the numbers open in a sheet. */}
+      {table && (
+        <>
+          <Button type="button" variant="outline" size="sm" className="mt-4 h-9 sm:hidden" onClick={() => setSheet(true)}>
+            See all numbers
+          </Button>
+          <Dialog open={sheet} onOpenChange={setSheet}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle className="font-heading text-lg">{title}</DialogTitle>
+              </DialogHeader>
+              <div className="-mx-1 overflow-y-auto px-1">
+                <table className="w-full text-sm">
+                  <thead className="sticky top-0 bg-popover">
+                    <tr className="border-b border-border text-xs text-muted-foreground">
+                      {table.head.map((h, i) => (
+                        <th key={`${h}-${i}`} className={cn("py-2.5 font-medium", i === 0 ? "text-left" : "text-right")}>
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {table.rows.map((row, r) => (
+                      <tr key={r}>
+                        {row.map((cell, i) => (
+                          <td key={i} className={cn("tabular py-3", i === 0 ? "text-left" : "text-right")}>
+                            {cell}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {table.note && <p className="pt-3 text-xs text-muted-foreground">{table.note}</p>}
+              </div>
+            </DialogContent>
+          </Dialog>
+        </>
+      )}
     </section>
   );
 }

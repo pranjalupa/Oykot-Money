@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { CaretRight, Repeat } from "@phosphor-icons/react";
 import { Money } from "@/components/money";
 import { CategoryIcon } from "@/components/category-icon";
-import { PlannedInput } from "@/components/planned-input";
+import { PlannedInput, PlannedSheet } from "@/components/planned-input";
 import type { CategoryRow } from "@/lib/budget";
 import type { GroupKey } from "@/db/schema";
 import { cn } from "@/lib/utils";
@@ -64,7 +64,24 @@ export function CategoryList({
 
   return (
     <div>
-      <div className="overflow-x-auto">
+      {/* Phones: a list, one two-line row per category. */}
+      <ul className="divide-y divide-border sm:hidden">
+        {shown.map((cat) => (
+          <MobileRow key={cat.id} cat={cat} groupKey={groupKey} month={month} depth={0} />
+        ))}
+        <li className="flex items-baseline justify-between gap-3 bg-muted/40 px-4 py-3 text-sm">
+          <span className="font-medium">Total</span>
+          <span className="text-right">
+            <Remaining planned={totals.planned} actual={totals.actual} isIncome={isIncome} words />
+            <span className="block text-xs text-muted-foreground">
+              <Money minor={totals.actual} /> of <Money minor={totals.planned} />
+            </span>
+          </span>
+        </li>
+      </ul>
+
+      {/* From sm up: the plan-vs-actual table. */}
+      <div className="hidden overflow-x-auto sm:block">
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="border-b border-border text-xs text-muted-foreground">
@@ -262,6 +279,69 @@ function Row({
 }
 
 /**
+ * One category on a phone:
+ *   [icon] Rent                       ₹7,000 left
+ *          ₹3,000 spent · Budget ₹10,000 ✎
+ * The row opens the category; the budget line opens the budget sheet.
+ */
+function MobileRow({
+  cat,
+  groupKey,
+  month,
+  depth,
+}: {
+  cat: CategoryRow;
+  groupKey: GroupKey;
+  month: string;
+  depth: number;
+}) {
+  const isIncome = groupKey === "income";
+  const nested = depth > 0;
+  const idle = cat.plannedMinor === 0 && cat.actualMinor === 0;
+  const editablePlan = !nested || cat.budgetsSeparately;
+  const assumed = cat.assumedMinor > 0 && cat.assumedMinor === cat.actualMinor;
+
+  return (
+    <>
+      <li className={cn("relative flex items-start gap-3 px-4 py-3 active:bg-muted/60", nested && "bg-muted/20")}>
+        {/* The whole row is the link; the budget button sits above it. */}
+        <Link href={`/category/${cat.id}?month=${month}`} aria-label={`Open ${cat.name}`} className="absolute inset-0" />
+        {nested ? (
+          <span aria-hidden className="w-9 shrink-0" />
+        ) : (
+          <CategoryIcon name={cat.icon} className="size-9 shrink-0 rounded-lg bg-muted text-muted-foreground" />
+        )}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-baseline justify-between gap-3">
+            <p className={cn("flex min-w-0 items-center gap-1.5 truncate text-sm", idle ? "text-muted-foreground" : "font-medium")}>
+              <span className="truncate">{cat.name}</span>
+              {assumed && <Repeat size={11} weight="bold" aria-label="Assumed spent" className="shrink-0 text-muted-foreground" />}
+            </p>
+            <span className="shrink-0 text-sm">
+              <Remaining planned={cat.plannedMinor} actual={cat.actualMinor} isIncome={isIncome} words />
+            </span>
+          </div>
+          <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
+            <span>
+              <Money minor={cat.actualMinor} tone="muted" /> {isIncome ? "received" : "spent"}
+            </span>
+            <span aria-hidden>·</span>
+            {editablePlan ? (
+              <PlannedSheet categoryId={cat.id} categoryName={cat.name} month={month} plannedMinor={cat.plannedMinor} />
+            ) : (
+              <span>budget rolls into parent</span>
+            )}
+          </div>
+        </div>
+      </li>
+      {cat.children.map((child) => (
+        <MobileRow key={child.id} cat={child} groupKey={groupKey} month={month} depth={depth + 1} />
+      ))}
+    </>
+  );
+}
+
+/**
  * Budget minus spend. For income the sign flips meaning — earning more than
  * planned is good — so the tone is decided per group rather than by the number.
  */
@@ -269,10 +349,13 @@ function Remaining({
   planned,
   actual,
   isIncome,
+  words = false,
 }: {
   planned: number;
   actual: number;
   isIncome: boolean;
+  /** Phones: "₹7,000 left" / "₹500 over" instead of a bare signed number. */
+  words?: boolean;
 }) {
   if (planned === 0 && actual === 0) {
     return <span className="text-muted-foreground">—</span>;
@@ -280,6 +363,20 @@ function Remaining({
 
   const diff = planned - actual;
   const over = diff < 0;
+
+  if (words) {
+    const label = isIncome ? (over ? "extra" : "to come") : over ? "over" : "left";
+    return (
+      <span className="whitespace-nowrap">
+        <Money
+          minor={Math.abs(diff)}
+          tone={over ? (isIncome ? "positive" : "negative") : "default"}
+          className="font-semibold"
+        />{" "}
+        <span className={cn("text-xs", over && !isIncome ? "text-negative" : "text-muted-foreground")}>{label}</span>
+      </span>
+    );
+  }
 
   return (
     <Money

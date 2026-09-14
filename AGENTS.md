@@ -133,6 +133,18 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   Teams and sharing are still out — don't build toward them without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
+- 2026-09-14 — **Mobile first, end to end.** Below `sm` nothing is a table and nothing needs hover.
+  - **Every `DialogContent` is a bottom sheet on phones** (`ui/dialog.tsx`), centred from sm up —
+    one change covers every form and confirm in the app.
+  - Category table → two-line rows ("₹7,000 left" / "₹3,000 spent · Budget ₹10,000 ✎"); the
+    budget opens `PlannedSheet` (big number field). Desktop keeps the table and inline input.
+  - Transactions: day headers on phones and a whole-row tap opening `TransactionRowSheet`
+    (details, Edit, Delete); desktop keeps the date column and inline icons.
+  - Charts: 170px tall on phones (220 from sm), tooltip pinned to the top edge; the Chart/Table
+    switch becomes a "See all numbers" sheet; Where it goes shows the top 5 with "Show top 8".
+  - Yearly month table → rows; Monthly/Yearly stat cards stay three across, compact.
+  - Row icon buttons (accounts, Settings categories) fold behind "⋯" via `RowActions`.
+  - Pick breakpoints in CSS; `useIsDesktop` (lib/use-media.ts) only where CSS can't decide.
 - 2026-09-14 — **Onboarding.** A setup wizard at `/welcome` (accounts + balances → monthly
   income → target split → this month's budget suggested from income × split, unticked starter
   categories retired) and a dismissible **first-use guide on every major flow** (Daily, Monthly,

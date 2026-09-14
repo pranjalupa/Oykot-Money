@@ -25,7 +25,7 @@ export async function YearView({ year }: { year: number }) {
 
   return (
     <div className="flex flex-col gap-6">
-      <section className="grid gap-4 sm:grid-cols-3">
+      <section className="grid grid-cols-3 gap-2 sm:gap-4">
         <Stat label="Income" minor={summary.totals.income} />
         <Stat label="Spent" minor={summary.totals.expense} />
         <Stat label="Saved" minor={summary.totals.saved} tone="auto" />
@@ -41,7 +41,35 @@ export async function YearView({ year }: { year: number }) {
         <div className="px-5 pt-5 pb-3 sm:px-6">
           <h2 className="font-heading text-base font-semibold">Month by month</h2>
         </div>
-        <table className="w-full text-sm">
+        {/* Phones: one row per month, saved on the right. */}
+        <ul className="divide-y divide-border border-t border-border sm:hidden">
+          {summary.byMonth.map((m) => {
+            const active = m.income || m.expense;
+            return (
+              <li key={m.month}>
+                <Link
+                  href={`/?view=month&month=${m.month}`}
+                  className={`flex items-center justify-between gap-3 px-4 py-3 active:bg-muted/60 ${active ? "" : "text-muted-foreground/50"}`}
+                >
+                  <span className="min-w-0">
+                    <span className="block text-sm font-medium">{formatMonthShort(m.month, locale)}</span>
+                    {active ? (
+                      <span className="block truncate text-xs text-muted-foreground">
+                        <Money minor={m.income} tone="muted" /> in · <Money minor={m.expense} tone="muted" /> spent
+                      </span>
+                    ) : null}
+                  </span>
+                  <span className="shrink-0 text-right text-sm font-semibold">
+                    {active ? <Money minor={m.saved} tone="auto" /> : "—"}
+                    {active ? <span className="block text-[11px] font-normal text-muted-foreground">saved</span> : null}
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+
+        <table className="hidden w-full text-sm sm:table">
           <thead>
             <tr className="border-y border-border text-xs text-muted-foreground">
               <th className="px-5 py-3 text-left font-medium sm:px-6">Month</th>
@@ -75,9 +103,9 @@ export async function YearView({ year }: { year: number }) {
 
 function Stat({ label, minor, tone = "default" }: { label: string; minor: number; tone?: "default" | "auto" }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-5">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="mt-1.5 font-heading text-2xl font-bold">
+    <div className="min-w-0 rounded-2xl border border-border bg-card p-3 sm:p-5">
+      <p className="text-[11px] text-muted-foreground sm:text-xs">{label}</p>
+      <p className="mt-1 truncate font-heading text-base font-bold sm:mt-1.5 sm:text-2xl">
         <Money minor={minor} tone={tone} />
       </p>
     </div>

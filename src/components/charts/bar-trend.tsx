@@ -26,7 +26,7 @@ export function BarTrend({
   format,
   reference,
   referenceLabel,
-  height = 220,
+  height,
 }: {
   data: BarPoint[];
   color: string;
@@ -42,14 +42,18 @@ export function BarTrend({
   return (
     <ChartContainer
       config={{ value: { label: valueLabel, color } }}
-      className="aspect-auto w-full"
-      style={{ height }}
+      // Short on phones so the list below still shows; taller from sm.
+      className={height ? "aspect-auto w-full" : "aspect-auto h-[170px] w-full sm:h-[220px]"}
+      style={height ? { height } : undefined}
     >
       <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 8 }}>
         <CartesianGrid vertical={false} strokeDasharray="3 3" />
         <XAxis dataKey="label" {...X_AXIS} interval="preserveStartEnd" minTickGap={6} />
         <YAxis hide />
+        {/* Pinned to the top edge, clear of the thumb doing the tapping. */}
         <Tooltip
+          position={{ y: 0 }}
+          wrapperStyle={{ zIndex: 10, pointerEvents: "none" }}
           cursor={{ fill: "var(--muted)", opacity: 0.5, radius: 8 }}
           content={({ active, payload }) => {
             if (!active || !payload?.length) return null;

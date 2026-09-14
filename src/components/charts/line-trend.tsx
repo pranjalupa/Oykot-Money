@@ -28,7 +28,7 @@ export function LineTrend({
   referenceLabel,
   format,
   fromZero = true,
-  height = 220,
+  height,
 }: {
   data: LinePoint[];
   color: string;
@@ -44,14 +44,19 @@ export function LineTrend({
   return (
     <ChartContainer
       config={{ value: { label: valueLabel, color } }}
-      className="aspect-auto w-full"
-      style={{ height }}
+      // Short on phones so the list below still shows; taller from sm.
+      className={height ? "aspect-auto w-full" : "aspect-auto h-[170px] w-full sm:h-[220px]"}
+      style={height ? { height } : undefined}
     >
       <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 8 }}>
         <CartesianGrid vertical={false} strokeDasharray="3 3" />
-        <XAxis dataKey="label" {...X_AXIS} interval="preserveStartEnd" minTickGap={24} />
+        <XAxis dataKey="label" {...X_AXIS} interval="preserveStartEnd" minTickGap={32} />
         <YAxis hide domain={fromZero ? [0, "auto"] : ["auto", "auto"]} />
+        {/* Pinned to the top edge: a tooltip that follows the touch point
+            sits under the thumb reading it. */}
         <Tooltip
+          position={{ y: 0 }}
+          wrapperStyle={{ zIndex: 10, pointerEvents: "none" }}
           content={({ active, payload }) => {
             if (!active || !payload?.length) return null;
             const p = payload[0].payload as LinePoint;

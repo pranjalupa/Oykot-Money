@@ -475,6 +475,13 @@ tables as a second layer; anonymous access is revoked.
 
 ## 10. Design
 
+**Mobile first.** On phones (below 640px) there are no tables and nothing depends on hover:
+dialogs open as bottom sheets; category tables are two-line rows whose budget opens a sheet with
+a large number field; transactions sit under day headers and a tap opens Edit / Delete; charts are
+170px tall with the tooltip pinned to the top, and their numbers open from *See all numbers*;
+row actions fold behind a ⋯ button. From 640px up the desktop layouts (tables, date column,
+inline icons, Chart / Table switch) are unchanged.
+
 - **Colours:** Forest (primary green) · Lemon (accent) · Stone (neutral surfaces) · Clay
   (destructive). In dark mode, primary becomes Lemon because dark green disappears on
   near-black; surfaces always stay neutral Stone. Reference: `docs/design-tokens.html`.

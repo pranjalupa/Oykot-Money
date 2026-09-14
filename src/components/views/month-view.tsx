@@ -75,7 +75,7 @@ export async function MonthView({ month }: { month: string }) {
         </div>
       )}
 
-      <section className="grid gap-4 sm:grid-cols-3">
+      <section className="grid grid-cols-3 gap-2 sm:gap-4">
         <StatCard label="Income" actualMinor={summary.actualIncome} plannedMinor={summary.plannedIncome} />
         <StatCard label="Expenses" actualMinor={summary.actualExpense} plannedMinor={summary.plannedExpense} />
         <StatCard label="Saved this month" actualMinor={summary.actualSaved} plannedMinor={summary.plannedSaved} tone="auto" />
@@ -119,14 +119,16 @@ function StatCard({
 }) {
   const pct = percentOf(actualMinor, plannedMinor);
   return (
-    <div className="rounded-2xl border border-border bg-card p-5">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="mt-1.5 font-heading text-2xl font-bold">
+    // Three across even on a phone: compact padding and type below sm.
+    <div className="min-w-0 rounded-2xl border border-border bg-card p-3 sm:p-5">
+      <p className="truncate text-[11px] text-muted-foreground sm:text-xs">{label}</p>
+      <p className="mt-1 truncate font-heading text-base font-bold sm:mt-1.5 sm:text-2xl">
         <Money minor={actualMinor} tone={tone} />
       </p>
-      <p className="mt-1 text-xs text-muted-foreground">
-        of <Money minor={plannedMinor} tone="muted" /> budgeted
-        {plannedMinor > 0 && <span className="tabular"> · {pct}%</span>}
+      <p className="mt-0.5 truncate text-[11px] text-muted-foreground sm:mt-1 sm:text-xs">
+        of <Money minor={plannedMinor} tone="muted" />
+        <span className="hidden sm:inline"> budgeted</span>
+        {plannedMinor > 0 && <span className="tabular hidden sm:inline"> · {pct}%</span>}
       </p>
     </div>
   );

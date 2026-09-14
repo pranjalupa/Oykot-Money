@@ -30,12 +30,20 @@ export function EditTransactionDialog({
   transaction,
   accounts,
   categories,
+  open: openProp,
+  onOpenChange,
 }: {
   transaction: TransactionRow;
   accounts: PickerAccount[];
   categories: PickerCategory[];
+  /** Controlled from outside (the phone row sheet) — then no trigger is drawn. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [openState, setOpenState] = useState(false);
+  const controlled = openProp !== undefined;
+  const open = controlled ? openProp : openState;
+  const setOpen = onOpenChange ?? setOpenState;
   const [state, action, pending] = useActionState<ActionResult | null, FormData>(
     async (prev, fd) => {
       const res = await updateTransaction(prev, fd);
@@ -52,13 +60,15 @@ export function EditTransactionDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
-        render={
-          <IconButton label={`Edit ${label}`}>
-            <PencilSimple size={14} weight="bold" />
-          </IconButton>
-        }
-      />
+      {!controlled && (
+        <DialogTrigger
+          render={
+            <IconButton label={`Edit ${label}`}>
+              <PencilSimple size={14} weight="bold" />
+            </IconButton>
+          }
+        />
+      )}
 
       <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-md">
         <DialogHeader>

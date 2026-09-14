@@ -22,11 +22,19 @@ import { IconButton } from "@/components/icon-button";
 export function DeleteTransactionButton({
   id,
   label,
+  open: openProp,
+  onOpenChange,
 }: {
   id: string;
   label: string;
+  /** Controlled from outside (the phone row sheet) — then no button is drawn. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [openState, setOpenState] = useState(false);
+  const controlled = openProp !== undefined;
+  const open = controlled ? openProp : openState;
+  const setOpen = onOpenChange ?? setOpenState;
   const [pending, start] = useTransition();
 
   function confirm() {
@@ -41,13 +49,15 @@ export function DeleteTransactionButton({
 
   return (
     <>
-      <IconButton
-        label={`Delete ${label}`}
-        tone="danger"
-        onClick={() => setOpen(true)}
-      >
-        <Trash size={14} weight="bold" />
-      </IconButton>
+      {!controlled && (
+        <IconButton
+          label={`Delete ${label}`}
+          tone="danger"
+          onClick={() => setOpen(true)}
+        >
+          <Trash size={14} weight="bold" />
+        </IconButton>
+      )}
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-sm">

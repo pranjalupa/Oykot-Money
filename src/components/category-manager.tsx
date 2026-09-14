@@ -22,6 +22,7 @@ import {
   type ActionResult,
 } from "@/app/actions";
 import { IconButton } from "@/components/icon-button";
+import { RowActions } from "@/components/row-actions";
 import { SortableList, SortableRow } from "@/components/sortable-list";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -166,7 +167,7 @@ function CategoryRow({ cat }: { cat: Cat }) {
       handleLabel={`Reorder ${cat.name}`}
       disabled={cat.archived}
       className={cn(
-        "gap-3 px-3 py-2.5",
+        "flex-wrap gap-3 px-3 py-2.5",
         cat.archived && "opacity-55",
         pending && "opacity-40",
       )}
@@ -188,22 +189,6 @@ function CategoryRow({ cat }: { cat: Cat }) {
         )}
       </span>
 
-      {canAssume && (
-        <IconButton
-          label={
-            cat.assumeSpent
-              ? `Stop assuming ${cat.name} is spent each month`
-              : `Assume ${cat.name} is spent each month`
-          }
-          tone={cat.assumeSpent ? "active" : "default"}
-          onClick={toggleAssumeSpent}
-          disabled={pending}
-          aria-pressed={cat.assumeSpent}
-        >
-          <Repeat size={14} weight="bold" />
-        </IconButton>
-      )}
-
       {cat.systemKey ? (
         // Backs You gave / You got — only budgeting and reordering stay open.
         <span
@@ -214,7 +199,23 @@ function CategoryRow({ cat }: { cat: Cat }) {
           Locked
         </span>
       ) : (
-        <>
+        <RowActions label={cat.name}>
+          {canAssume && (
+            <IconButton
+              label={
+                cat.assumeSpent
+                  ? `Stop assuming ${cat.name} is spent each month`
+                  : `Assume ${cat.name} is spent each month`
+              }
+              tone={cat.assumeSpent ? "active" : "default"}
+              onClick={toggleAssumeSpent}
+              disabled={pending}
+              aria-pressed={cat.assumeSpent}
+            >
+              <Repeat size={14} weight="bold" />
+            </IconButton>
+          )}
+
           <EditCategoryDialog cat={cat} />
 
           <IconButton
@@ -226,7 +227,7 @@ function CategoryRow({ cat }: { cat: Cat }) {
           </IconButton>
 
           <DeleteCategoryButton cat={cat} disabled={pending} />
-        </>
+        </RowActions>
       )}
     </SortableRow>
   );

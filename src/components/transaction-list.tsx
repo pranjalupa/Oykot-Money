@@ -4,9 +4,18 @@ import { LocalDate } from "@/components/currency-provider";
 import { CategoryIcon } from "@/components/category-icon";
 import { EditTransactionDialog } from "@/components/edit-transaction-dialog";
 import { DeleteTransactionButton } from "@/components/delete-transaction-button";
+import { TransactionRowSheet } from "@/components/transaction-row-sheet";
 import type { PickerAccount, PickerCategory } from "@/components/transaction-fields";
 import type { TransactionRow } from "@/lib/budget";
 
+/**
+ * Transactions, newest first.
+ *
+ * Phones: grouped under day headers, each row just icon · name · amount, and
+ * tapping a row opens its sheet (details, Edit, Delete).
+ * From sm up: no headers — the date is its own column before the amount, with
+ * Edit and Delete inline.
+ */
 export function TransactionList({
   transactions,
   accounts,
@@ -29,9 +38,9 @@ export function TransactionList({
 
   return (
     <ul className="divide-y divide-border">
-      {transactions.map((t) => {
+      {transactions.map((t, i) => {
         // A settlement moves money between you and a person (or your own
-        // accounts). Borrowing is stored as an inflow, so the arrow flips.
+        // accounts). Money from a person is stored as an inflow, so the arrow flips.
         const isTransfer = !!t.counterAccountId && !t.categoryId;
         const borrowed = t.direction === "inflow" && !!t.counterAccountId;
         const route = borrowed
@@ -41,20 +50,34 @@ export function TransactionList({
           t.merchant ||
           t.categoryName ||
           (borrowed ? `Got from ${t.counterAccountName ?? "?"}` : `To ${t.counterAccountName ?? "?"}`);
+        const detail = isTransfer
+          ? route
+          : t.counterAccountId
+            ? `${t.categoryName ?? "Uncategorised"} · ${route}`
+            : `${t.categoryName ?? "Uncategorised"} · ${t.accountName}`;
+        const newDay = i === 0 || transactions[i - 1].date !== t.date;
 
-        return (
+        return [
+          newDay && (
+            <li
+              key={`day-${t.date}`}
+              className="bg-muted/40 px-4 py-1.5 text-xs font-semibold text-muted-foreground sm:hidden"
+            >
+              <LocalDate date={t.date} options={{ weekday: "short", day: "numeric", month: "short" }} />
+            </li>
+          ),
           <li
             key={t.id}
-            className="group flex items-center gap-3 px-3 py-3 transition-colors hover:bg-muted/50 sm:gap-4 sm:px-4"
+            className="group relative flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/50 active:bg-muted/60 sm:gap-4 sm:active:bg-transparent"
           >
             {isTransfer ? (
-              <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground sm:size-8 sm:rounded-md">
                 <ArrowsLeftRight size={16} weight="duotone" />
               </span>
             ) : (
               <CategoryIcon
                 name={t.categoryIcon}
-                className="size-8 shrink-0 rounded-md bg-muted text-muted-foreground"
+                className="size-9 shrink-0 rounded-lg bg-muted text-muted-foreground sm:size-8 sm:rounded-md"
               />
             )}
 
@@ -70,18 +93,11 @@ export function TransactionList({
                   />
                 )}
               </p>
-              <p className="truncate text-xs text-muted-foreground">
-                {isTransfer
-                  ? route
-                  : t.counterAccountId
-                    ? `${t.categoryName ?? "Uncategorised"} · ${route}`
-                    : `${t.categoryName ?? "Uncategorised"} · ${t.accountName}`}
-              </p>
+              <p className="truncate text-xs text-muted-foreground">{detail}</p>
             </div>
 
-            {/* Date, amount and actions are fixed-width columns, so they line
-                up from row to row whatever the name or amount length. */}
-            <span className="flex w-10 shrink-0 flex-col items-center leading-none text-muted-foreground sm:w-12">
+            {/* Desktop columns: date, amount, actions — fixed widths so they line up. */}
+            <span className="hidden w-12 shrink-0 flex-col items-center leading-none text-muted-foreground sm:flex">
               <span className="text-sm font-semibold text-foreground tabular-nums">
                 <LocalDate date={t.date} options={{ day: "numeric" }} />
               </span>
@@ -92,22 +108,18 @@ export function TransactionList({
 
             <Money
               minor={t.direction === "inflow" ? t.amountMinor : -t.amountMinor}
-              tone={
-                isTransfer
-                  ? "muted"
-                  : t.direction === "inflow"
-                    ? "positive"
-                    : "default"
-              }
-              className="w-20 shrink-0 text-right text-sm font-semibold sm:w-28"
+              tone={isTransfer ? "muted" : t.direction === "inflow" ? "positive" : "default"}
+              className="shrink-0 text-right text-sm font-semibold sm:w-28"
             />
 
-            <div className="flex shrink-0 items-center gap-0.5 pl-1">
+            <div className="hidden shrink-0 items-center gap-0.5 pl-1 sm:flex">
               <EditTransactionDialog transaction={t} accounts={accounts} categories={categories} />
               <DeleteTransactionButton id={t.id} label={label} />
             </div>
-          </li>
-        );
+
+            <TransactionRowSheet transaction={t} label={label} detail={detail} accounts={accounts} categories={categories} />
+          </li>,
+        ];
       })}
     </ul>
   );

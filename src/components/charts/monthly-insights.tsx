@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import { useIsDesktop } from "@/lib/use-media";
 import { Bar, BarChart, Cell, LabelList, Pie, PieChart, Tooltip, XAxis, YAxis } from "recharts";
 import { ChartContainer } from "@/components/ui/chart";
 import { ChartCard, TooltipBox } from "@/components/charts/chart-card";
@@ -73,7 +75,7 @@ export function IncomeSplit({
         <p className="py-8 text-center text-sm text-muted-foreground">Log some income and spending to see the split.</p>
       ) : (
         <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-center sm:gap-8">
-          <div className="relative size-[200px] shrink-0">
+          <div className="relative size-[160px] shrink-0 sm:size-[200px]">
             <ChartContainer
               config={Object.fromEntries(slices.map((s) => [s.key, { label: s.label, color: s.color }]))}
               className="aspect-square size-full"
@@ -175,8 +177,12 @@ const ROW = 46;
 export function TopCategories({ rows }: { rows: CategorySpend[] }) {
   const currency = useCurrency();
   const money = (m: number) => formatMoney(m, { currency });
+  const desktop = useIsDesktop();
+  const [expanded, setExpanded] = useState(false);
   const spending = rows.filter((r) => r.actualMinor > 0).sort((a, b) => b.actualMinor - a.actualMinor);
-  const data: RankedBar[] = spending.slice(0, 8).map((r) => ({
+  // Phones start with the top 5 so the chart fits a screen; desktops show 8.
+  const limit = expanded ? 8 : desktop ? 8 : 5;
+  const data: RankedBar[] = spending.slice(0, limit).map((r) => ({
     ...r,
     color: META[r.groupKey].color,
     over: r.plannedMinor > 0 && r.actualMinor > r.plannedMinor,
@@ -243,6 +249,15 @@ export function TopCategories({ rows }: { rows: CategorySpend[] }) {
         </ChartContainer>
       ) : (
         <p className="py-10 text-center text-sm text-muted-foreground">Log some spending to see where it goes.</p>
+      )}
+      {!desktop && spending.length > 5 && (
+        <button
+          type="button"
+          onClick={() => setExpanded((e) => !e)}
+          className="mt-2 self-start text-sm font-medium text-muted-foreground underline underline-offset-4"
+        >
+          {expanded ? "Show top 5" : `Show top ${Math.min(8, spending.length)}`}
+        </button>
       )}
     </ChartCard>
   );
