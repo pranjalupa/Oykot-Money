@@ -132,6 +132,10 @@ try {
           txs.push({ date: date(m, Math.ceil(between(0.001, days))), amount, direction: "outflow", account: amount < 50000 && rand() < 0.3 ? cash.id : bank.id, category: id, merchant: pick(p.merchants!) });
         }
       }
+      // Cash has to come from somewhere: a monthly ATM withdrawal (a move, no category).
+      if (days >= 2 && cash.id !== bank.id) {
+        txs.push({ date: date(m, 2), amount: 250000, direction: "transfer", account: bank.id, counter: cash.id, category: null, merchant: "ATM withdrawal" });
+      }
       // Other income now and then: a freelance payment.
       const other = byName(/other income/i, "income");
       if (other && rand() < 0.3 && days >= 20) {
