@@ -133,6 +133,7 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   Teams and sharing are still out — don't build toward them without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
+- 2026-09-18 — **Annotation tool back on** for pranjalupa@gmail.com (`ANNOTATIONS_ENABLED = true`).
 - 2026-09-14 — **Annotation tool disabled, not deleted.** `ANNOTATIONS_ENABLED = false` in
   `lib/annotator.ts` hides the launcher and refuses every annotation action; the code, the
   `annotations` table and saved notes stay. Flip it to true to bring it back. Pranjal's account
@@ -261,7 +262,7 @@ Fully workable and deployed at https://oykot-money.vercel.app. Home (Daily/Month
 tabs) / group pages / category detail / Money / People / Settings all read and write against
 Supabase, with auth and per-user isolation. Archiving, deleting, drag reordering and the
 icon grid are wired everywhere they apply. Six charts total, all plain Recharts forms.
-Annotation tool (owner-only) disabled since 2026-09-14 (`ANNOTATIONS_ENABLED`). Onboarding wizard and first-use guides
+Annotation tool (owner-only) on again since 2026-09-18 (`ANNOTATIONS_ENABLED`). Onboarding wizard and first-use guides
 live since 2026-09-14.
 **Not built yet:** statement import or any automated entry (deliberately deferred; see the
 `merchant_rules` note above).
