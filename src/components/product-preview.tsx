@@ -140,3 +140,35 @@ export function PaceMini() {
     </Mini>
   );
 }
+
+/** The month's split, as three stacked proportions — Monthly, in miniature. */
+export function SplitPreviewCard({ className }: { className?: string }) {
+  const rows = [
+    { name: "Needs", amount: "₹33,002", pct: 54, tint: "var(--chart-needs)" },
+    { name: "Wants", amount: "₹11,386", pct: 19, tint: "var(--chart-wants)" },
+    { name: "Investments", amount: "₹16,000", pct: 27, tint: "var(--chart-investments)" },
+  ];
+
+  return (
+    <div className={`rounded-2xl border border-border bg-card p-4 shadow-xl ${className ?? ""}`}>
+      <p className="text-xs font-medium text-muted-foreground">Where September went</p>
+
+      {/* One bar, three parts — the split as a single line. */}
+      <div className="mt-3 flex h-2.5 gap-1 overflow-hidden rounded-full">
+        {rows.map((r) => (
+          <span key={r.name} style={{ width: `${r.pct}%`, background: r.tint }} className="rounded-full" />
+        ))}
+      </div>
+
+      <ul className="mt-3 space-y-1.5">
+        {rows.map((r) => (
+          <li key={r.name} className="flex items-center gap-2 text-xs">
+            <span className="size-2 shrink-0 rounded-full" style={{ background: r.tint }} />
+            <span className="font-medium">{r.name}</span>
+            <span className="ml-auto text-muted-foreground">{r.amount}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}

@@ -135,6 +135,11 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
 ## Decisions & Updates (newest first — add new entries at top)
 - 2026-09-21 — **Landing page rebuilt**, patterns checked against Mobbin (Monarch, Origin,
   Ramp): eyebrow pill → headline → one primary CTA → product visual, then revealed features.
+  - **The marketing pages carry depth the app deliberately doesn't** — a blurred colour
+    wash (`.mesh`), film grain (`.grain`), tinted bento panels (`.tinted` with a per-card
+    `--tint`) and a card stack that leans back (`.tilt`). All built from existing tokens
+    (Forest, Lemon, the three chart hues) so it reads as the same brand in both themes.
+    **None of it belongs inside the app**: surfaces there stay Stone.
   - **Product visuals are the real UI in markup, never screenshots** —
     `components/product-preview.tsx` holds them (`DailyPreviewCard`, `BudgetMini`,
     `PeopleMini`, `RecurringMini`, `PaceMini`). They follow the theme, stay sharp, and
