@@ -10,7 +10,7 @@ export function PublicHeader() {
         <LogoMark size={28} />
         <Wordmark height={17} />
       </Link>
-      <nav className="flex items-center gap-1 text-sm sm:gap-3">
+      <nav className="flex shrink-0 items-center gap-0.5 text-sm whitespace-nowrap sm:gap-3">
         <Link href="/pricing" className="rounded-md px-2 py-1.5 text-muted-foreground hover:text-foreground">
           Pricing
         </Link>

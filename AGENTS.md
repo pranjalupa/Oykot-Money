@@ -133,6 +133,18 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   Teams and sharing are still out — don't build toward them without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
+- 2026-09-21 — **Landing page rebuilt**, patterns checked against Mobbin (Monarch, Origin,
+  Ramp): eyebrow pill → headline → one primary CTA → product visual, then revealed features.
+  - **The hero visual is the real Daily card in markup, not a screenshot.** It uses the app's
+    own tokens, so it follows the theme and can't go stale. Keep it that way.
+  - Motion lives in `globals.css` behind
+    `@media (prefers-reduced-motion: no-preference) and (scripting: enabled)` — a CSS-only
+    gate, so nothing is ever hidden when the reveal script can't run. **Don't reintroduce a
+    `<script>` in a component to set a flag:** React warns, and it doesn't run on client
+    navigation. `components/landing-motion.tsx` has `Reveal` (IntersectionObserver, fires
+    once) and `CountUp`.
+  - `CountUp` takes a *locale string*, not a formatter — **a function can't cross from a
+    server component into a client one**, which is exactly how this first broke.
 - 2026-09-21 — **No bars in list rows, and summaries stop repeating themselves.**
   - A per-row progress bar was added earlier today and taken straight back out: five bars
     down a list reads as a chart, which is why it was removed once before (2026-09-13).
