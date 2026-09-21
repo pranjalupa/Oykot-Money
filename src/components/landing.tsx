@@ -1,37 +1,38 @@
 import Link from "next/link";
-import {
-  ArrowRight,
-  CalendarCheck,
-  ChartPieSlice,
-  Repeat,
-  UsersThree,
-} from "@phosphor-icons/react/dist/ssr";
+import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
 import { buttonVariants } from "@/components/ui/button";
 import { PublicFooter, PublicHeader } from "@/components/public-chrome";
-import { CountUp, Reveal } from "@/components/landing-motion";
+import { Reveal } from "@/components/landing-motion";
+import {
+  BudgetMini,
+  DailyPreviewCard,
+  PaceMini,
+  PeopleMini,
+  RecurringMini,
+} from "@/components/product-preview";
 import { TRIAL_DAYS } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
 
 const FEATURES = [
   {
-    icon: CalendarCheck,
     title: "Know what's safe to spend today",
-    body: "One figure, every morning: what's left in Needs and Wants, divided by the days still to come.",
+    body: "One figure every morning: what's left in Needs and Wants, divided by the days still to come.",
+    visual: PaceMini,
   },
   {
-    icon: ChartPieSlice,
     title: "Plan the month in minutes",
     body: "Budget each category against your Needs, Wants and Investments split. Next month carries the plan over.",
+    visual: BudgetMini,
   },
   {
-    icon: UsersThree,
     title: "Lend and borrow without awkward maths",
-    body: "Track what friends owe you and what you owe the bank, right beside the budget it affects.",
+    body: "What friends owe you and what you owe the bank, in words, beside the budget it affects.",
+    visual: PeopleMini,
   },
   {
-    icon: Repeat,
     title: "Fixed bills handle themselves",
     body: "Rent, SIPs and subscriptions repeat on their own — or count as spent without logging them at all.",
+    visual: RecurringMini,
   },
 ];
 
@@ -95,14 +96,14 @@ export function Landing() {
 
         <AppPreview />
 
+        {/* A card per feature, each showing the screen it's talking about
+            rather than an icon standing in for it. */}
         <section className="mt-16 grid gap-4 sm:mt-24 sm:grid-cols-2">
           {FEATURES.map((f, i) => (
             <Reveal key={f.title} delay={i * 70}>
-              <div className="press h-full rounded-2xl border border-border bg-card p-5 hover:-translate-y-0.5 hover:border-foreground/20 hover:shadow-lg">
-                <span className="flex size-10 items-center justify-center rounded-xl bg-muted text-foreground">
-                  <f.icon size={20} weight="duotone" />
-                </span>
-                <h2 className="mt-4 font-heading text-lg font-bold">{f.title}</h2>
+              <div className="press flex h-full flex-col rounded-2xl border border-border bg-card p-5 hover:-translate-y-0.5 hover:border-foreground/20 hover:shadow-lg">
+                <f.visual />
+                <h2 className="mt-5 font-heading text-lg font-bold">{f.title}</h2>
                 <p className="mt-1 text-sm text-muted-foreground">{f.body}</p>
               </div>
             </Reveal>
@@ -128,41 +129,12 @@ export function Landing() {
   );
 }
 
-/**
- * The product, not a picture of it: the real Daily card, built from the same
- * tokens the app uses, with two transactions drifting beside it.
- *
- * Deliberately not a screenshot — a screenshot goes stale the day the app
- * changes, and can't answer to the theme.
- */
+/** The hero visual: the Daily card, with two transactions floating beside it. */
 function AppPreview() {
-  const spent = 44_388;
-  const budget = 61_500;
-
   return (
     <Reveal className="mx-auto max-w-md">
       <div className="relative">
-        <div className="rounded-[1.75rem] border border-border bg-card p-5 shadow-xl">
-          <p className="text-sm font-medium text-muted-foreground">Safe to spend today</p>
-          <p className="mt-1.5 font-heading text-[2.75rem] leading-none font-bold tracking-tight">
-            ₹<CountUp value={1711} />
-            <span className="ml-1.5 font-sans text-base font-medium tracking-normal text-muted-foreground">
-              / day
-            </span>
-          </p>
-
-          <div className="mt-5 h-2.5 overflow-hidden rounded-full bg-muted">
-            <div
-              className="fill-bar h-full rounded-full bg-primary"
-              style={{ width: `${Math.round((spent / budget) * 100)}%` }}
-            />
-          </div>
-          <p className="mt-3 text-sm text-muted-foreground">
-            <span className="font-semibold text-foreground">₹44,388</span> of ₹61,500 spent
-            <span aria-hidden className="mx-1.5">·</span>
-            <span className="font-semibold text-foreground">₹17,112</span> left
-          </p>
-        </div>
+        <DailyPreviewCard />
 
         {/* Two rows from the transaction list, floated off the card's corners.
             Hidden on phones, where there's no room to float anything. */}

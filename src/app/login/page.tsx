@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { AuthForm } from "@/components/auth-form";
+import { AuthSplit } from "@/components/auth-split";
 import { getEnabledProviders } from "@/lib/supabase/providers";
 
 export const metadata = { title: "Sign in · Oykot Money" };
@@ -8,10 +9,10 @@ export default async function LoginPage() {
   const { google } = await getEnabledProviders();
 
   return (
-    <div className="flex min-h-svh items-center justify-center px-4 py-16">
+    <AuthSplit>
       <Suspense>
         <AuthForm mode="signin" googleEnabled={google} />
       </Suspense>
-    </div>
+    </AuthSplit>
   );
 }

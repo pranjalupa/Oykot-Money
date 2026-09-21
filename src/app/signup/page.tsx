@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { headers } from "next/headers";
 import { AuthForm } from "@/components/auth-form";
+import { AuthSplit } from "@/components/auth-split";
 import { getEnabledProviders } from "@/lib/supabase/providers";
 import { currencyForCountry } from "@/lib/currency";
 
@@ -12,7 +13,7 @@ export default async function SignupPage() {
   const country = (await headers()).get("x-vercel-ip-country");
 
   return (
-    <div className="flex min-h-svh items-center justify-center px-4 py-16">
+    <AuthSplit>
       <Suspense>
         <AuthForm
           mode="signup"
@@ -20,6 +21,6 @@ export default async function SignupPage() {
           defaultCurrency={currencyForCountry(country)}
         />
       </Suspense>
-    </div>
+    </AuthSplit>
   );
 }

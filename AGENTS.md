@@ -135,8 +135,12 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
 ## Decisions & Updates (newest first — add new entries at top)
 - 2026-09-21 — **Landing page rebuilt**, patterns checked against Mobbin (Monarch, Origin,
   Ramp): eyebrow pill → headline → one primary CTA → product visual, then revealed features.
-  - **The hero visual is the real Daily card in markup, not a screenshot.** It uses the app's
-    own tokens, so it follows the theme and can't go stale. Keep it that way.
+  - **Product visuals are the real UI in markup, never screenshots** —
+    `components/product-preview.tsx` holds them (`DailyPreviewCard`, `BudgetMini`,
+    `PeopleMini`, `RecurringMini`, `PaceMini`). They follow the theme, stay sharp, and
+    can't go stale. Feature cards show the screen they describe instead of an icon.
+  - **Sign in / sign up are split** (`components/auth-split.tsx`): form one side, that
+    product panel the other, from `lg` up only — on a phone the form is the whole screen.
   - Motion lives in `globals.css` behind
     `@media (prefers-reduced-motion: no-preference) and (scripting: enabled)` — a CSS-only
     gate, so nothing is ever hidden when the reveal script can't run. **Don't reintroduce a
