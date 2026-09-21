@@ -4,7 +4,13 @@
  * follow you across devices; Settings → "Show tips again" clears them.
  *
  * Keep each to three steps. A guide that needs more is a flow that needs fixing.
+ *
+ * **Master switch.** Off 2026-09-21: Pranjal found the cards took a screen
+ * block on every page. Nothing here is deleted — the guides, the dismissals on
+ * the profile and Settings → "Show tips again" all still work, so flipping
+ * this to true brings them back exactly as they were.
  */
+export const GUIDES_ENABLED = false;
 export const GUIDES = {
   "home-daily": {
     title: "How Daily works",

@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useMemo, useState } from "react
 import { Lightbulb, X } from "@phosphor-icons/react";
 import { dismissGuide, resetGuides } from "@/app/onboarding-actions";
 import { Button } from "@/components/ui/button";
-import { GUIDES, type GuideId } from "@/lib/guides";
+import { GUIDES, GUIDES_ENABLED, type GuideId } from "@/lib/guides";
 import { cn } from "@/lib/utils";
 
 type Guides = { dismissed: Set<string>; dismiss: (id: GuideId) => void; reset: () => Promise<void> };
@@ -43,7 +43,7 @@ export function useGuides() {
 /** The first-use card for one flow. Renders nothing once dismissed, or when signed out. */
 export function FlowGuide({ id, compact = false, className }: { id: GuideId; compact?: boolean; className?: string }) {
   const guides = useGuides();
-  if (!guides || guides.dismissed.has(id)) return null;
+  if (!GUIDES_ENABLED || !guides || guides.dismissed.has(id)) return null;
   const guide = GUIDES[id];
 
   return (
@@ -98,7 +98,8 @@ export function FlowGuide({ id, compact = false, className }: { id: GuideId; com
 export function ResetGuidesButton() {
   const guides = useGuides();
   const [done, setDone] = useState(false);
-  if (!guides) return null;
+  // Nothing to bring back while the guides are switched off.
+  if (!GUIDES_ENABLED || !guides) return null;
   return (
     <button
       type="button"

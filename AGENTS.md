@@ -133,6 +133,23 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   Teams and sharing are still out — don't build toward them without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
+- 2026-09-21 — **Phone screens reworked toward a fintech layout**, on Pranjal's brief
+  ("buttons too small, a bit too much"), keeping the existing colours and shadcn.
+  - **Chrome first:** page title and its sentence are desktop-only on Home, groups and
+    Money — the period already reads as the heading — and the header's Add is hidden on
+    phones (kept mounted; `/?add=1` opens it). The month/year control fills the width.
+  - **Nothing under 44px.** `IconButton` was 28px and `IconLink` 32px; both are 44 on
+    phones, compact from sm up. Tabs 44, list rows 64+. Keep it that way.
+  - **Daily hero:** one number, one bar, one sentence, then `QuickActions` — four tiles
+    (Add · Budget · Settle · Money), phones only, since desktop has the sidebar.
+  - Category rows carry a per-row progress bar; transaction filters fold behind one
+    button on phones; long chip labels have short phone variants (`TAB_LABEL_SHORT`,
+    `TYPES[].short`) instead of wrapping out of their pills.
+  - **Guides off:** `GUIDES_ENABLED = false` in `lib/guides.ts` — same pattern as the
+    annotator. The cards, dismissals and Settings' "Show tips again" all still exist.
+  - **Fixed:** dnd-kit's `aria-describedby` ids come from a module counter, so any page
+    with two sortable lists hydrated mismatched (Money, every load). `DndContext` now
+    takes a `useId()`. Drag handles are desktop-only — on phones they truncated names.
 - 2026-09-21 — **Real logo in, annotation tool off again.** `ANNOTATIONS_ENABLED = false`;
   nothing deleted, flip it back when notes are wanted. Pranjal supplied the marks, so the
   generated placeholder ring is gone.

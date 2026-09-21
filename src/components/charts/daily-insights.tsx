@@ -44,11 +44,19 @@ export function DailyHero({
   // Days left and pace live in the Spending pace chart below.
 
   return (
-    <section className="rounded-2xl border border-border bg-card p-6 sm:p-8">
-      <p className="text-sm text-muted-foreground">{isCurrentMonth ? "Safe to spend today" : "Per day"}</p>
-      <p className="mt-1 font-heading text-5xl font-bold tracking-tight">
+    <section className="rounded-2xl border border-border bg-card p-5 sm:p-8">
+      <p className="text-sm font-medium text-muted-foreground">
+        {isCurrentMonth ? "Safe to spend today" : "Per day"}
+      </p>
+
+      {/* The number is the screen. Everything under it is support, and it's
+          kept to one bar and one line — a grid of stats beside it only ever
+          restated this figure. */}
+      <p className="mt-1.5 font-heading text-[2.75rem] leading-none font-bold tracking-tight sm:text-5xl">
         <Money minor={safePerDayMinor} tone={over ? "negative" : "default"} />
-        <span className="ml-1.5 font-sans text-base font-medium tracking-normal text-muted-foreground">/ day</span>
+        <span className="ml-1.5 font-sans text-base font-medium tracking-normal text-muted-foreground">
+          / day
+        </span>
       </p>
 
       {budgetMinor > 0 ? (
@@ -59,22 +67,24 @@ export function DailyHero({
             aria-valuenow={used}
             aria-valuemin={0}
             aria-valuemax={100}
-            className="mt-6 h-2.5 overflow-hidden rounded-full bg-muted"
+            className="mt-5 h-2.5 overflow-hidden rounded-full bg-muted"
           >
             <div
               className={`h-full rounded-full ${over ? "bg-negative" : "bg-primary"}`}
               style={{ width: `${Math.min(used, 100)}%` }}
             />
           </div>
-          <p className="mt-2.5 flex flex-wrap justify-between gap-x-4 gap-y-1 text-sm">
-            <span>
-              <Money minor={spentMinor} className="font-semibold" />{" "}
-              <span className="text-muted-foreground">spent of {money(budgetMinor)}</span>
-            </span>
-            <span>
-              <Money minor={Math.abs(remainingMinor)} tone={over ? "negative" : "default"} className="font-semibold" />{" "}
-              <span className="text-muted-foreground">{over ? "over" : "left"}</span>
-            </span>
+          {/* One sentence, not a row of competing figures. */}
+          <p className="mt-3 text-sm text-muted-foreground">
+            <Money minor={spentMinor} tone="default" className="font-semibold text-foreground" /> of{" "}
+            {money(budgetMinor)} spent
+            <span aria-hidden className="mx-1.5">·</span>
+            <Money
+              minor={Math.abs(remainingMinor)}
+              tone={over ? "negative" : "default"}
+              className="font-semibold text-foreground"
+            />{" "}
+            {over ? "over" : "left"}
           </p>
         </>
       ) : (

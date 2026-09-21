@@ -9,6 +9,7 @@ import { monthBounds } from "@/lib/targets";
 import { requireUser, getUserPrefs } from "@/lib/auth";
 import { currentMonthIn, dayOfMonthIn } from "@/lib/dates";
 import { DailyHero, PaceCard } from "@/components/charts/daily-insights";
+import { QuickActions } from "@/components/quick-actions";
 import { prepareMonth } from "@/lib/month-setup";
 
 /**
@@ -50,6 +51,8 @@ export async function DailyView({ month }: { month: string }) {
         isCurrentMonth={daily.isCurrentMonth}
         throughDay={throughDay}
       />
+
+      <QuickActions />
 
       <PaceCard
         month={month}

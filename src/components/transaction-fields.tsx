@@ -45,6 +45,11 @@ const TAB_LABEL: Record<TransactionTab, string> = {
   person: "Lend / Borrow",
   move: "Move",
 };
+/** What fits in a chip at phone width — "Lend / Borrow" wrapped to two lines. */
+const TAB_LABEL_SHORT: Record<TransactionTab, string> = {
+  ...TAB_LABEL,
+  person: "People",
+};
 type PersonMode = "gave" | "got";
 
 const SPEND_GROUPS = [
@@ -298,13 +303,14 @@ export function TransactionFields({
               onClick={() => pickTab(t)}
               aria-pressed={tab === t}
               className={cn(
-                "flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                "flex-1 rounded-md px-3 text-sm font-medium whitespace-nowrap transition-colors max-sm:h-10 sm:py-1.5",
                 tab === t
                   ? "bg-card text-foreground shadow-sm ring-1 ring-foreground/15"
                   : "text-muted-foreground hover:text-foreground",
               )}
             >
-              {TAB_LABEL[t]}
+              <span className="sm:hidden">{TAB_LABEL_SHORT[t]}</span>
+              <span className="hidden sm:inline">{TAB_LABEL[t]}</span>
             </button>
           ))}
         </div>
