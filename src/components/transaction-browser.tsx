@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { MagnifyingGlass, X } from "@phosphor-icons/react";
+import { FadersHorizontal, MagnifyingGlass, X } from "@phosphor-icons/react";
 import { Input } from "@/components/ui/input";
 import { TransactionList } from "@/components/transaction-list";
 import type { PickerAccount, PickerCategory } from "@/components/transaction-fields";
@@ -10,10 +10,12 @@ import { toMajor } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
 const TYPES = [
-  { key: "all", label: "All" },
-  { key: "outflow", label: "Spent" },
-  { key: "inflow", label: "Received" },
-  { key: "transfer", label: "People & moves" },
+  // `short` is what a phone-width chip can hold; the long one is the honest
+  // name and stays wherever there's room for it.
+  { key: "all", label: "All", short: "All" },
+  { key: "outflow", label: "Spent", short: "Spent" },
+  { key: "inflow", label: "Received", short: "Got" },
+  { key: "transfer", label: "People & moves", short: "People" },
 ] as const;
 
 const SELECT =
@@ -41,6 +43,10 @@ export function TransactionBrowser({
   const [query, setQuery] = useState("");
   const [type, setType] = useState<(typeof TYPES)[number]["key"]>("all");
   const [categoryId, setCategoryId] = useState("");
+  // Three rows of controls above the list is most of a phone screen, so on a
+  // phone only the search box shows and the rest is one tap away. Desktop has
+  // the width for all of it at once.
+  const [showFilters, setShowFilters] = useState(false);
 
   // Only categories that actually appear this month — a filter that can only
   // ever return nothing is noise.
@@ -92,11 +98,30 @@ export function TransactionBrowser({
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search merchant, category, amount"
               aria-label="Search transactions"
-              className="h-8 pl-8 text-sm"
+              className="h-11 pl-8 text-base sm:h-8 sm:text-sm"
             />
           </div>
 
-          <div className="flex gap-1 rounded-lg bg-muted p-0.5" role="group" aria-label="Type">
+          <button
+            type="button"
+            onClick={() => setShowFilters((o) => !o)}
+            aria-expanded={showFilters}
+            aria-label="Filters"
+            className={cn(
+              "flex size-11 shrink-0 items-center justify-center rounded-lg border border-input transition-colors sm:hidden",
+              showFilters || type !== "all" || categoryId ? "bg-muted text-foreground" : "text-muted-foreground",
+            )}
+          >
+            <FadersHorizontal size={18} />
+          </button>
+
+          <div
+            className={cn(
+              "flex flex-wrap items-center gap-2 max-sm:w-full",
+              !showFilters && "max-sm:hidden",
+            )}
+          >
+          <div className="flex gap-1 rounded-lg bg-muted p-0.5 max-sm:w-full" role="group" aria-label="Type">
             {TYPES.map((t) => (
               <button
                 key={t.key}
@@ -104,13 +129,14 @@ export function TransactionBrowser({
                 onClick={() => setType(t.key)}
                 aria-pressed={type === t.key}
                 className={cn(
-                  "rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
+                  "rounded-md px-2.5 text-sm font-medium whitespace-nowrap transition-colors max-sm:h-10 max-sm:flex-1 sm:py-1 sm:text-xs",
                   type === t.key
                     ? "bg-card text-foreground ring-1 ring-foreground/15"
                     : "text-muted-foreground hover:text-foreground",
                 )}
               >
-                {t.label}
+                <span className="sm:hidden">{t.short}</span>
+                <span className="hidden sm:inline">{t.label}</span>
               </button>
             ))}
           </div>
@@ -120,7 +146,7 @@ export function TransactionBrowser({
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
               aria-label="Category"
-              className={SELECT}
+              className={cn(SELECT, "max-sm:h-11 max-sm:w-full max-sm:text-base")}
             >
               <option value="">All categories</option>
               {usedCategories.map(([id, name]) => (
@@ -135,12 +161,13 @@ export function TransactionBrowser({
             <button
               type="button"
               onClick={clear}
-              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+              className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground max-sm:h-10 sm:text-xs"
             >
               <X size={12} weight="bold" />
               Clear · {shown.length} of {transactions.length}
             </button>
           )}
+          </div>
         </div>
       )}
 

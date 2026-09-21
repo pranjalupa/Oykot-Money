@@ -113,7 +113,7 @@ export function IncomeSplit({
             </ChartContainer>
             {/* The whole the slices are shares of, in the hole. */}
             <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
-              <span className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Income</span>
+              <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Income</span>
               <span className="font-heading text-lg font-bold">{formatCompact(incomeMinor, currency)}</span>
             </div>
           </div>

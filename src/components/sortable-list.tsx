@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import {
   DndContext,
   KeyboardSensor,
@@ -64,6 +64,11 @@ export function SortableList({
   const order = sync.order;
   const setOrder = (next: string[]) => setSync({ key, order: next });
 
+  // dnd-kit derives its aria-describedby ids from a module-level counter, so
+  // a page with more than one list hydrates with different ids than the server
+  // sent. Handing it a React id keeps both sides in step.
+  const dndId = useId();
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, {
@@ -87,6 +92,7 @@ export function SortableList({
 
   return (
     <DndContext
+      id={dndId}
       sensors={sensors}
       collisionDetection={closestCenter}
       modifiers={[restrictToVerticalAxis, restrictToParentElement]}
@@ -145,7 +151,7 @@ export function SortableRow({
                 ref={setActivatorNodeRef}
                 type="button"
                 aria-label={handleLabel}
-                className="flex size-6 shrink-0 cursor-grab touch-none items-center justify-center rounded text-muted-foreground/50 transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:cursor-grabbing"
+                className="hidden size-6 shrink-0 cursor-grab touch-none items-center justify-center rounded text-muted-foreground/50 sm:flex transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:cursor-grabbing"
                 {...attributes}
                 {...listeners}
               >

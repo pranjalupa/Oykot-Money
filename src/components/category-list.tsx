@@ -313,7 +313,7 @@ function MobileRow({
         )}
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline justify-between gap-3">
-            <p className={cn("flex min-w-0 items-center gap-1.5 truncate text-sm", idle ? "text-muted-foreground" : "font-medium")}>
+            <p className={cn("flex min-w-0 items-center gap-1.5 truncate text-[15px]", idle ? "text-muted-foreground" : "font-medium")}>
               <span className="truncate">{cat.name}</span>
               {assumed && <Repeat size={11} weight="bold" aria-label="Assumed spent" className="shrink-0 text-muted-foreground" />}
             </p>
@@ -321,7 +321,7 @@ function MobileRow({
               <Remaining planned={cat.plannedMinor} actual={cat.actualMinor} isIncome={isIncome} words />
             </span>
           </div>
-          <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
+          <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[13px] text-muted-foreground">
             <span>
               <Money minor={cat.actualMinor} tone="muted" /> {isIncome ? "received" : "spent"}
             </span>
@@ -332,6 +332,23 @@ function MobileRow({
               <span>budget rolls into parent</span>
             )}
           </div>
+          {/* How much of the plan is gone, at a glance — the figures beside it
+              say how much, this says how far along. Nothing to show without a
+              plan, so an unbudgeted category stays clean. */}
+          {cat.plannedMinor > 0 && (
+            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full"
+                style={{
+                  width: `${Math.min((cat.actualMinor / cat.plannedMinor) * 100, 100)}%`,
+                  background:
+                    !isIncome && cat.actualMinor > cat.plannedMinor
+                      ? "var(--negative)"
+                      : `var(--chart-${groupKey})`,
+                }}
+              />
+            </div>
+          )}
         </div>
       </li>
       {cat.children.map((child) => (

@@ -11,7 +11,7 @@ import { formatMonthShort } from "@/lib/dates";
 function Stat({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
-      <dt className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">{label}</dt>
+      <dt className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">{label}</dt>
       <dd className="mt-0.5 text-base font-semibold">{value}</dd>
     </div>
   );
@@ -41,7 +41,7 @@ export function BudgetSummary({
 
   return (
     <section className="rounded-xl border border-border bg-card p-5">
-      <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+      <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
         {plannedMinor <= 0 ? (isIncome ? "Received" : "Spent") : isIncome ? "Still expected" : over ? "Over budget" : "Left to spend"}
       </p>
       <p className="mt-1 font-heading text-4xl font-bold">
