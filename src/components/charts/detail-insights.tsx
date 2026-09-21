@@ -8,21 +8,14 @@ import { useCurrency, useLocale } from "@/components/currency-provider";
 import { formatCompact, formatMoney } from "@/lib/money";
 import { formatMonthShort } from "@/lib/dates";
 
-function Stat({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div>
-      <dt className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">{label}</dt>
-      <dd className="mt-0.5 text-base font-semibold">{value}</dd>
-    </div>
-  );
-}
-
 /**
- * How a group or category stands against its budget: the headline figure,
- * then the four numbers behind it in one row.
+ * How a group or category stands against its budget: the figure that answers
+ * it, a bar, and the two numbers behind it on one line.
  *
- * Same shape as the Net worth card on Money — a label, one big number, and a
- * divided row of stats — so every summary in the app reads the same way.
+ * It used to print the headline figure a second time in a four-stat grid
+ * ("Left to spend ₹5,001" above "Remaining ₹5,001"), with "Used 44%" saying
+ * what a bar says better. Same shape as the heroes on Home now, so every
+ * summary in the app reads the same way.
  */
 export function BudgetSummary({
   spentMinor,
@@ -35,33 +28,54 @@ export function BudgetSummary({
   isIncome: boolean;
   footnote?: string;
 }) {
+  const currency = useCurrency();
   const pct = plannedMinor > 0 ? Math.round((spentMinor / plannedMinor) * 100) : 0;
   const diff = plannedMinor - spentMinor;
   const over = !isIncome && diff < 0;
+  const unplanned = plannedMinor <= 0;
 
   return (
-    <section className="rounded-xl border border-border bg-card p-5">
-      <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-        {plannedMinor <= 0 ? (isIncome ? "Received" : "Spent") : isIncome ? "Still expected" : over ? "Over budget" : "Left to spend"}
+    <section className="rounded-2xl border border-border bg-card p-5 sm:p-6">
+      <p className="text-sm font-medium text-muted-foreground">
+        {unplanned ? (isIncome ? "Received" : "Spent") : isIncome ? "Still expected" : over ? "Over budget" : "Left to spend"}
       </p>
-      <p className="mt-1 font-heading text-4xl font-bold">
-        {plannedMinor <= 0 ? (
+      <p className="mt-1.5 font-heading text-[2.75rem] leading-none font-bold tracking-tight sm:text-5xl">
+        {unplanned ? (
           <Money minor={spentMinor} />
         ) : (
           <Money minor={Math.abs(diff)} tone={over ? "negative" : "default"} />
         )}
       </p>
 
-      <dl className="mt-5 grid grid-cols-2 gap-4 border-t border-border pt-4 sm:grid-cols-4">
-        <Stat label={isIncome ? "Received" : "Spent"} value={<Money minor={spentMinor} tone={spentMinor ? "default" : "muted"} />} />
-        <Stat label="Budgeted" value={<Money minor={plannedMinor} tone={plannedMinor ? "default" : "muted"} />} />
-        <Stat label={isIncome ? "Received" : "Used"} value={plannedMinor > 0 ? `${pct}%` : "—"} />
-        <Stat
-          label={isIncome ? "Still expected" : over ? "Over by" : "Remaining"}
-          value={<Money minor={Math.abs(diff)} tone={over ? "negative" : plannedMinor ? "default" : "muted"} />}
-        />
-      </dl>
-      {footnote && <p className="mt-3 text-xs text-muted-foreground">{footnote}</p>}
+      {!unplanned && (
+        <div
+          role="progressbar"
+          aria-label={isIncome ? "Received against expected" : "Budget used"}
+          aria-valuenow={pct}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          className="mt-5 h-2.5 overflow-hidden rounded-full bg-muted"
+        >
+          <div
+            className={`h-full rounded-full ${over ? "bg-negative" : "bg-primary"}`}
+            style={{ width: `${Math.min(pct, 100)}%` }}
+          />
+        </div>
+      )}
+
+      <p className="mt-3 text-sm text-muted-foreground">
+        <Money minor={spentMinor} className="font-semibold text-foreground" />{" "}
+        {isIncome ? "received" : "spent"}
+        {!unplanned && (
+          <>
+            {" of "}
+            {formatMoney(plannedMinor, { currency })}
+            <span aria-hidden className="mx-1.5">·</span>
+            {pct}% used
+          </>
+        )}
+      </p>
+      {footnote && <p className="mt-2 text-xs text-muted-foreground">{footnote}</p>}
     </section>
   );
 }

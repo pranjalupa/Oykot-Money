@@ -332,23 +332,6 @@ function MobileRow({
               <span>budget rolls into parent</span>
             )}
           </div>
-          {/* How much of the plan is gone, at a glance — the figures beside it
-              say how much, this says how far along. Nothing to show without a
-              plan, so an unbudgeted category stays clean. */}
-          {cat.plannedMinor > 0 && (
-            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
-              <div
-                className="h-full rounded-full"
-                style={{
-                  width: `${Math.min((cat.actualMinor / cat.plannedMinor) * 100, 100)}%`,
-                  background:
-                    !isIncome && cat.actualMinor > cat.plannedMinor
-                      ? "var(--negative)"
-                      : `var(--chart-${groupKey})`,
-                }}
-              />
-            </div>
-          )}
         </div>
       </li>
       {cat.children.map((child) => (

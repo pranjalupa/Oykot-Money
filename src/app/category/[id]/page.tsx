@@ -99,21 +99,25 @@ export default async function CategoryPage({
           />
           <div>
             <h1 className="font-heading text-2xl font-bold">{cat.name}</h1>
-            <p className="mt-0.5 text-sm text-muted-foreground">
+            <p className="mt-0.5 text-sm text-muted-foreground max-sm:sr-only">
               {GROUP_META[cat.groupKey].label}
               {cat.archived && " · retired"}
               {cat.systemKey && " · filled in by You gave / You got on people"}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        {/* Phones: the month control takes the row, and Add goes — the tab
+            bar's "+" is on screen and lands in this category anyway. */}
+        <div className="flex w-full items-center gap-2 sm:w-auto">
           <MonthSwitcher month={month} basePath={`/category/${id}`} />
-          <TransactionDialog
-            accounts={accounts}
-            categories={allCategories}
-            defaultDate={todayIn(timeZone)}
-            defaultCategoryId={id}
-          />
+          <div className="contents max-sm:hidden">
+            <TransactionDialog
+              accounts={accounts}
+              categories={allCategories}
+              defaultDate={todayIn(timeZone)}
+              defaultCategoryId={id}
+            />
+          </div>
           {!cat.systemKey && (
             <DeleteCategoryButton
               cat={{ id: cat.id, name: cat.name }}

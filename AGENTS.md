@@ -133,6 +133,16 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   Teams and sharing are still out — don't build toward them without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
+- 2026-09-21 — **No bars in list rows, and summaries stop repeating themselves.**
+  - A per-row progress bar was added earlier today and taken straight back out: five bars
+    down a list reads as a chart, which is why it was removed once before (2026-09-13).
+    **One bar per screen, in the hero.** Don't reintroduce it.
+  - `BudgetSummary` (group + category pages) printed its headline figure twice — "Left to
+    spend ₹5,001" above a four-stat grid ending in "Remaining ₹5,001" — plus "Used 44%",
+    which a bar says better. It's now the same shape as the Home heroes: figure, bar, one
+    line. **If a stat restates the big number, delete the stat.**
+  - Category page header: group name and Add are desktop-only on phones; the month control
+    takes the row, with delete beside it.
 - 2026-09-21 — **Bottom sheets and the controls inside them.** One shape for both sheet
   systems (`ui/dialog.tsx` on phones and `ui/sheet.tsx` side="bottom"): 28px top corners, a
   1.5×44 grab handle, a 45% scrim with blur (10% left the page behind competing), taller
@@ -155,7 +165,7 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
     phones, compact from sm up. Tabs 44, list rows 64+. Keep it that way.
   - **Daily hero:** one number, one bar, one sentence, then `QuickActions` — four tiles
     (Add · Budget · Settle · Money), phones only, since desktop has the sidebar.
-  - Category rows carry a per-row progress bar; transaction filters fold behind one
+  - Transaction filters fold behind one
     button on phones; long chip labels have short phone variants (`TAB_LABEL_SHORT`,
     `TYPES[].short`) instead of wrapping out of their pills.
   - **Guides off:** `GUIDES_ENABLED = false` in `lib/guides.ts` — same pattern as the
