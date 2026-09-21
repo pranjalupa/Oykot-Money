@@ -136,10 +136,12 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
 - 2026-09-21 — **Real logo in, annotation tool off again.** `ANNOTATIONS_ENABLED = false`;
   nothing deleted, flip it back when notes are wanted. Pranjal supplied the marks, so the
   generated placeholder ring is gone.
-  - `components/logo.tsx` holds both: `LogoMark` keeps Forest 900 + Lemon (it's the logo, not
-    a theme token, and it has to survive on an app icon), `Wordmark` draws in `currentColor`
-    so it follows the text around it. Sources kept at `public/logo-mark.svg` and
-    `public/logo-wordmark.svg`; **don't retype the path data**, import the components.
+  - `components/logo.tsx` holds both: `LogoMark` is the Forest 900 tile with a white glyph
+    (the logo's own colours, not theme tokens — it has to survive on an app icon), and
+    `Wordmark` is the "Oykot" lettering lifted out of the full lockup, drawn in
+    `currentColor` so it follows the text around it. Sources kept at `public/logo-mark.svg`
+    and `public/logo-lockup.svg`; **don't retype the path data** — change the files and
+    re-lift it with the script in this commit.
   - Used in the sidebar (mark + wordmark, mark alone when collapsed), the phone header, the
     public header, sign-in/sign-up, password reset, the wizard and the pricing card.
   - App icons are rasterised **from the SVG**, not redrawn: 192/512 as-is, a 512 maskable with
