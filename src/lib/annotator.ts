@@ -10,7 +10,7 @@ export const ANNOTATOR_EMAILS = ["pranjalupa@gmail.com"];
  * Master switch. Off 2026-09-14, back on 2026-09-18 for pranjalupa@gmail.com.
  * Set to false to hide the tool again without deleting anything.
  */
-export const ANNOTATIONS_ENABLED = true;
+export const ANNOTATIONS_ENABLED = false;
 
 export function isAnnotator(email: string | null | undefined) {
   return ANNOTATIONS_ENABLED && !!email && ANNOTATOR_EMAILS.includes(email.toLowerCase());

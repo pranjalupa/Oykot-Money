@@ -12,11 +12,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/password-input";
 import { Label } from "@/components/ui/label";
+import { LogoMark } from "@/components/logo";
 
 function Header({ title, note }: { title: string; note: string }) {
   return (
     <div className="mb-7 text-center">
-      <p className="font-heading text-2xl font-extrabold">Oykot</p>
+      <LogoMark size={44} className="mx-auto" />
       <h1 className="mt-4 font-heading text-xl font-bold">{title}</h1>
       <p className="accent-note mt-1 text-sm text-muted-foreground">{note}</p>
     </div>

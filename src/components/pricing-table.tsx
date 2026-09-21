@@ -13,6 +13,7 @@ import {
   type PriceCurrency,
 } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
+import { LogoMark, Wordmark } from "@/components/logo";
 
 type Viewer = "guest" | "trial" | "expired" | "paid";
 
@@ -64,7 +65,10 @@ export function PricingTable({
       </div>
 
       <div className="mt-4 rounded-xl border border-border bg-card p-6">
-        <p className="font-heading text-lg font-bold">Oykot Money</p>
+        <div className="flex items-center gap-2">
+          <LogoMark size={22} />
+          <Wordmark height={14} />
+        </div>
         <p className="mt-3 flex items-baseline gap-1.5">
           <span className="font-heading text-4xl font-extrabold">{formatPrice(price, currency)}</span>
           <span className="text-sm text-muted-foreground">/ {period === "yearly" ? "year" : "month"}</span>

@@ -133,6 +133,29 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   Teams and sharing are still out — don't build toward them without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
+- 2026-09-21 — **Real logo in, annotation tool off again.** `ANNOTATIONS_ENABLED = false`;
+  nothing deleted, flip it back when notes are wanted. Pranjal supplied the marks, so the
+  generated placeholder ring is gone.
+  - `components/logo.tsx` holds both: `LogoMark` keeps Forest 900 + Lemon (it's the logo, not
+    a theme token, and it has to survive on an app icon), `Wordmark` draws in `currentColor`
+    so it follows the text around it. Sources kept at `public/logo-mark.svg` and
+    `public/logo-wordmark.svg`; **don't retype the path data**, import the components.
+  - Used in the sidebar (mark + wordmark, mark alone when collapsed), the phone header, the
+    public header, sign-in/sign-up, password reset, the wizard and the pricing card.
+  - App icons are rasterised **from the SVG**, not redrawn: 192/512 as-is, a 512 maskable with
+    16% inset for Android's crop, 180 full-bleed for iOS (it rounds its own corners), 32 favicon.
+- 2026-09-21 — **The site is installable** (`app/manifest.ts`, `viewport` in the layout,
+  `public/sw.js`, `/offline`). `viewport-fit: cover` is what makes the safe-area padding in
+  `app-nav.tsx` real — without it those insets are zero.
+  - **The worker caches no pages, ever.** Every screen is private and a stale budget is worse
+    than none: navigations are network-first with an `/offline` fallback, and only Next's
+    fingerprinted `_next/static` output is cached. Don't "improve" this into caching HTML.
+  - Middleware must keep `/manifest.webmanifest`, `/sw.js` and `/offline` public — a service
+    worker that 307s to `/login` can't register at all.
+  - **Next:** App Store and Play builds wrap this (Capacitor). Two known blockers when that
+    starts: Google refuses OAuth inside a webview (needs the system browser + a deep link),
+    and Apple requires Sign in with Apple wherever Google sign-in is offered. Subscriptions
+    stay on the web by decision, so store IAP is not in scope.
 - 2026-09-18 — **Annotation tool back on** for pranjalupa@gmail.com (`ANNOTATIONS_ENABLED = true`).
 - 2026-09-14 — **Annotation tool disabled, not deleted.** `ANNOTATIONS_ENABLED = false` in
   `lib/annotator.ts` hides the launcher and refuses every annotation action; the code, the

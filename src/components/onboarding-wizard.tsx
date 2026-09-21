@@ -22,6 +22,7 @@ import { CurrencySymbol, useCurrency } from "@/components/currency-provider";
 import { IconButton } from "@/components/icon-button";
 import { formatMoney, toMajor, toMinor } from "@/lib/money";
 import { cn } from "@/lib/utils";
+import { LogoMark, Wordmark } from "@/components/logo";
 
 type SpendGroup = "needs" | "wants" | "investments";
 type AccountType = "bank" | "cash" | "wallet";
@@ -163,7 +164,10 @@ export function OnboardingWizard({
     <div className="fixed inset-0 z-[60] overflow-y-auto bg-background">
       <div className="mx-auto flex min-h-full w-full max-w-xl flex-col px-5 py-8 sm:py-12">
         <header className="mb-8 flex items-center justify-between gap-3">
-          <p className="font-heading text-xl font-extrabold">Oykot</p>
+          <div className="flex items-center gap-2">
+            <LogoMark size={26} />
+            <Wordmark height={16} />
+          </div>
           {step > 0 && (
             <button
               type="button"

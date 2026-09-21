@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { CurrencySelect } from "@/components/currency-select";
 import { DEFAULT_CURRENCY, type CurrencyCode } from "@/lib/currency";
 import { cn } from "@/lib/utils";
+import { LogoMark } from "@/components/logo";
 
 export function AuthForm({
   mode,
@@ -38,7 +39,7 @@ export function AuthForm({
   return (
     <div className="w-full max-w-sm">
       <div className="mb-7 text-center">
-        <p className="font-heading text-2xl font-extrabold">Oykot</p>
+        <LogoMark size={44} className="mx-auto" />
         <h1 className="mt-4 font-heading text-xl font-bold">
           {isSignUp ? "Create your account" : "Welcome back"}
         </h1>

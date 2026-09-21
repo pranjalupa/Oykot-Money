@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import { LEGAL } from "@/lib/legal";
+import { LogoMark, Wordmark } from "@/components/logo";
 
 export function PublicHeader() {
   return (
     <header className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-4 py-5 sm:px-6">
-      <Link href="/" className="font-heading text-xl font-extrabold">
-        Oykot
+      <Link href="/" className="flex items-center gap-2" aria-label="Oykot Money">
+        <LogoMark size={28} />
+        <Wordmark height={17} />
       </Link>
       <nav className="flex items-center gap-1 text-sm sm:gap-3">
         <Link href="/pricing" className="rounded-md px-2 py-1.5 text-muted-foreground hover:text-foreground">

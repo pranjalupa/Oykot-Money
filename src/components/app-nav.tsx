@@ -33,6 +33,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { LogoMark, Wordmark } from "@/components/logo";
 
 /**
  * The sidebar collapses to icons on wide screens and shows labels in the mobile
@@ -255,8 +256,14 @@ export function AppNav({
       >
         <div className={cn("mb-6 flex items-center", collapsed ? "justify-center" : "justify-between")}>
           {!collapsed && (
-            <Link href="/" className="px-2.5 font-heading text-lg font-extrabold">
-              Oykot
+            <Link href="/" className="flex items-center gap-2 px-2.5" aria-label="Oykot Money">
+              <LogoMark size={24} />
+              <Wordmark height={15} />
+            </Link>
+          )}
+          {collapsed && (
+            <Link href="/" className="mb-2" aria-label="Oykot Money">
+              <LogoMark size={24} />
             </Link>
           )}
           <MaybeTooltip show label={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
@@ -294,8 +301,9 @@ export function AppNav({
           reaches. The old ≡ drawer hid every destination behind one icon. */}
       <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur lg:hidden">
         <div className="flex items-center justify-between gap-2 px-4 py-2.5">
-          <Link href="/" className="font-heading text-lg font-extrabold">
-            Oykot
+          <Link href="/" className="flex items-center gap-2" aria-label="Oykot Money">
+            <LogoMark size={26} />
+            <Wordmark height={15} />
           </Link>
           <div className="flex items-center gap-1">
             <ThemeToggle />
