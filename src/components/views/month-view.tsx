@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import { Money } from "@/components/money";
+import { PeriodHero } from "@/components/period-hero";
 import { CopyPlanButton } from "@/components/copy-plan-button";
 import { TargetEditor } from "@/components/target-editor";
 import {
@@ -75,11 +76,33 @@ export async function MonthView({ month }: { month: string }) {
         </div>
       )}
 
-      <section className="grid grid-cols-3 gap-2 sm:gap-4">
-        <StatCard label="Income" actualMinor={summary.actualIncome} plannedMinor={summary.plannedIncome} />
-        <StatCard label="Expenses" actualMinor={summary.actualExpense} plannedMinor={summary.plannedExpense} />
-        <StatCard label="Saved this month" actualMinor={summary.actualSaved} plannedMinor={summary.plannedSaved} tone="auto" />
-      </section>
+      {/* What the month came to, with the two figures that made it underneath
+          and the bar showing how much of the budget went. */}
+      <PeriodHero
+        label="Saved this month"
+        amountMinor={summary.actualSaved}
+        caption={
+          <>
+            <Money minor={summary.actualIncome} tone="muted" className="font-semibold text-foreground" /> in
+            <span aria-hidden className="mx-1.5">·</span>
+            <Money minor={summary.actualExpense} tone="muted" className="font-semibold text-foreground" /> out
+          </>
+        }
+        progress={
+          summary.plannedExpense > 0
+            ? {
+                percent: percentOf(summary.actualExpense, summary.plannedExpense),
+                over: summary.actualExpense > summary.plannedExpense,
+                note: (
+                  <>
+                    {percentOf(summary.actualExpense, summary.plannedExpense)}% of the{" "}
+                    <Money minor={summary.plannedExpense} tone="muted" /> budget
+                  </>
+                ),
+              }
+            : undefined
+        }
+      />
 
       <IncomeSplit
           incomeMinor={summary.actualIncome > 0 ? summary.actualIncome : summary.plannedIncome}
@@ -102,34 +125,6 @@ export async function MonthView({ month }: { month: string }) {
         />
 
       <TopCategories rows={categories} />
-    </div>
-  );
-}
-
-function StatCard({
-  label,
-  actualMinor,
-  plannedMinor,
-  tone = "default",
-}: {
-  label: string;
-  actualMinor: number;
-  plannedMinor: number;
-  tone?: "default" | "auto";
-}) {
-  const pct = percentOf(actualMinor, plannedMinor);
-  return (
-    // Three across even on a phone: compact padding and type below sm.
-    <div className="min-w-0 rounded-2xl border border-border bg-card p-3 sm:p-5">
-      <p className="truncate text-[11px] text-muted-foreground sm:text-xs">{label}</p>
-      <p className="mt-1 truncate font-heading text-base font-bold sm:mt-1.5 sm:text-2xl">
-        <Money minor={actualMinor} tone={tone} />
-      </p>
-      <p className="mt-0.5 truncate text-[11px] text-muted-foreground sm:mt-1 sm:text-xs">
-        of <Money minor={plannedMinor} tone="muted" />
-        <span className="hidden sm:inline"> budgeted</span>
-        {plannedMinor > 0 && <span className="tabular hidden sm:inline"> · {pct}%</span>}
-      </p>
     </div>
   );
 }

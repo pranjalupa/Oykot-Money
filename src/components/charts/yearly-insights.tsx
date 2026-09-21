@@ -23,28 +23,23 @@ const active = (m: YearMonth) => m.income !== 0 || m.expense !== 0;
  *
  * A running total of the same figures, a savings-rate dial and a per-month
  * group mix all used to sit alongside it. They were the same story told
- * three more times; the savings rate now rides along in the header.
+ * three more times; the savings rate lives in the hero above.
  */
 export function MonthlySavings({
   months,
-  incomeTotal,
-  savedTotal,
 }: {
   months: YearMonth[];
-  incomeTotal: number;
-  savedTotal: number;
 }) {
   const currency = useCurrency();
   const locale = useLocale();
   const money = (m: number) => formatMoney(m, { currency, signed: true });
   const plain = (m: number) => formatMoney(m, { currency });
   const seen = months.filter(active);
-  const rate = incomeTotal > 0 ? Math.round((savedTotal / incomeTotal) * 100) : null;
-
+  // The savings rate is the hero's note now; showing it here as well put the
+  // same figure on screen twice.
   return (
     <ChartCard
       title="Saved each month"
-      aside={rate === null ? undefined : `${rate}% of income kept`}
       legend={[
         { label: "Saved", color: "var(--positive)" },
         { label: "Overspent", color: "var(--negative)" },

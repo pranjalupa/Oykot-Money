@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { Money } from "@/components/money";
+import { PeriodHero } from "@/components/period-hero";
+import { percentOf } from "@/lib/money";
 import { getYearSummary } from "@/lib/budget";
 import { requireUser, getUserPrefs } from "@/lib/auth";
 import { formatMonthShort } from "@/lib/dates";
@@ -25,17 +27,30 @@ export async function YearView({ year }: { year: number }) {
 
   return (
     <div className="flex flex-col gap-6">
-      <section className="grid grid-cols-3 gap-2 sm:gap-4">
-        <Stat label="Income" minor={summary.totals.income} />
-        <Stat label="Spent" minor={summary.totals.expense} />
-        <Stat label="Saved" minor={summary.totals.saved} tone="auto" />
-      </section>
-
-      <MonthlySavings
-        months={months}
-        incomeTotal={summary.totals.income}
-        savedTotal={summary.totals.saved}
+      {/* The year in one figure: what you kept. The bar is the share of income
+          that stayed, which is the number that actually moves year to year. */}
+      <PeriodHero
+        label={`Saved in ${year}`}
+        amountMinor={summary.totals.saved}
+        caption={
+          <>
+            <Money minor={summary.totals.income} tone="muted" className="font-semibold text-foreground" /> in
+            <span aria-hidden className="mx-1.5">·</span>
+            <Money minor={summary.totals.expense} tone="muted" className="font-semibold text-foreground" /> out
+          </>
+        }
+        progress={
+          summary.totals.income > 0
+            ? {
+                percent: percentOf(summary.totals.saved, summary.totals.income),
+                over: summary.totals.saved < 0,
+                note: <>{percentOf(summary.totals.saved, summary.totals.income)}% of income kept</>,
+              }
+            : undefined
+        }
       />
+
+      <MonthlySavings months={months} />
 
       <section className="overflow-hidden rounded-2xl border border-border bg-card">
         <div className="px-5 pt-5 pb-3 sm:px-6">
@@ -97,17 +112,6 @@ export async function YearView({ year }: { year: number }) {
           </tbody>
         </table>
       </section>
-    </div>
-  );
-}
-
-function Stat({ label, minor, tone = "default" }: { label: string; minor: number; tone?: "default" | "auto" }) {
-  return (
-    <div className="min-w-0 rounded-2xl border border-border bg-card p-3 sm:p-5">
-      <p className="text-[11px] text-muted-foreground sm:text-xs">{label}</p>
-      <p className="mt-1 truncate font-heading text-base font-bold sm:mt-1.5 sm:text-2xl">
-        <Money minor={minor} tone={tone} />
-      </p>
     </div>
   );
 }
