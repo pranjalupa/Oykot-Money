@@ -52,18 +52,22 @@ export default async function GroupPage({
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Same rule as Home on a phone: the name stays, the sentence and the
+          duplicate Add button don't — the tab bar's "+" is always there. */}
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-heading text-2xl font-bold">{meta.label}</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">{meta.blurb}</p>
+          <p className="mt-0.5 hidden text-sm text-muted-foreground sm:block">{meta.blurb}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex w-full items-center gap-2 sm:w-auto">
           <MonthSwitcher month={month} basePath={`/${groupKey}`} />
-          <TransactionDialog
-            accounts={accounts}
-            categories={categories}
-            defaultDate={todayIn(timeZone)}
-          />
+          <div className="contents max-sm:hidden">
+            <TransactionDialog
+              accounts={accounts}
+              categories={categories}
+              defaultDate={todayIn(timeZone)}
+            />
+          </div>
         </div>
       </header>
 
