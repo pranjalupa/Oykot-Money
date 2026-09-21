@@ -133,9 +133,10 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   Teams and sharing are still out — don't build toward them without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
-- 2026-09-21 — **Annotation tool on again** for pranjalupa@gmail.com (`ANNOTATIONS_ENABLED`),
-  after being off during the morning's mobile rework. "Check the annotations" =
-  `npx tsx scripts/annotations.mts list`. Note the launcher sits above the phone tab bar.
+- 2026-09-21 — **Annotation tool off again** (`ANNOTATIONS_ENABLED = false`), on the same day
+  it went back on. It has been flipped several times now: treat the flag as the only control,
+  never delete the code, the `annotations` table or saved notes. "Check the annotations" =
+  `npx tsx scripts/annotations.mts list`, which still works with the tool switched off.
 - 2026-09-21 — **Phone screens reworked toward a fintech layout**, on Pranjal's brief
   ("buttons too small, a bit too much"), keeping the existing colours and shadcn.
   - **Chrome first:** page title and its sentence are desktop-only on Home, groups and
