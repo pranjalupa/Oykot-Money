@@ -4,6 +4,13 @@ import { NextResponse, type NextRequest } from "next/server";
 /** Routes reachable without a session. Everything else redirects to /login. */
 const PUBLIC_PATHS = ["/login", "/signup", "/auth", "/pricing", "/legal"];
 
+/**
+ * The files that make the app installable. A browser fetches these without
+ * the user's cookies in some contexts, and a service worker that 307s to
+ * /login can't be registered at all — so they're never gated.
+ */
+const APP_FILES = ["/manifest.webmanifest", "/sw.js", "/offline"];
+
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
 
@@ -35,7 +42,8 @@ export async function updateSession(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
   // "/" is the landing page when signed out, the app when signed in.
-  const isPublic = pathname === "/" || PUBLIC_PATHS.some((p) => pathname.startsWith(p));
+  const isPublic =
+    pathname === "/" || APP_FILES.includes(pathname) || PUBLIC_PATHS.some((p) => pathname.startsWith(p));
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();

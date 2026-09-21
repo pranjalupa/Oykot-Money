@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { cookies } from "next/headers";
 import { Archivo, Inter, Instrument_Serif } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
@@ -14,6 +14,7 @@ import { DEFAULT_CURRENCY } from "@/lib/currency";
 import { Annotator } from "@/components/annotator";
 import { GuidesProvider } from "@/components/flow-guide";
 import { isAnnotator } from "@/lib/annotator";
+import { ServiceWorker } from "@/components/service-worker";
 import "./globals.css";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
@@ -35,6 +36,30 @@ const instrumentSerif = Instrument_Serif({
 export const metadata: Metadata = {
   title: "Oykot Money",
   description: "Personal budgeting — needs, wants, investments.",
+  applicationName: "Oykot Money",
+  // Installed on a phone it's an app, not a browser tab: no Safari chrome,
+  // the status bar tinted by the page, and its own name under the icon.
+  appleWebApp: { capable: true, title: "Oykot", statusBarStyle: "black-translucent" },
+  formatDetection: { telephone: false },
+  // Next writes the modern `mobile-web-app-capable`; older iOS only honours
+  // the apple-prefixed one, and that's the tag that makes the home-screen
+  // launch full screen rather than inside Safari.
+  other: { "apple-mobile-web-app-capable": "yes" },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  // Lets the page reach under the notch and the home bar, which is what makes
+  // the `env(safe-area-inset-*)` padding in app-nav.tsx mean anything. Without
+  // it those insets are always zero.
+  viewportFit: "cover",
+  // Matches the app background in each theme, so the iOS status bar and the
+  // Android toolbar don't sit on a slab of the wrong colour.
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f7f7f7" },
+    { media: "(prefers-color-scheme: dark)", color: "#171716" },
+  ],
 };
 
 export default async function RootLayout({
@@ -82,6 +107,7 @@ export default async function RootLayout({
               </GuidesProvider>
             </CurrencyProvider>
           </TooltipProvider>
+          <ServiceWorker />
           {/* Clear of the bottom tab bar on phones. */}
           <Toaster position="bottom-center" mobileOffset={{ bottom: 88 }} />
         </ThemeProvider>
