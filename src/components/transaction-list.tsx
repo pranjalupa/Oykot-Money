@@ -61,14 +61,14 @@ export function TransactionList({
           newDay && (
             <li
               key={`day-${t.date}`}
-              className="bg-muted/40 px-4 py-1.5 text-xs font-semibold text-muted-foreground sm:hidden"
+              className="bg-muted/40 px-4 py-2 text-xs font-semibold text-muted-foreground sm:hidden"
             >
               <LocalDate date={t.date} options={{ weekday: "short", day: "numeric", month: "short" }} />
             </li>
           ),
           <li
             key={t.id}
-            className="group relative flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/50 active:bg-muted/60 sm:gap-4 sm:active:bg-transparent"
+            className="group relative flex min-h-[64px] items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/50 active:bg-muted/60 sm:min-h-0 sm:gap-4 sm:active:bg-transparent"
           >
             {isTransfer ? (
               <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground sm:size-8 sm:rounded-md">

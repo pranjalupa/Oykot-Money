@@ -26,12 +26,12 @@ export async function MonthSwitcher({
   const next = shiftMonth(month, 1);
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex w-full items-center justify-between gap-1 sm:w-auto sm:justify-start">
       <IconLink href={withMonth(basePath, prev)} label={`Go to ${monthLabel(prev)}`}>
         <CaretLeft size={16} weight="bold" />
       </IconLink>
 
-      <span className="min-w-[9.5rem] text-center text-sm font-medium">
+      <span className="flex-1 text-center text-base font-semibold sm:min-w-[9.5rem] sm:flex-none sm:text-sm sm:font-medium">
         {monthLabel(month)}
       </span>
 
@@ -42,7 +42,7 @@ export async function MonthSwitcher({
       {month !== thisMonth && (
         <Link
           href={withMonth(basePath, thisMonth)}
-          className="ml-1 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          className="ml-1 flex h-11 items-center rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:h-auto sm:px-2 sm:py-1 sm:text-xs"
         >
           Today
         </Link>

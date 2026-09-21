@@ -60,7 +60,7 @@ export function FlowGuide({ id, compact = false, className }: { id: GuideId; com
         onClick={() => guides.dismiss(id)}
         aria-label="Dismiss this guide"
         title="Dismiss"
-        className="absolute top-2 right-2 flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        className="absolute top-1 right-1 flex size-11 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:top-2 sm:right-2 sm:size-8"
       >
         <X size={14} weight="bold" />
       </button>

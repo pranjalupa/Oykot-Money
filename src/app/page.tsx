@@ -87,8 +87,11 @@ export default async function HomePage({
 
   return (
     <div className="flex flex-col gap-6">
+      {/* On a phone the period already reads as the heading, so the title and
+          its sentence are desktop-only — four rows of chrome above one number
+          was the whole complaint. */}
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <div>
+        <div className="hidden sm:block">
           <h1 className="font-heading text-2xl font-bold">
             {view === "year" ? year : monthLabel(month)}
           </h1>
@@ -99,7 +102,7 @@ export default async function HomePage({
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex w-full items-center gap-2 sm:w-auto">
           {view === "year" ? (
             <YearSwitcher year={year} />
           ) : (
@@ -107,6 +110,7 @@ export default async function HomePage({
           )}
           {/* The phone tab bar's "+" lands on /?add=1. Keyed so arriving there
               while already on Home remounts it open. */}
+          <div className="contents max-sm:hidden">
           <TransactionDialog
             key={params.add === "1" ? "add" : "idle"}
             defaultOpen={params.add === "1"}
@@ -114,6 +118,7 @@ export default async function HomePage({
             categories={categories}
             defaultDate={todayIn(timeZone)}
           />
+          </div>
         </div>
       </header>
 
@@ -127,7 +132,7 @@ export default async function HomePage({
             href={href(v)}
             aria-current={v === view ? "page" : undefined}
             className={cn(
-              "flex-1 rounded-md px-3 py-1.5 text-center text-sm font-medium transition-colors",
+              "flex h-11 flex-1 items-center justify-center rounded-md px-3 text-center text-[15px] font-medium transition-colors sm:h-8 sm:text-sm",
               v === view
                 ? // bg-card is *darker* than bg-muted in dark mode, so elevation
                   // alone doesn't read there — the ring is what makes the active
@@ -152,11 +157,11 @@ export default async function HomePage({
 
 function YearSwitcher({ year }: { year: number }) {
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex w-full items-center justify-between gap-1 sm:w-auto sm:justify-start">
       <IconLink href={`/?view=year&year=${year - 1}`} label={`Go to ${year - 1}`}>
         <CaretLeft size={16} weight="bold" />
       </IconLink>
-      <span className="tabular min-w-14 text-center text-sm font-medium">
+      <span className="tabular flex-1 text-center text-base font-semibold sm:min-w-14 sm:flex-none sm:text-sm sm:font-medium">
         {year}
       </span>
       <IconLink href={`/?view=year&year=${year + 1}`} label={`Go to ${year + 1}`}>

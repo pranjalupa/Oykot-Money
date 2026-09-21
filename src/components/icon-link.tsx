@@ -31,7 +31,7 @@ export function IconLink({
             href={href}
             aria-label={label}
             className={cn(
-              "flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+              "flex size-11 items-center justify-center rounded-md sm:size-8 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
               className,
             )}
           >
