@@ -139,6 +139,9 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
     `components/product-preview.tsx` holds them (`DailyPreviewCard`, `BudgetMini`,
     `PeopleMini`, `RecurringMini`, `PaceMini`). They follow the theme, stay sharp, and
     can't go stale. Feature cards show the screen they describe instead of an icon.
+  - **Pricing is two panels**, not one narrow card in a wide page: the plan and its price
+    on the left (billing toggle *inside* the card, beside the figure it changes), what's in
+    it on the right. The FAQ is a `<details name="faq">` accordion — exclusive, all shut.
   - **Sign in / sign up are split** (`components/auth-split.tsx`): form one side, that
     product panel the other, from `lg` up only — on a phone the form is the whole screen.
   - Motion lives in `globals.css` behind

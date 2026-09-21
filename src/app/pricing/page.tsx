@@ -1,5 +1,5 @@
 import { headers } from "next/headers";
-import { Info } from "@phosphor-icons/react/dist/ssr";
+import { CaretDown, Info } from "@phosphor-icons/react/dist/ssr";
 import { PricingTable } from "@/components/pricing-table";
 import { PublicFooter, PublicHeader } from "@/components/public-chrome";
 import { getUser } from "@/lib/auth";
@@ -45,10 +45,16 @@ export default async function PricingPage({
             it — choose a plan to keep adding.
           </p>
         )}
-        <div className="mb-8 text-center">
-          <h1 className="font-heading text-3xl font-extrabold">One plan. Everything in it.</h1>
+        <div className="mb-8 text-center sm:mb-10">
+          <p className="mx-auto flex w-fit items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground">
+            <span className="size-1.5 rounded-full bg-primary" />
+            {TRIAL_DAYS} days free · no card needed
+          </p>
+          <h1 className="mt-5 font-heading text-3xl font-extrabold tracking-tight sm:text-4xl">
+            One plan. Everything in it.
+          </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Try it free for {TRIAL_DAYS} days, then pay monthly or save with yearly.
+            Pay monthly, or save with yearly. Cancel whenever you like.
           </p>
         </div>
 
@@ -57,16 +63,27 @@ export default async function PricingPage({
           viewer={viewer}
         />
 
-        <section className="mx-auto mt-14 max-w-2xl">
-          <h2 className="font-heading text-xl font-bold">Questions</h2>
-          <dl className="mt-4 divide-y divide-border rounded-xl border border-border bg-card">
+        <section className="mx-auto mt-14 max-w-2xl sm:mt-20">
+          <h2 className="text-center font-heading text-xl font-bold">Questions</h2>
+          <div className="mt-5 divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
+            {/* `name` makes them exclusive: opening one closes the rest, so the
+                page never turns into the wall of text it was. All start shut —
+                React drops an `open` attribute on hydration anyway. */}
             {FAQ.map((f) => (
-              <div key={f.q} className="px-5 py-4">
-                <dt className="text-sm font-semibold">{f.q}</dt>
-                <dd className="mt-1 text-sm text-muted-foreground">{f.a}</dd>
-              </div>
+              <details key={f.q} name="faq" className="group">
+                <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-sm font-semibold hover:bg-muted/40">
+                  {f.q}
+                  <CaretDown
+                    size={16}
+                    weight="bold"
+                    aria-hidden
+                    className="shrink-0 text-muted-foreground transition-transform duration-200 group-open:rotate-180"
+                  />
+                </summary>
+                <p className="px-5 pb-4 text-sm text-muted-foreground">{f.a}</p>
+              </details>
             ))}
-          </dl>
+          </div>
         </section>
       </main>
       {!user && <PublicFooter />}
