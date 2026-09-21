@@ -324,8 +324,8 @@ export function AppNav({
               <SquaresFour size={22} weight={groupActive ? "fill" : "regular"} />
               <span>Groups</span>
             </SheetTrigger>
-            <SheetContent side="bottom" className="rounded-t-2xl pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
-              <SheetTitle className="px-5 pt-5 font-heading text-base font-bold">Groups</SheetTitle>
+            <SheetContent side="bottom" className="pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
+              <SheetTitle className="px-5 pt-4 font-heading text-lg font-bold">Groups</SheetTitle>
               <div className="grid grid-cols-2 gap-2 px-4">
                 {GROUP_ITEMS.map(({ href, label, icon: Icon }) => {
                   const active = isActive(pathname, href);

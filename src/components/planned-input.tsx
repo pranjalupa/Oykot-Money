@@ -55,14 +55,16 @@ export function PlannedSheet({
           setOpen(true);
         }}
         className={cn(
-          "relative z-10 inline-flex items-center gap-1 rounded py-0.5 text-xs text-muted-foreground",
+          // Sits above the whole-row link, and tall enough to hit on a phone:
+          // a 20px strip inside a row that navigates is a coin toss.
+          "relative z-10 -my-2 inline-flex min-h-11 items-center gap-1 rounded py-2 text-[13px] text-muted-foreground sm:my-0 sm:min-h-0 sm:py-0.5 sm:text-xs",
           pending && "opacity-50",
         )}
       >
         <span className="border-b border-dashed border-muted-foreground/50">
           {plannedMinor > 0 ? `Budget ${formatMoney(plannedMinor, { currency })}` : "Set budget"}
         </span>
-        <PencilSimple size={11} weight="bold" aria-hidden className="opacity-70" />
+        <PencilSimple size={13} weight="bold" aria-hidden className="opacity-70 sm:size-3" />
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>

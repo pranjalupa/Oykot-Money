@@ -133,6 +133,15 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   Teams and sharing are still out — don't build toward them without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
+- 2026-09-21 — **Bottom sheets and the controls inside them.** One shape for both sheet
+  systems (`ui/dialog.tsx` on phones and `ui/sheet.tsx` side="bottom"): 28px top corners, a
+  1.5×44 grab handle, a 45% scrim with blur (10% left the page behind competing), taller
+  travel on open, safe-area padding, and a footer whose buttons go full width on phones.
+  - Controls got their own pass, since a sheet is mostly controls: `Input` and the Add form's
+    native selects are 44px on phones, `Button` default 40 / lg 44 / icon 40, all compact
+    again from sm up.
+  - **Fixed:** the budget trigger in a phone category row was a 20px strip sitting inside a
+    row-wide link, so tapping it usually opened the category instead. It's 44px now.
 - 2026-09-21 — **Annotation tool off again** (`ANNOTATIONS_ENABLED = false`), on the same day
   it went back on. It has been flipped several times now: treat the flag as the only control,
   never delete the code, the `annotations` table or saved notes. "Check the annotations" =

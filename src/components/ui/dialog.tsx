@@ -31,7 +31,7 @@ function DialogOverlay({
     <DialogPrimitive.Backdrop
       data-slot="dialog-overlay"
       className={cn(
-        "fixed inset-0 isolate z-50 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
+        "fixed inset-0 isolate z-50 bg-black/45 duration-150 supports-backdrop-filter:backdrop-blur-sm sm:bg-black/25 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
         className
       )}
       {...props}
@@ -55,12 +55,12 @@ function DialogContent({
         // Phones: a bottom sheet — full width, within thumb reach, scrolls
         // inside itself. From sm up: the centred dialog it always was.
         className={cn(
-          "fixed inset-x-0 bottom-0 z-50 grid max-h-[92svh] w-full gap-4 overflow-y-auto rounded-t-2xl bg-popover p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] text-sm text-popover-foreground ring-1 ring-foreground/10 duration-200 outline-none data-open:animate-in data-open:fade-in-0 data-open:slide-in-from-bottom-10 data-closed:animate-out data-closed:fade-out-0 data-closed:slide-out-to-bottom-10 sm:inset-x-auto sm:top-1/2 sm:bottom-auto sm:left-1/2 sm:max-w-sm sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-xl sm:pb-4 sm:duration-100 sm:data-open:zoom-in-95 sm:data-closed:zoom-out-95",
+          "fixed inset-x-0 bottom-0 z-50 grid max-h-[90svh] w-full gap-5 overflow-y-auto rounded-t-[1.75rem] bg-popover p-5 pt-3 pb-[calc(1.25rem+env(safe-area-inset-bottom))] text-sm text-popover-foreground shadow-2xl ring-1 ring-foreground/10 duration-300 ease-out outline-none data-open:animate-in data-open:fade-in-0 data-open:slide-in-from-bottom-16 data-closed:animate-out data-closed:fade-out-0 data-closed:slide-out-to-bottom-16 sm:inset-x-auto sm:top-1/2 sm:bottom-auto sm:left-1/2 sm:max-w-sm sm:-translate-x-1/2 sm:-translate-y-1/2 sm:gap-4 sm:rounded-xl sm:p-4 sm:pb-4 sm:shadow-lg sm:duration-100 sm:data-open:zoom-in-95 sm:data-closed:zoom-out-95",
           className
         )}
         {...props}
       >
-        <span aria-hidden className="mx-auto -mt-1 -mb-1 h-1 w-10 rounded-full bg-muted-foreground/30 sm:hidden" />
+        <span aria-hidden className="mx-auto -mb-1 h-1.5 w-11 rounded-full bg-muted-foreground/35 sm:hidden" />
         {children}
         {showCloseButton && (
           <DialogPrimitive.Close
@@ -68,7 +68,7 @@ function DialogContent({
             render={
               <Button
                 variant="ghost"
-                className="absolute top-2 right-2"
+                className="absolute top-3 right-3 size-11 sm:top-2 sm:right-2 sm:size-8"
                 size="icon-sm"
               />
             }
@@ -105,7 +105,7 @@ function DialogFooter({
     <div
       data-slot="dialog-footer"
       className={cn(
-        "-mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-xl border-t bg-muted/50 p-4 sm:flex-row sm:justify-end",
+        "-mx-5 -mb-[calc(1.25rem+env(safe-area-inset-bottom))] flex flex-col-reverse gap-2 border-t bg-muted/50 p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] *:w-full sm:-mx-4 sm:-mb-4 sm:flex-row sm:justify-end sm:rounded-b-xl sm:p-4 sm:*:w-auto",
         className
       )}
       {...props}
@@ -125,7 +125,7 @@ function DialogTitle({ className, ...props }: DialogPrimitive.Title.Props) {
     <DialogPrimitive.Title
       data-slot="dialog-title"
       className={cn(
-        "font-heading text-base leading-none font-medium",
+        "font-heading text-lg leading-snug font-semibold sm:text-base sm:leading-none sm:font-medium",
         className
       )}
       {...props}

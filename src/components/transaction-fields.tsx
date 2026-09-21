@@ -62,7 +62,7 @@ const SPEND_GROUPS = [
 const NEW = "__new__";
 
 const SELECT =
-  "h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none";
+  "h-11 rounded-md border border-input bg-transparent px-3 text-base sm:h-9 sm:text-sm shadow-xs focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none";
 
 /**
  * The fields of a transaction, shared by Add and Edit so the two can never
