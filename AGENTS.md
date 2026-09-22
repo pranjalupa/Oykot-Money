@@ -133,6 +133,24 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   Teams and sharing are still out — don't build toward them without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
+- 2026-09-22 — **Accessibility pass**, measured rather than eyeballed: contrast computed
+  from the tokens, then axe-core run against every signed-in screen in both themes, at
+  desktop and 375px, with a sheet open. Ends at **zero axe violations**.
+  - **Light-theme tokens moved** to clear WCAG: `--negative`/`--destructive` #c1543f → #b54e3b
+    (4.25 → 4.76 on background, it's amount *text*), `--chart-investments` #19a499 → #17948a
+    (2.88 → 3.48) and `--chart-wants` → #8f8814 (3.14 → 3.44); chart fills need 3:1, not 4.5.
+    Dark already passed everywhere. **Re-measure before changing any of these.**
+  - `dark:bg-destructive/20` on the destructive button put its text at 4.41:1 → `/12`.
+  - `loading.tsx` had `aria-label` on a plain div (prohibited) → `role="status"`.
+  - **Home's h1 is `sr-only sm:not-sr-only`**, not `hidden sm:block`: the phone layout hid
+    the only h1 on the page. Hide headings visually, never from the accessibility tree.
+  - Added a skip link (`.skip-link` in globals.css, written by hand — `sr-only
+    focus:not-sr-only` stayed clipped at 1px) and a global
+    `@media (prefers-reduced-motion: reduce)` rule covering every animation and transition.
+  - Row-wide overlay links (category rows, transaction rows) now draw a focus ring.
+  - **Running the audit:** load axe-core from cdnjs in the browser console and
+    `await axe.run(document, {resultTypes:['violations']})`. Wait for the page to settle —
+    a run during `loading.tsx` reports a missing h1 that isn't real.
 - 2026-09-22 — **Sidebar header, per state.** Expanded: the logo is a Home link with the
   collapse icon beside it, as before. Collapsed: no icon — the mark itself expands the
   sidebar (a button, not a link). The icon rail below is unchanged (w-16).

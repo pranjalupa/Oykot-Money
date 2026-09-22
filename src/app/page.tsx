@@ -90,11 +90,14 @@ export default async function HomePage({
           its sentence are desktop-only — four rows of chrome above one number
           was the whole complaint. */}
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <div className="hidden sm:block">
-          <h1 className="font-heading text-2xl font-bold">
+        <div>
+          {/* The heading is hidden, not removed, on phones: the month is right
+              there in the switcher visually, but a page with no h1 leaves a
+              screen reader with nothing to orient by. */}
+          <h1 className="font-heading text-2xl font-bold sr-only sm:not-sr-only">
             {view === "year" ? year : monthLabel(month)}
           </h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">
+          <p className="mt-0.5 hidden text-sm text-muted-foreground sm:block">
             {view === "daily" && "Day by day, and what's safe to spend from here."}
             {view === "month" && "What you planned, next to what you actually spent."}
             {view === "year" && "Month by month, across the whole year."}

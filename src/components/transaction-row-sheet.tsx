@@ -39,7 +39,7 @@ export function TransactionRowSheet({
         type="button"
         onClick={() => setSheet(true)}
         aria-label={`Open ${label}`}
-        className="absolute inset-0 sm:hidden"
+        className="absolute inset-0 rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none sm:hidden"
       />
 
       <Dialog open={sheet} onOpenChange={setSheet}>

@@ -305,7 +305,7 @@ function MobileRow({
     <>
       <li className={cn("relative flex min-h-[64px] items-start gap-3 px-4 py-3.5 active:bg-muted/60", nested && "bg-muted/20")}>
         {/* The whole row is the link; the budget button sits above it. */}
-        <Link href={`/category/${cat.id}?month=${month}`} aria-label={`Open ${cat.name}`} className="absolute inset-0" />
+        <Link href={`/category/${cat.id}?month=${month}`} aria-label={`Open ${cat.name}`} className="absolute inset-0 rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none focus-visible:-outline-offset-2" />
         {nested ? (
           <span aria-hidden className="w-9 shrink-0" />
         ) : (

@@ -133,7 +133,7 @@
   --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath fill='none' stroke='%236d6a5f' stroke-linecap='round' stroke-linejoin='round' stroke-width='24' d='M208 96l-80 80-80-80'/%3E%3C/svg%3E");
   --accent: #daf546;
   --accent-foreground: #004437;
-  --destructive: #c1543f;
+  --destructive: #b54e3b;
   --destructive-foreground: #fbeeec;
 
   --border: #e1e0dc;
@@ -141,7 +141,7 @@
   --ring: #1f7d64;
 
   --positive: #1f7d64;
-  --negative: #c1543f;
+  --negative: #b54e3b;
 
   --needs: #1f7d64;
   --wants: #a3b822;
@@ -158,8 +158,8 @@
      chroma floor, colour-blind separation, 3:1 on the card). Order in a stack
      is always Needs, Wants, Investments. */
   --chart-needs: #1c7049;
-  --chart-wants: #968f15;
-  --chart-investments: #19a499;
+  --chart-wants: #8f8814;
+  --chart-investments: #17948a;
   /* The series that matters, and the grey context it's read against. */
   --chart-accent: #4a4843;
   --chart-neutral: #8c897e;
@@ -292,4 +292,43 @@ select:not([multiple]):not([size]) {
       transform: scaleX(0);
     }
   }
+}
+
+/* Reduced motion, app-wide. The landing page's scenery was already gated on
+   this; everything else — sheets sliding up, the sidebar's width, chart
+   entrances, hover lifts — was not. Near-zero rather than `none`, so code
+   waiting on transitionend still gets its event. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Skip link. Written out rather than `sr-only focus:not-sr-only`, which left
+   it clipped to 1px even while focused — the one thing it must not do. */
+.skip-link {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 60;
+  border-radius: var(--radius);
+  background: var(--primary);
+  color: var(--primary-foreground);
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  /* Off-screen until focused, but never `display: none` — that would take it
+     out of the tab order, which is the whole point of it. */
+  transform: translateY(-200%);
+  transition: transform 0.15s ease-out;
+}
+.skip-link:focus {
+  transform: none;
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
 }

@@ -6,7 +6,10 @@
  */
 export default function Loading() {
   return (
-    <div className="flex animate-pulse flex-col gap-6" aria-busy="true" aria-label="Loading">
+    // role="status" both makes the aria-label legal (a bare div can't carry
+    // one) and announces the wait instead of leaving a screen reader on a
+    // page that has silently gone blank.
+    <div role="status" aria-busy="true" aria-label="Loading" className="flex animate-pulse flex-col gap-6">
       <div className="flex items-center justify-between gap-3">
         <div className="flex flex-col gap-2">
           <div className="h-7 w-44 rounded-md bg-muted" />
