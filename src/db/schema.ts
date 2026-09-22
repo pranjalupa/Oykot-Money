@@ -139,6 +139,8 @@ export const SUBSCRIPTION_STATUSES = [
   "complimentary",
 ] as const;
 
+export type SubscriptionStatus = (typeof SUBSCRIPTION_STATUSES)[number];
+
 /**
  * One row per user: where they stand with paying.
  *

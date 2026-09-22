@@ -2,7 +2,18 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 /** Routes reachable without a session. Everything else redirects to /login. */
-const PUBLIC_PATHS = ["/login", "/signup", "/auth", "/pricing", "/legal"];
+const PUBLIC_PATHS = [
+  "/login",
+  "/signup",
+  "/auth",
+  "/pricing",
+  "/legal",
+  // Payment providers call these server-to-server with no cookie. Gating them
+  // behind the session turns every webhook into a 307 to /login, which the
+  // provider reads as a failure and retries until it gives up. They carry
+  // their own signature; that's what makes them safe, not the session.
+  "/api/webhooks",
+];
 
 /**
  * The files that make the app installable. A browser fetches these without

@@ -1,0 +1,92 @@
+"use client";
+
+import { useState } from "react";
+import Script from "next/script";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { startCheckout } from "@/app/checkout/actions";
+import type { PriceCurrency } from "@/lib/pricing";
+
+/**
+ * One button, two checkouts.
+ *
+ * Rupees open Razorpay's modal over this page — their flow needs a mandate
+ * (UPI autopay or a card e-mandate), so it can't be a plain redirect.
+ * Everything else redirects to Polar, who take the payment as merchant of
+ * record.
+ *
+ * The button doesn't know any prices. It asks the server for a checkout, and
+ * the server asks the provider — so there's no amount in the browser for
+ * anyone to edit.
+ */
+
+declare global {
+  interface Window {
+    Razorpay?: new (options: Record<string, unknown>) => { open: () => void };
+  }
+}
+
+export function CheckoutButton({
+  plan,
+  currency,
+  label,
+  disabled,
+}: {
+  plan: "monthly" | "yearly";
+  currency: PriceCurrency;
+  label: string;
+  disabled?: boolean;
+}) {
+  const [busy, setBusy] = useState(false);
+
+  async function go() {
+    setBusy(true);
+    try {
+      const result = await startCheckout(plan, currency);
+      if (!result.ok) {
+        toast.error(result.error);
+        return;
+      }
+
+      if (result.provider === "polar") {
+        window.location.href = result.url;
+        return;
+      }
+
+      if (!window.Razorpay) {
+        toast.error("Checkout didn't load. Check your connection and try again.");
+        return;
+      }
+
+      new window.Razorpay({
+        key: result.keyId,
+        subscription_id: result.subscriptionId,
+        name: "Oykot Money",
+        description: plan === "yearly" ? "Yearly plan" : "Monthly plan",
+        prefill: { name: result.name ?? "", email: result.email ?? "" },
+        theme: { color: "#004437" },
+        // Nothing is unlocked here. The webhook decides, because this callback
+        // runs in a browser we don't control.
+        handler: () => {
+          toast.success("Payment received — your account updates in a moment.");
+        },
+        modal: { ondismiss: () => setBusy(false) },
+      }).open();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <>
+      {currency === "INR" && (
+        <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
+      )}
+      <Button size="lg" className="w-full" onClick={go} disabled={busy || disabled}>
+        {busy ? "Opening checkout…" : label}
+      </Button>
+    </>
+  );
+}

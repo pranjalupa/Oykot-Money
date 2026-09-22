@@ -14,20 +14,27 @@ import {
 } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
 import { LogoMark, Wordmark } from "@/components/logo";
+import { CheckoutButton } from "@/components/checkout-button";
 
 type Viewer = "guest" | "trial" | "expired" | "paid";
 
 export function PricingTable({
   defaultCurrency,
   viewer,
+  checkout,
 }: {
   defaultCurrency: PriceCurrency;
   viewer: Viewer;
+  /** Which providers are configured, and whether they're in test mode. */
+  checkout?: { razorpay: boolean; polar: boolean; test: boolean };
 }) {
   const [period, setPeriod] = useState<"monthly" | "yearly">("yearly");
   const [currency, setCurrency] = useState<PriceCurrency>(defaultCurrency);
   const price = PRICES[currency][period];
   const perMonth = period === "yearly" ? PRICES[currency].yearly / 12 : null;
+  // A provider that isn't set up shouldn't show a button that can't work.
+  const checkoutReady = currency === "INR" ? !!checkout?.razorpay : !!checkout?.polar;
+  const testMode = !!checkout?.test;
 
   return (
     <div className="mx-auto w-full max-w-md">
@@ -98,18 +105,32 @@ export function PricingTable({
               </p>
             </>
           )}
-          {(viewer === "trial" || viewer === "expired") && (
-            <>
-              {/* Honest about it: the button exists so the flow is ready, but
-                  there's nothing to pay with yet. */}
-              <Button className="w-full" disabled>
-                Upgrade — checkout opens soon
-              </Button>
-              <p className="mt-2 text-center text-xs text-muted-foreground">
-                Payments aren&rsquo;t live yet. You keep full access until they are.
-              </p>
-            </>
-          )}
+          {(viewer === "trial" || viewer === "expired") &&
+            (checkoutReady ? (
+              <>
+                <CheckoutButton
+                  plan={period}
+                  currency={currency}
+                  label={`Subscribe ${period === "yearly" ? "yearly" : "monthly"}`}
+                />
+                <p className="mt-2 text-center text-xs text-muted-foreground">
+                  {testMode
+                    ? "Test mode — no real money moves."
+                    : "Cancel any time from Settings."}
+                </p>
+              </>
+            ) : (
+              <>
+                {/* Honest about it: the button exists so the flow is ready, but
+                    there's nothing to pay with yet. */}
+                <Button className="w-full" disabled>
+                  Upgrade — checkout opens soon
+                </Button>
+                <p className="mt-2 text-center text-xs text-muted-foreground">
+                  Payments aren&rsquo;t live yet. You keep full access until they are.
+                </p>
+              </>
+            ))}
           {viewer === "paid" && (
             <p className="rounded-md bg-muted px-3 py-2 text-center text-sm">You&rsquo;re all set.</p>
           )}

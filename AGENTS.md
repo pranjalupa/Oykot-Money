@@ -133,6 +133,23 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   Teams and sharing are still out — don't build toward them without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
+- 2026-09-22 — **Payments built, in test mode: Razorpay (INR) + Polar (everyone else).**
+  Polar chosen over Paddle for the MoR — same-day approval, 4% + 40¢, pays Indian banks via
+  Stripe Connect. Not on the Vercel Marketplace (only Stripe is), so both are plain API work.
+  - **`lib/payments/store.ts` is the only writer to `subscriptions`.** Each provider's webhook
+    translates its own vocabulary into one shape; `lib/access.ts` reads the row and never
+    learns who paid. Keep it that way when a third provider appears.
+  - Razorpay: plain REST + `node:crypto` HMAC, no SDK. **The signature covers the raw body** —
+    read `request.text()` and parse after, never `request.json()`.
+  - Polar: official `@polar-sh/nextjs` adapter (Checkout / CustomerPortal / Webhooks). The
+    portal takes **`getExternalCustomerId`** (our user id), not `getCustomerId` (Polar's).
+  - **Identity comes from the provider, never the browser.** Razorpay carries `notes.userId`,
+    Polar `customer.externalId`. Matching on email would let anyone claim an account.
+  - **Fixed:** `/api/webhooks/*` was behind the auth middleware, so every webhook got a 307
+    to /login — a provider reads that as failure and retries for hours. It's public now; the
+    signature is what makes it safe, not a session.
+  - Setup steps, env var names and test cards: `docs/payments-setup.md`. Pranjal holds all
+    keys; **ACCESS_ENFORCED stays off** until a real payment has been taken and refunded.
 - 2026-09-22 — **Accessibility pass**, measured rather than eyeballed: contrast computed
   from the tokens, then axe-core run against every signed-in screen in both themes, at
   desktop and 375px, with a sheet open. Ends at **zero axe violations**.

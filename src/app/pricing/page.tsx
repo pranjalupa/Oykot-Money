@@ -5,6 +5,7 @@ import { PublicFooter, PublicHeader } from "@/components/public-chrome";
 import { getUser } from "@/lib/auth";
 import { getAccess } from "@/lib/access";
 import { priceCurrencyForCountry, TRIAL_DAYS } from "@/lib/pricing";
+import { configured as razorpayReady, isTestMode } from "@/lib/payments/razorpay";
 
 export const metadata = { title: "Pricing · Oykot Money" };
 export const dynamic = "force-dynamic";
@@ -55,6 +56,11 @@ export default async function PricingPage({
         <PricingTable
           defaultCurrency={priceCurrencyForCountry(h.get("x-vercel-ip-country"))}
           viewer={viewer}
+          checkout={{
+            razorpay: razorpayReady(),
+            polar: Boolean(process.env.POLAR_ACCESS_TOKEN && process.env.POLAR_PRODUCT_MONTHLY),
+            test: isTestMode() || process.env.POLAR_SERVER !== "production",
+          }}
         />
 
         <section className="mx-auto mt-14 max-w-2xl">
