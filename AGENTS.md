@@ -133,9 +133,9 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   Teams and sharing are still out — don't build toward them without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
-- 2026-09-22 — **The logo is the sidebar toggle**; the separate collapse icon beside it is
-  gone. The icon rail when collapsed is unchanged (w-16). The mark is a button in both
-  states rather than a link — Home is in the nav right below it, so nothing is lost.
+- 2026-09-22 — **Sidebar header, per state.** Expanded: the logo is a Home link with the
+  collapse icon beside it, as before. Collapsed: no icon — the mark itself expands the
+  sidebar (a button, not a link). The icon rail below is unchanged (w-16).
 - 2026-09-22 — **Landing page removed and pricing reverted**, at Pranjal's request. Signed
   out, `/` redirects to `/login` again (it's no longer public in the middleware), and
   `components/landing.tsx` plus the marketing scenery CSS (`.mesh`, `.grain`, `.tinted`,

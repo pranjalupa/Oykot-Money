@@ -12,6 +12,7 @@ import {
   Moon,
   Plus,
   ShoppingBag,
+  SidebarSimple,
   SignOut,
   SquaresFour,
   Sun,
@@ -253,25 +254,41 @@ export function AppNav({
           collapsed ? "w-16 px-2" : "w-56 px-3",
         )}
       >
-        {/* The logo is the collapse control — there's no second icon beside it.
-            Home is in the nav below, so nothing is lost by the mark no longer
-            being a link. */}
-        <div className={cn("mb-6 flex items-center", collapsed ? "justify-center" : "justify-start")}>
-          <MaybeTooltip show label={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
-            <button
-              type="button"
-              onClick={toggleCollapsed}
-              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-              aria-expanded={!collapsed}
-              className={cn(
-                "flex items-center gap-2 rounded-xl transition-transform hover:scale-[1.03] focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
-                collapsed ? "size-10 justify-center" : "px-2.5 py-1",
-              )}
-            >
-              <LogoMark size={24} />
-              {!collapsed && <Wordmark height={15} />}
-            </button>
-          </MaybeTooltip>
+        {/* Expanded: the logo goes Home and the icon beside it collapses.
+            Collapsed: there's no room for two controls, so the mark itself is
+            the way back out. */}
+        <div className={cn("mb-6 flex items-center", collapsed ? "justify-center" : "justify-between")}>
+          {collapsed ? (
+            <MaybeTooltip show label="Expand sidebar">
+              <button
+                type="button"
+                onClick={toggleCollapsed}
+                aria-label="Expand sidebar"
+                aria-expanded={false}
+                className="flex size-10 items-center justify-center rounded-xl transition-transform hover:scale-[1.03] focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+              >
+                <LogoMark size={24} />
+              </button>
+            </MaybeTooltip>
+          ) : (
+            <>
+              <Link href="/" className="flex items-center gap-2 px-2.5" aria-label="Oykot Money">
+                <LogoMark size={24} />
+                <Wordmark height={15} />
+              </Link>
+              <MaybeTooltip show label="Collapse sidebar">
+                <button
+                  type="button"
+                  onClick={toggleCollapsed}
+                  aria-label="Collapse sidebar"
+                  aria-expanded
+                  className="flex size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                >
+                  <SidebarSimple size={18} weight="bold" />
+                </button>
+              </MaybeTooltip>
+            </>
+          )}
         </div>
 
         <NavLinks compact={collapsed} />
