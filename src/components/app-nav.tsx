@@ -12,7 +12,6 @@ import {
   Moon,
   Plus,
   ShoppingBag,
-  SidebarSimple,
   SignOut,
   SquaresFour,
   Sun,
@@ -251,62 +250,46 @@ export function AppNav({
       <aside
         className={cn(
           "fixed inset-y-0 left-0 z-40 hidden flex-col border-r border-border bg-card py-4 transition-[width] duration-200 lg:flex",
-          collapsed ? "w-14 px-1" : "w-56 px-3",
+          collapsed ? "w-16 px-2" : "w-56 px-3",
         )}
       >
-        {/* Collapsed, the rail is only the logo — a rail of unlabelled icons is
-            a rebus, and the one thing you always know how to read is the mark.
-            Pressing it opens the sidebar; it isn't a link to Home there. */}
-        {collapsed ? (
-          <MaybeTooltip show label="Open menu">
+        {/* The logo is the collapse control — there's no second icon beside it.
+            Home is in the nav below, so nothing is lost by the mark no longer
+            being a link. */}
+        <div className={cn("mb-6 flex items-center", collapsed ? "justify-center" : "justify-start")}>
+          <MaybeTooltip show label={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
             <button
               type="button"
               onClick={toggleCollapsed}
-              aria-label="Open menu"
-              aria-expanded={false}
-              className="mx-auto flex size-11 items-center justify-center rounded-xl transition-transform hover:scale-105 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+              aria-expanded={!collapsed}
+              className={cn(
+                "flex items-center gap-2 rounded-xl transition-transform hover:scale-[1.03] focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+                collapsed ? "size-10 justify-center" : "px-2.5 py-1",
+              )}
             >
-              <LogoMark size={26} />
+              <LogoMark size={24} />
+              {!collapsed && <Wordmark height={15} />}
             </button>
           </MaybeTooltip>
-        ) : (
-          <>
-            <div className="mb-6 flex items-center justify-between">
-              <Link href="/" className="flex items-center gap-2 px-2.5" aria-label="Oykot Money">
-                <LogoMark size={24} />
-                <Wordmark height={15} />
-              </Link>
-              <MaybeTooltip show label="Collapse sidebar">
-                <button
-                  type="button"
-                  onClick={toggleCollapsed}
-                  aria-label="Collapse sidebar"
-                  aria-expanded
-                  className="flex size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-                >
-                  <SidebarSimple size={18} weight="bold" />
-                </button>
-              </MaybeTooltip>
-            </div>
+        </div>
 
-            <NavLinks compact={false} />
+        <NavLinks compact={collapsed} />
 
-            <div className="mt-4 flex flex-col gap-0.5 border-t border-border pt-3">
-              <ThemeToggle expanded />
-              <SignOutButton expanded />
-              {(name || email) && (
-                <div className="min-w-0 px-2.5 pt-2">
-                  {name && (
-                    <p className="truncate text-xs font-medium text-foreground">{name}</p>
-                  )}
-                  {email && (
-                    <p className="truncate text-[11px] text-muted-foreground">{email}</p>
-                  )}
-                </div>
+        <div className={cn("mt-4 flex flex-col gap-0.5 border-t border-border pt-3", collapsed && "items-center")}>
+          <ThemeToggle expanded={!collapsed} />
+          <SignOutButton expanded={!collapsed} />
+          {!collapsed && (name || email) && (
+            <div className="min-w-0 px-2.5 pt-2">
+              {name && (
+                <p className="truncate text-xs font-medium text-foreground">{name}</p>
+              )}
+              {email && (
+                <p className="truncate text-[11px] text-muted-foreground">{email}</p>
               )}
             </div>
-          </>
-        )}
+          )}
+        </div>
       </aside>
 
       {/* Mobile: a slim top bar, and the main tabs at the bottom where a thumb
