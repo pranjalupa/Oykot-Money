@@ -133,6 +133,10 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   Teams and sharing are still out — don't build toward them without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
+- 2026-09-22 — **Collapsed sidebar is the logo and nothing else** (w-14). A rail of
+  unlabelled icons is a rebus; the mark is the one thing that always reads. Pressing it
+  expands the sidebar — collapsed, it is a button, not a link to Home. Supersedes the
+  icons-only rail from 2026-09-13. `app-shell.tsx`'s content offset follows (`pl-14`).
 - 2026-09-22 — **Landing page removed and pricing reverted**, at Pranjal's request. Signed
   out, `/` redirects to `/login` again (it's no longer public in the middleware), and
   `components/landing.tsx` plus the marketing scenery CSS (`.mesh`, `.grain`, `.tinted`,
