@@ -133,6 +133,11 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   Teams and sharing are still out — don't build toward them without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
+- 2026-09-22 — **Dollar monthly $4 → $6.** An MoR takes ~6.5% + 50¢ on an international
+  card: 19% of a $4 charge, 13% of a $6 one, 8% of the $36 yearly. The fixed part is what
+  hurts at small amounts — **check the fee against the price before setting either**. Yearly
+  stayed $36, so the page now reads −50%; $48 would read −33% if that's preferred. App price
+  and provider product must always agree.
 - 2026-09-22 — **Payments built, in test mode: Razorpay (INR) + Polar (everyone else).**
   Polar chosen over Paddle for the MoR — same-day approval, 4% + 40¢, pays Indian banks via
   Stripe Connect. Not on the Vercel Marketplace (only Stripe is), so both are plain API work.

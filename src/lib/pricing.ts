@@ -1,15 +1,20 @@
 /**
  * Prices and trial terms — the one place to change them.
  *
- * PLACEHOLDERS, agreed 2026-09-11: $4 / $36 and ₹249 / ₹1,999. The rupee
- * price is set on its own rather than converted, so it can be tuned for India.
+ * ₹249 / ₹1,999 and $6 / $36. The rupee price is set on its own rather than
+ * converted, so it can be tuned for India.
+ *
+ * The dollar monthly went $4 → $6 on 2026-09-22. A merchant of record takes
+ * roughly 6.5% + 50¢ on an international card, which is **19% of a $4 charge**
+ * — the fixed part, not the percentage, is what hurts at small amounts. At $6
+ * it's 13%, and the yearly plan (one charge instead of twelve) is 8%.
  * Shared by client and server; the payment providers will need matching plans.
  */
 export const TRIAL_DAYS = 14;
 
 export const PRICES = {
   INR: { monthly: 249, yearly: 1999 },
-  USD: { monthly: 4, yearly: 36 },
+  USD: { monthly: 6, yearly: 36 },
 } as const;
 
 export type PriceCurrency = keyof typeof PRICES;

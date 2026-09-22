@@ -7,6 +7,23 @@ account, because signing up, passing KYC and holding API keys are yours to do.
 If one leaks, rotate it in the provider's dashboard — deleting the message
 doesn't help.
 
+## What you're setting up
+
+Two providers, split by currency — the app picks one and the customer never
+sees a choice:
+
+| Customer pays in | Provider | Why |
+| --- | --- | --- |
+| **₹ rupees** | Razorpay | Domestic rails: UPI autopay, Indian cards, no FX |
+| **$ dollars** | Polar | Merchant of record — it sells, handles VAT/GST worldwide, pays you out |
+
+**Why a merchant of record at all:** selling a digital subscription to an EU
+consumer means VAT is owed from the first euro, with no threshold for a
+non-EU seller. Same story in the UK and a dozen others. An MoR becomes the
+seller, so those registrations are theirs, not yours. It costs about 6.5% +
+50¢ per charge — which is why the dollar monthly price is $6 and yearly is
+the plan worth pushing.
+
 ---
 
 ## 1. Razorpay — customers paying in rupees
@@ -34,20 +51,36 @@ Polar is a **merchant of record**: it sells to the customer, handles VAT/GST
 in their country, and pays you out. That's what keeps you out of tax
 registration in dozens of countries as an Indian individual.
 
-1. **Sign up** at <https://polar.sh> and create an organisation. Approval is
-   usually same-day. Payouts reach an Indian bank through Stripe Connect.
-2. **Switch to the sandbox** (<https://sandbox.polar.sh>) for testing — it's a
-   separate account with its own products and tokens.
-3. **Create two products**, both *recurring*: $4/month and $36/year. Copy the
-   product ids.
-4. **Access token** — Settings → Developers → New token, scoped to
-   checkouts, customers, subscriptions and webhooks.
-5. **Webhook** — Settings → Webhooks → Add endpoint:
+India is on Polar's supported list, and individuals qualify — payouts run
+through Stripe Connect Express, which reaches India even though standalone
+Stripe there is invite-only. You don't need a company.
+
+**Do the sandbox first.** It's a separate account at
+<https://sandbox.polar.sh> with its own products, tokens and webhook secrets,
+and nothing you do there touches real money. Everything below is done twice:
+once in sandbox now, once in production when you go live.
+
+1. **Sign up** at <https://sandbox.polar.sh> with GitHub or email, and create
+   an organisation. The slug becomes part of your checkout URLs, so pick the
+   name you'd want customers to see.
+2. **Create two products** — Products → New Product:
+   - *Oykot Money — Monthly*: recurring, **monthly**, **$6**.
+   - *Oykot Money — Yearly*: recurring, **yearly**, **$36**.
+   No benefits or licence keys needed — access is decided by our own
+   subscriptions table, not by Polar's entitlements.
+   Copy both product ids (they look like `xxxxxxxx-xxxx-…`).
+3. **Access token** — Settings → Developers → New Token. Scope it to
+   `checkouts:write`, `customers:read`, `subscriptions:read` and
+   `webhooks:read`. Copy it once; it isn't shown again.
+4. **Webhook** — Settings → Webhooks → Add Endpoint:
    - URL: `https://oykot-money.vercel.app/api/webhooks/polar`
-   - Format: **Raw**
+   - Format: **Raw** (not Discord or Slack)
    - Events: `subscription.active`, `subscription.updated`,
      `subscription.canceled`, `subscription.uncanceled`, `subscription.revoked`
-   - Copy the signing secret it gives you.
+   - Copy the signing secret.
+5. **Payout account** — Finance → Payout Account → connect Stripe Express with
+   your PAN and Indian bank details. This can wait until you're ready to take
+   real money, but it's the slowest step, so start it early.
 
 ## 3. Environment variables
 
@@ -78,7 +111,10 @@ could do.
 
 - **Razorpay**: test card `4111 1111 1111 1111`, any future expiry, CVV `123`,
   OTP `1234`. Or UPI id `success@razorpay`.
-- **Polar sandbox**: Stripe's test card `4242 4242 4242 4242`.
+- **Polar sandbox**: Stripe's test card `4242 4242 4242 4242`, any future
+  expiry and CVC. Polar's own dashboard → Webhooks → your endpoint shows every
+  delivery, its response code, and a **Redeliver** button — that's the fastest
+  way to debug a handler without paying again.
 - **Webhooks against localhost**: both providers need a public URL. Use
   `vercel dev` against a preview deployment, or a tunnel, and point the
   webhook there while testing.
@@ -94,6 +130,15 @@ In order, not before:
    and webhook secret swapped in.
 3. A real payment made by you, in each currency, and refunded.
 4. Only then `ACCESS_ENFORCED=true`.
+
+## A decision still open
+
+Yearly ($36) costs the same as six monthly charges ($72/year), so the pricing
+page advertises **50% off**. That's deliberate — one charge a year costs ~8%
+in fees against ~15% for twelve — but it is a steep discount. If you'd rather
+it read −33%, set yearly to $48 in `lib/pricing.ts` and update the Polar
+product to match. The two must always agree: the app shows its own price,
+Polar charges its own.
 
 ## What the code does with all this
 

@@ -573,7 +573,7 @@ inline icons, Chart / Table switch) are unchanged.
 
 | Question | Proposal | Why |
 |---|---|---|
-| Global price | **$4 / month, $36 / year** | Inside the range; yearly works out to $3/month, a clear reason to pay annually |
+| Global price | **$6 / month, $36 / year** | Raised from $4 on 2026-09-22: a merchant of record takes ~6.5% + 50¢ on an international card, which is 19% of a $4 charge and 13% of a $6 one. Yearly works out to $3/month — half price, and one charge instead of twelve |
 | India price | **₹249 / month, ₹1,999 / year** — set deliberately, not converted | A straight conversion of $4 lands above ₹300. Worth testing, not a settled number |
 | Trial length | **14 days** | Enough to set a budget and live with it for two weeks. Longer trials delay the decision without adding much |
 | Card to start the trial | **No card needed** | A budgeting app has to earn trust with your money data before asking for a card |
