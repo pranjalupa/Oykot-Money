@@ -133,8 +133,16 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   Teams and sharing are still out — don't build toward them without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
-- 2026-09-21 — **Landing page rebuilt**, patterns checked against Mobbin (Monarch, Origin,
-  Ramp): eyebrow pill → headline → one primary CTA → product visual, then revealed features.
+- 2026-09-22 — **Landing page removed and pricing reverted**, at Pranjal's request. Signed
+  out, `/` redirects to `/login` again (it's no longer public in the middleware), and
+  `components/landing.tsx` plus the marketing scenery CSS (`.mesh`, `.grain`, `.tinted`,
+  `.tilt`, `.rise`, `.drift`, `.press`) are gone. **Kept, because the sign-in panel uses
+  them:** `components/product-preview.tsx`, `landing-motion.tsx`, `.reveal` and `.fill-bar`.
+  Pricing is back to the single-card version from 882a16c. Git history has the removed work
+  if it's wanted again: 323bbe6, b7a9beb, 0c5f7f8 (landing) and d7e02c7 (pricing).
+- 2026-09-21 — **Landing page rebuilt** *(removed 2026-09-22 — see above)*, patterns checked
+  against Mobbin (Monarch, Origin, Ramp): eyebrow pill → headline → one primary CTA →
+  product visual, then revealed features.
   - **The marketing pages carry depth the app deliberately doesn't** — a blurred colour
     wash (`.mesh`), film grain (`.grain`), tinted bento panels (`.tinted` with a per-card
     `--tint`) and a card stack that leans back (`.tilt`). All built from existing tokens

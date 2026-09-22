@@ -19,7 +19,6 @@ import { redirect } from "next/navigation";
 import { getUser, ensureUserSetup, getProfile, getUserPrefs } from "@/lib/auth";
 import { FlowGuide } from "@/components/flow-guide";
 import { cn } from "@/lib/utils";
-import { Landing } from "@/components/landing";
 
 export const dynamic = "force-dynamic";
 
@@ -46,8 +45,8 @@ export default async function HomePage({
   searchParams: Promise<{ view?: string; month?: string; year?: string; add?: string }>;
 }) {
   const user = await getUser();
-  // Signed out, "/" is the front door rather than a redirect to login.
-  if (!user) return <Landing />;
+  // No marketing page for now: signed out, "/" is the sign-in screen.
+  if (!user) redirect("/login");
   const { timeZone } = await getUserPrefs();
   // Home is the page people open most, so it keeps net worth history filled
   // in — after the response, so it never slows the page down.

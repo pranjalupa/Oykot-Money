@@ -42,8 +42,8 @@ export async function updateSession(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
   // "/" is the landing page when signed out, the app when signed in.
-  const isPublic =
-    pathname === "/" || APP_FILES.includes(pathname) || PUBLIC_PATHS.some((p) => pathname.startsWith(p));
+  // "/" is not public: with the landing page gone it redirects to /login.
+  const isPublic = APP_FILES.includes(pathname) || PUBLIC_PATHS.some((p) => pathname.startsWith(p));
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();
