@@ -370,8 +370,8 @@ export function TransactionFields({
           {accountField(personMode === "gave" ? "Paid from" : "Received into")}
           <p className="-mt-2 text-xs text-muted-foreground">
             {personMode === "gave"
-              ? "Counts as spending this month — in Lent out, or Paid back if you owed them."
-              : "Counts as money in this month — in Borrowed, or Got paid back if they owed you."}
+              ? "Counts as spending this month (as Lent out, or Paid back if you owed them)."
+              : "Counts as money in this month (as Borrowed, or Got paid back if they owed you)."}
           </p>
         </>
       )}
@@ -381,7 +381,7 @@ export function TransactionFields({
           {accountField("From account")}
           {counterField("To account")}
           <p className="-mt-2 text-xs text-muted-foreground">
-            Between your own accounts — this won&rsquo;t touch your budget.
+            Between your own accounts. This won&rsquo;t touch your budget.
           </p>
         </>
       )}
@@ -400,7 +400,7 @@ export function TransactionFields({
             <option value="">Choose…</option>
             {relevant.map((c) => (
               <option key={c.id} value={c.id}>
-                {c.parentId ? "— " : ""}
+                {c.parentId ? "\u00a0\u00a0\u00a0" : ""}
                 {c.name}
               </option>
             ))}
@@ -426,7 +426,7 @@ export function TransactionFields({
           <span>
             Repeat every month
             <span className="block text-xs text-muted-foreground">
-              Rent, SIP, salary — added automatically on the same date each month.
+              Rent, SIP, salary: added automatically on the same date each month.
               Manage them in Settings.
             </span>
           </span>

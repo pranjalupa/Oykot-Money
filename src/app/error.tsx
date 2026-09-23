@@ -23,7 +23,7 @@ export default function ErrorPage({
       </span>
       <h1 className="mt-4 font-heading text-xl font-bold">Something went wrong</h1>
       <p className="mt-1.5 text-sm text-muted-foreground">
-        This page didn&rsquo;t load. Your data is safe — try again, and if it keeps
+        This page didn&rsquo;t load. Your data is safe. Try again, and if it keeps
         happening, head home.
       </p>
       {error.digest && (

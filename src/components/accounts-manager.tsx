@@ -210,7 +210,7 @@ function DeleteAccountButton({
               <p className="rounded-md bg-destructive/10 p-3 text-destructive">
                 {impact.transactions} transaction
                 {impact.transactions === 1 ? "" : "s"} use this account, so it
-                can&rsquo;t be deleted — that would rewrite your history.
+                can&rsquo;t be deleted. That would rewrite your history.
                 Archive it instead: the balance stays and it stops appearing in
                 new transactions.
               </p>

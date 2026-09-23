@@ -220,7 +220,7 @@ export function EditAccountDialog({
           </DialogTitle>
           {isAsset && (
             <DialogDescription>
-              Whatever the fund says it&rsquo;s worth today. No returns math —
+              Whatever the fund says it&rsquo;s worth today. No returns math,
               just the number.
             </DialogDescription>
           )}

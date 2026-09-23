@@ -1,6 +1,6 @@
 import { WifiSlash } from "@phosphor-icons/react/dist/ssr";
 
-export const metadata = { title: "No connection — Oykot Money" };
+export const metadata = { title: "No connection · Oykot Money" };
 
 /** Shown by the service worker when a page is opened with no network. */
 export default function OfflinePage() {

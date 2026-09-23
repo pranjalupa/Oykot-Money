@@ -72,7 +72,7 @@ export function ProfileForm({
         <p className="flex items-start gap-2 rounded-md bg-muted px-3 py-2 text-sm">
           <Warning size={16} weight="fill" className="mt-0.5 shrink-0 text-muted-foreground" />
           <span>
-            Nothing is converted — every amount keeps its number and only the symbol
+            Nothing is converted. Every amount keeps its number and only the symbol
             changes, so {CURRENCIES[currency].symbol}500 becomes{" "}
             {CURRENCIES[picked].symbol}500.
           </span>

@@ -94,7 +94,7 @@ export default async function GroupPage({
           categories={g.categories}
           groupKey={groupKey}
           month={month}
-          emptyNote="No categories in this group yet — add your first one."
+          emptyNote="No categories in this group yet. Add your first one."
         />
       </section>
 

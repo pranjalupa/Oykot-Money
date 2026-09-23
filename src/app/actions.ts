@@ -373,7 +373,7 @@ export async function setTargets(
     return fail("Each share must be between 0 and 100.");
 
   const total = values.reduce((s, v) => s + v.percent, 0);
-  if (total !== 100) return fail(`Shares must add up to 100% — that's ${total}%.`);
+  if (total !== 100) return fail(`Shares must add up to 100%. Right now they add up to ${total}%.`);
 
   for (const v of values) {
     await db
@@ -977,7 +977,7 @@ export async function deleteAccount(formData: FormData): Promise<ActionResult> {
     await db.delete(accounts).where(and(eq(accounts.id, id), eq(accounts.userId, user.id)));
   } catch {
     return fail(
-      "This account has transactions. Deleting it would rewrite your history — archive it instead.",
+      "This account has transactions. Deleting it would rewrite your history, so archive it instead.",
     );
   }
 

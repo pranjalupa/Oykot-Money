@@ -16,7 +16,7 @@ export const GUIDES = {
     title: "How Daily works",
     steps: [
       "Safe to spend is what's left in Needs and Wants, divided by the days left in the month.",
-      "Tap Add (or + on your phone) whenever money moves — Spent, Received, or Lend / Borrow.",
+      "Tap Add (or + on your phone) whenever money moves: Spent, Received, or Lend / Borrow.",
       "Spending pace shows your spending against an even pace. Under the dashed line means on track.",
     ],
   },
@@ -55,7 +55,7 @@ export const GUIDES = {
     title: "Lending and borrowing",
     steps: [
       "Add a person or a lender, then tap them.",
-      "Use You gave or You got. It counts in this month's budget on its own — as Lent out, Paid back, Borrowed or Got paid back.",
+      "Use You gave or You got. It counts in this month's budget on its own, as Lent out, Paid back, Borrowed or Got paid back.",
       "Settle up fills in the whole balance for you.",
     ],
   },
@@ -63,7 +63,7 @@ export const GUIDES = {
     title: "Adding a transaction",
     steps: [
       "Spent and Received need a category, so they count in your budget.",
-      "Lend / Borrow is for money with a person or a bank — pick who, and whether you gave or got.",
+      "Lend / Borrow is for money with a person or a bank. Pick who, and whether you gave or got.",
       "Tick Repeat every month for rent, SIP or salary.",
     ],
   },

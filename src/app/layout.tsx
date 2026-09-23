@@ -35,7 +35,7 @@ const instrumentSerif = Instrument_Serif({
 
 export const metadata: Metadata = {
   title: "Oykot Money",
-  description: "Personal budgeting — needs, wants, investments.",
+  description: "Personal budgeting for your needs, wants and investments.",
   applicationName: "Oykot Money",
   // Installed on a phone it's an app, not a browser tab: no Safari chrome,
   // the status bar tinted by the page, and its own name under the icon.

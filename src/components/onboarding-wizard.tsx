@@ -295,7 +295,7 @@ export function OnboardingWizard({
           {step === 2 && (
             <div className="flex flex-col gap-5">
               <p className="text-sm text-muted-foreground">
-                What usually comes in each month, after tax. It&rsquo;s used to suggest your budget — leave it empty if
+                What usually comes in each month, after tax. It&rsquo;s used to suggest your budget. Leave it empty if
                 it varies a lot.
               </p>
               <div className="flex flex-col gap-1.5">
@@ -389,7 +389,7 @@ export function OnboardingWizard({
                 ))}
               </ul>
               <p className={cn("text-sm", splitTotal === 100 ? "text-muted-foreground" : "font-medium text-negative")}>
-                {splitTotal === 100 ? "Adds up to 100%." : `Adds up to ${splitTotal}% — it needs to be 100%.`}
+                {splitTotal === 100 ? "Adds up to 100%." : `Adds up to ${splitTotal}%. It needs to be 100%.`}
               </p>
             </div>
           )}
@@ -470,7 +470,7 @@ export function OnboardingWizard({
                 );
               })}
               <p className="text-xs text-muted-foreground">
-                Unticked categories are retired, not deleted — bring them back any time from Settings.
+                Unticked categories are retired, not deleted. Bring them back any time from Settings.
               </p>
             </div>
           )}

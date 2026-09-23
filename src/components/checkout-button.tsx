@@ -78,7 +78,7 @@ export function CheckoutButton({
         // Nothing is unlocked here. The webhook decides, because this callback
         // runs in a browser we don't control.
         handler: () => {
-          toast.success("Payment received — your account updates in a moment.");
+          toast.success("Payment received. Your account updates in a moment.");
         },
         modal: { ondismiss: () => setBusy(false) },
       }).open();

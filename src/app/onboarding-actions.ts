@@ -56,7 +56,7 @@ export async function completeOnboarding(input: OnboardingInput): Promise<Result
     balance: amount(a.balance),
   }));
   if (rows.length === 0) return fail("Add at least one account.");
-  if (rows.length > 12) return fail("That's a lot of accounts — add the rest from Money.");
+  if (rows.length > 12) return fail("That's a lot of accounts. Add the rest from Money.");
   if (rows.some((r) => !r.name)) return fail("Every account needs a name.");
   if (rows.some((r) => r.balance === null)) return fail("Balances must be a number, zero or more.");
 

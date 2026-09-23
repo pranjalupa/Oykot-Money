@@ -75,7 +75,7 @@ export async function YearView({ year }: { year: number }) {
                     ) : null}
                   </span>
                   <span className="shrink-0 text-right text-sm font-semibold">
-                    {active ? <Money minor={m.saved} tone="auto" /> : "—"}
+                    {active ? <Money minor={m.saved} tone="auto" /> : <span className="text-xs">No activity</span>}
                     {active ? <span className="block text-[11px] font-normal text-muted-foreground">saved</span> : null}
                   </span>
                 </Link>
@@ -103,9 +103,9 @@ export async function YearView({ year }: { year: number }) {
                       {formatMonthShort(m.month, locale)}
                     </Link>
                   </td>
-                  <td className="px-3 py-3.5 text-right">{active ? <Money minor={m.income} /> : "—"}</td>
-                  <td className="px-3 py-3.5 text-right">{active ? <Money minor={m.expense} /> : "—"}</td>
-                  <td className="px-5 py-3.5 text-right sm:px-6">{active ? <Money minor={m.saved} tone="auto" /> : "—"}</td>
+                  <td className="px-3 py-3.5 text-right">{active ? <Money minor={m.income} /> : <span className="sr-only">No activity</span>}</td>
+                  <td className="px-3 py-3.5 text-right">{active ? <Money minor={m.expense} /> : <span className="sr-only">No activity</span>}</td>
+                  <td className="px-5 py-3.5 text-right sm:px-6">{active ? <Money minor={m.saved} tone="auto" /> : <span className="sr-only">No activity</span>}</td>
                 </tr>
               );
             })}

@@ -211,7 +211,7 @@ function Row({
               <Repeat
                 size={11}
                 weight="bold"
-                aria-label="Assumed spent — no transaction logged"
+                aria-label="Assumed spent, no transaction logged"
                 className="shrink-0 text-muted-foreground"
               />
             )}
@@ -358,7 +358,7 @@ function Remaining({
   words?: boolean;
 }) {
   if (planned === 0 && actual === 0) {
-    return <span className="text-muted-foreground">—</span>;
+    return <span className="text-muted-foreground">No budget</span>;
   }
 
   const diff = planned - actual;

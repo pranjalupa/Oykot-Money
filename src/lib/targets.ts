@@ -13,7 +13,7 @@ export const GROUP_META: Record<
 > = {
   needs: {
     label: "Needs",
-    blurb: "Rent, food, transport — the non-negotiables.",
+    blurb: "Rent, food, transport: the non-negotiables.",
     slug: "needs",
   },
   wants: {
@@ -23,7 +23,7 @@ export const GROUP_META: Record<
   },
   investments: {
     label: "Investments",
-    blurb: "SIP, PF, emergency fund — money you keep.",
+    blurb: "SIP, PF, emergency fund: money you keep.",
     slug: "investments",
   },
   income: {

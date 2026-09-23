@@ -67,7 +67,7 @@ export function IncomeSplit({
         head: ["", "Spent", "Of income", "Target"],
         rows: [
           ...rows.map((r) => [META[r.key].label, money(r.actualMinor), `${r.actualPercent}%`, `${r.targetPercent}%`]),
-          ["Not spent", money(left), `${shareOfIncome(left)}%`, "—"],
+          ["Not spent", money(left), `${shareOfIncome(left)}%`, "No target"],
         ],
       }}
     >

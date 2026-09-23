@@ -119,7 +119,7 @@ export function TargetEditor({
       >
         {balanced
           ? "Adds up to 100%."
-          : `Adds up to ${total}% — needs to be 100%.`}
+          : `Adds up to ${total}%. It needs to be 100%.`}
       </p>
 
       {state && !state.ok && (

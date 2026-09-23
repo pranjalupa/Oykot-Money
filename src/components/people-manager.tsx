@@ -423,7 +423,7 @@ function MoneyForm({
             return `${LOAN_CATEGORIES[key].groupLabel} · ${LOAN_CATEGORIES[key].name}`;
           })()}
         </span>
-        {person.balanceMinor !== 0 && " — anything beyond the balance is split off as a new loan."}
+        {person.balanceMinor !== 0 ? ". Anything beyond the balance is split off as a new loan." : "."}
       </p>
 
       {state && !state.ok && (
@@ -648,7 +648,7 @@ function DeletePersonButton({
           <div className="text-sm">
             {person.hasHistory ? (
               <p className="rounded-md bg-destructive/10 p-3 text-destructive">
-                They have transactions, so this can&rsquo;t be deleted —
+                They have transactions, so this can&rsquo;t be deleted:
                 removing them would rewrite your history. Archive them instead:
                 the balance stays, they just stop appearing in new transactions.
               </p>

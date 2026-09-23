@@ -177,7 +177,7 @@ function CategoryRow({ cat }: { cat: Cat }) {
         className="size-7 shrink-0 rounded-md bg-muted text-muted-foreground"
       />
       <span className="min-w-0 flex-1 truncate text-sm">
-        {cat.parentId && <span className="text-muted-foreground">— </span>}
+        {cat.parentId && <span aria-hidden className="text-muted-foreground">↳ </span>}
         {cat.name}
         {cat.archived && (
           <span className="ml-2 text-xs text-muted-foreground">retired</span>

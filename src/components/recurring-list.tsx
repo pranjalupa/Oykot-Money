@@ -50,7 +50,7 @@ export function RecurringList({ rules }: { rules: RecurringRow[] }) {
     return (
       <p className="rounded-lg border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
         Nothing repeats yet. Tick &ldquo;Repeat every month&rdquo; when adding a
-        transaction — rent, SIP, salary — and it lands here.
+        transaction (rent, SIP, salary) and it lands here.
       </p>
     );
   }
@@ -129,7 +129,7 @@ function Row({ rule }: { rule: RecurringRow }) {
       </IconButton>
 
       <IconButton
-        label={`Remove repeat for ${label} — past transactions stay`}
+        label={`Remove repeat for ${label}. Past transactions stay`}
         tone="danger"
         onClick={remove}
         disabled={pending}
@@ -172,7 +172,7 @@ function EditRecurringDialog({ rule, label }: { rule: RecurringRow; label: strin
           <DialogTitle className="font-heading">Edit repeat</DialogTitle>
           <DialogDescription>
             Applies from the next one. Transactions it already added stay as they
-            are — edit those directly if they need to change.
+            are. Edit those directly if they need to change.
           </DialogDescription>
         </DialogHeader>
         <form action={action} className="flex flex-col gap-4">

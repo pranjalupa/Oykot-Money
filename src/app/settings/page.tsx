@@ -128,7 +128,7 @@ export default async function SettingsPage() {
         <h2 className="font-heading text-lg font-bold">Categories</h2>
         <p className="mt-0.5 mb-4 text-sm text-muted-foreground">
           Rename, re-group, or retire any of them. Retiring keeps past
-          transactions intact — it just stops the category appearing in new ones.
+          transactions intact. It just stops the category appearing in new ones.
         </p>
         <FlowGuide id="categories" className="mb-4" />
         <CategoryManager categories={categories} />

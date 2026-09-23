@@ -103,7 +103,7 @@ export function PeopleMini() {
 export function RecurringMini() {
   const rows = [
     { name: "Rent", when: "1st, every month", amount: "₹22,000" },
-    { name: "SIP — index fund", when: "5th, every month", amount: "₹10,000" },
+    { name: "Index fund SIP", when: "5th, every month", amount: "₹10,000" },
     { name: "Netflix", when: "12th, every month", amount: "₹649" },
   ];
   return (

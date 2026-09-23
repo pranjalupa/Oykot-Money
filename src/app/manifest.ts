@@ -16,7 +16,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Oykot Money",
     short_name: "Oykot",
-    description: "Budget your needs, wants and investments — and see where the month actually went.",
+    description: "Budget your needs, wants and investments, and see where the month actually went.",
     start_url: "/",
     id: "/",
     scope: "/",

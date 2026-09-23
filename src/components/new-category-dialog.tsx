@@ -75,7 +75,7 @@ export function NewCategoryDialog({
               onChange={(e) => setParentId(e.target.value)}
               className="h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
             >
-              <option value="">Nothing — top level</option>
+              <option value="">None (top level)</option>
               {parents.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}

@@ -24,7 +24,7 @@ export function TrialBanner({
     state === "trial"
       ? `Free trial · ${daysLeft} day${daysLeft === 1 ? "" : "s"} left`
       : state === "grace"
-        ? "Your last payment didn't go through — update it to keep full access."
+        ? "Your last payment didn't go through. Update it to keep full access."
         : enforced
           ? "Your trial has ended. You can still view and export everything."
           : "Your trial has ended. Oykot stays fully open until payments launch.";

@@ -150,7 +150,7 @@ export function NetWorthTrend({ points }: { points: { month: string; totalMinor:
     >
       {points.length < 2 ? (
         <div className="flex h-[200px] items-center justify-center rounded-xl bg-muted/40 text-sm text-muted-foreground">
-          One point so far: <span className="ml-1 font-medium text-foreground">{last ? money(last.totalMinor) : "—"}</span>
+          One point so far: <span className="ml-1 font-medium text-foreground">{last ? money(last.totalMinor) : "none"}</span>
         </div>
       ) : (
         <LineTrend

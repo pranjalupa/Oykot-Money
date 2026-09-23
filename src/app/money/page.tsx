@@ -92,7 +92,7 @@ export default async function MoneyPage() {
       <AccountsManager
         accounts={spending}
         title="Accounts"
-        blurb="Bank, cash, wallets — money you spend from."
+        blurb="Bank, cash and wallets: the money you spend from."
         empty="No accounts yet."
         action={
           // Moving your own money lives here rather than in the Add form:

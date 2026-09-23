@@ -150,7 +150,7 @@ export function PaceCard({
       ]}
       table={{
         head: ["Day", "Spent so far", "Budget pace"],
-        rows: data.map((d) => [d.title, d.value === null ? "—" : money(d.value), money(d.reference)]),
+        rows: data.map((d) => [d.title, d.value === null ? "Not yet" : money(d.value), money(d.reference)]),
       }}
     >
       <LineTrend

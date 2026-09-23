@@ -122,7 +122,7 @@ export function AuthForm({
             className="flex items-start gap-2 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive"
           >
             <Warning size={16} weight="fill" className="mt-0.5 shrink-0" />
-            That confirmation link didn&rsquo;t work — it may have expired or
+            That confirmation link didn&rsquo;t work. It may have expired or
             already been used. Sign in below, or create the account again.
           </p>
         )}

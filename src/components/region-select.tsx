@@ -22,7 +22,7 @@ export function RegionSelect({
     >
       {REGION_CODES.map((code) => (
         <option key={code} value={code}>
-          {REGIONS[code].label} — {formatDay("2026-09-03", REGIONS[code].locale, { day: "numeric", month: "short", year: "numeric" })}
+          {REGIONS[code].label} ({formatDay("2026-09-03", REGIONS[code].locale, { day: "numeric", month: "short", year: "numeric" })}
         </option>
       ))}
     </select>
