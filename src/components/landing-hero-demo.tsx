@@ -139,7 +139,11 @@ export function HeroDemo({ currency }: { currency: PriceCurrency }) {
   }, [d, reduce]);
 
   const logged = phase === "logged" || phase === "counted" || phase === "done";
-  const spent = d.spent + (logged ? d.logged.amount : 0);
+  // The month total moves with the day's number, not with the row: updating
+  // it the moment the row starts appearing made the card change in three
+  // places at three different times.
+  const counted = phase === "counted" || phase === "done";
+  const spent = d.spent + (counted ? d.logged.amount : 0);
   const Logged = ICON[d.logged.icon];
   const Existing = ICON[d.existing.icon];
 
