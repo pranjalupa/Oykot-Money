@@ -11,6 +11,7 @@ import { requireUser, getProfile, getUserPrefs } from "@/lib/auth";
 import { getAccess } from "@/lib/access";
 import { formatDay } from "@/lib/dates";
 import { ProfileForm } from "@/components/profile-form";
+import { BillingControls } from "@/components/billing-controls";
 import { AccountData } from "@/components/account-data";
 import { DEFAULT_CURRENCY, isCurrency } from "@/lib/currency";
 import { DEFAULT_REGION, isRegion } from "@/lib/region";
@@ -26,15 +27,23 @@ export default async function SettingsPage() {
     getProfile(),
   ]);
   const [access, { locale }] = await Promise.all([getAccess(), getUserPrefs()]);
+  const periodEnd = access?.periodEnd
+    ? formatDay(access.periodEnd.toISOString(), locale, { day: "numeric", month: "long", year: "numeric" })
+    : null;
+  const lifetime = access?.state === "active" && access.plan === "lifetime";
   const planLabel =
     access?.state === "complimentary"
-      ? "Complimentary — free for good"
-      : access?.state === "active"
-        ? `Paid · ${access.plan ?? "monthly"}`
+      ? "Complimentary. Free for good."
+      : lifetime
+        ? "Lifetime · founding member"
+        : access?.state === "active" && access.cancelling
+          ? `Cancelled · yours until ${periodEnd ?? "the end of this period"}`
+          : access?.state === "active"
+        ? `Paid · ${access.plan ?? "monthly"}${periodEnd ? `, renews ${periodEnd}` : ""}`
         : access?.state === "trial"
           ? `Free trial · ends ${formatDay(access.trialEndsAt.toISOString(), locale, { day: "numeric", month: "long" })}`
           : access?.state === "grace"
-            ? "Payment problem — update your payment"
+            ? "Payment problem. Update your payment to keep going."
             : "Trial ended";
 
   return (
@@ -72,17 +81,24 @@ export default async function SettingsPage() {
         <p className="mt-0.5 text-sm text-muted-foreground">{planLabel}</p>
         {access && access.state !== "complimentary" && access.state !== "active" && (
           <p className="mt-2 text-xs text-muted-foreground">
-            Payments aren&rsquo;t live yet, so there&rsquo;s nothing to pay — you keep full access
+            Payments aren&rsquo;t live yet, so there&rsquo;s nothing to pay. You keep full access
             until they are.
           </p>
         )}
-        <Link
-          href="/pricing"
-          className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium underline underline-offset-4"
-        >
-          See plans
-          <ArrowSquareOut size={14} weight="bold" />
-        </Link>
+        {access?.state === "active" && access.provider && !lifetime && !access.cancelling ? (
+          <BillingControls provider={access.provider} periodEnd={periodEnd} />
+        ) : (
+          !lifetime &&
+          access?.state !== "complimentary" && (
+            <Link
+              href="/pricing"
+              className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium underline underline-offset-4"
+            >
+              See plans
+              <ArrowSquareOut size={14} weight="bold" />
+            </Link>
+          )
+        )}
       </section>
 
       <section className="rounded-xl border border-border bg-card p-5">

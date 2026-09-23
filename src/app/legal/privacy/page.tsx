@@ -17,10 +17,10 @@ export default function PrivacyPage() {
       <section>
         <h2>What we collect</h2>
         <ul>
-          <li><strong>Your account</strong> — email address, name, and a password (stored only as a secure hash by our login provider). If you sign in with Google, the name and email Google shares.</li>
-          <li><strong>What you enter</strong> — budgets, categories, transactions, accounts, assets, and the people you lend to or borrow from.</li>
-          <li><strong>Settings</strong> — your currency, date format and timezone. We suggest defaults from the country your connection comes from; we don&rsquo;t store your IP address.</li>
-          <li><strong>Payments, once they launch</strong> — handled by the payment provider. We&rsquo;d receive your plan and payment status, never your card or bank details.</li>
+          <li><strong>Your account.</strong> Email address, name, and a password (stored only as a secure hash by our login provider). If you sign in with Google, the name and email Google shares.</li>
+          <li><strong>What you enter.</strong> Budgets, categories, transactions, accounts, assets, and the people you lend to or borrow from.</li>
+          <li><strong>Settings.</strong> Your currency, date format and timezone. We suggest defaults from the country your connection comes from; we don&rsquo;t store your IP address.</li>
+          <li><strong>Payments, once they launch.</strong> Handled by the payment provider. We&rsquo;d receive your plan and payment status, never your card or bank details.</li>
         </ul>
       </section>
       <section>
@@ -30,10 +30,10 @@ export default function PrivacyPage() {
       <section>
         <h2>Who processes it for us</h2>
         <ul>
-          <li><strong>Supabase</strong> — database and sign-in.</li>
-          <li><strong>Vercel</strong> — hosting. The app and database run in Mumbai, India.</li>
-          <li><strong>Google</strong> — only if you choose to sign in with Google.</li>
-          <li><strong>Payment providers</strong> — Razorpay for payments in India and a merchant of record elsewhere, once payments launch.</li>
+          <li><strong>Supabase.</strong> Database and sign-in.</li>
+          <li><strong>Vercel.</strong> Hosting. The app and database run in Mumbai, India.</li>
+          <li><strong>Google.</strong> Only if you choose to sign in with Google.</li>
+          <li><strong>Payment providers.</strong> Razorpay for payments in India and a merchant of record elsewhere, once payments launch.</li>
         </ul>
       </section>
       <section>
@@ -42,7 +42,7 @@ export default function PrivacyPage() {
       </section>
       <section>
         <h2>Your rights</h2>
-        <p>You can see, correct, export or delete your data at any time — most of it directly in the app (Settings has export and delete). You can also withdraw consent by deleting your account. Under India&rsquo;s Digital Personal Data Protection Act, 2023, and similar laws where you live, you can ask us about how your data is handled or raise a grievance at <Contact />. We reply within 30 days.</p>
+        <p>You can see, correct, export or delete your data at any time, most of it directly in the app (Settings has export and delete). You can also withdraw consent by deleting your account. Under India&rsquo;s Digital Personal Data Protection Act, 2023, and similar laws where you live, you can ask us about how your data is handled or raise a grievance at <Contact />. We reply within 30 days.</p>
       </section>
       <section>
         <h2>Security</h2>

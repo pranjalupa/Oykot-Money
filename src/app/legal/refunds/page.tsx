@@ -21,6 +21,7 @@ export default function RefundsPage() {
           {/* The yearly window is the offer on the pricing page; the two are the
               same promise and have to move together. */}
           <li>On a <strong>yearly</strong> plan, ask within {YEARLY_OFFER.refundDays} days of your first charge and we&rsquo;ll refund the whole year.</li>
+          <li>For <strong>lifetime</strong>, ask within {YEARLY_OFFER.refundDays} days of paying and we&rsquo;ll refund it in full. Lifetime access ends with the refund, and the founding seat goes back on offer.</li>
           <li>On a <strong>monthly</strong> plan, ask within {MONTHLY_REFUND_DAYS} days of your first charge and we&rsquo;ll refund it in full.</li>
           <li>Renewals aren&rsquo;t refunded, except for a duplicate or mistaken charge, which we always refund.</li>
           <li>Refunds go back to the original payment method, usually within 5–10 working days depending on your bank.</li>
@@ -30,7 +31,7 @@ export default function RefundsPage() {
       {YEARLY_OFFER.priceLock && (
         <section>
           <h2>Your price</h2>
-          <p>The price you subscribe at is the price you keep, for as long as the subscription runs without a break. If we raise prices, it applies to new subscriptions — not yours. Cancel and come back later and you pay whatever the price is then.</p>
+          <p>The price you subscribe at is the price you keep, for as long as the subscription runs without a break. If we raise prices, it applies to new subscriptions, not yours. Cancel and come back later and you pay whatever the price is then.</p>
         </section>
       )}
       <section>

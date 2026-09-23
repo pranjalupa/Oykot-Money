@@ -46,6 +46,8 @@ export default async function HomePage({
 }) {
   const user = await getUser();
   // No marketing page for now: signed out, "/" is the sign-in screen.
+  // Signed out, the middleware serves /landing here instead, so this only
+  // catches a session that lapsed between the middleware and the render.
   if (!user) redirect("/login");
   const { timeZone } = await getUserPrefs();
   // Home is the page people open most, so it keeps net worth history filled

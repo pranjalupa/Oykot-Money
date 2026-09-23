@@ -7,7 +7,8 @@ import { db } from "@/db";
 import { subscriptions } from "@/db/schema";
 import { getUser, requireUser } from "@/lib/auth";
 
-import { TRIAL_DAYS } from "@/lib/pricing";
+import { LIFETIME_SEATS, TRIAL_DAYS } from "@/lib/pricing";
+import { lifetimeSeatsSold } from "@/lib/payments/store";
 export { TRIAL_DAYS };
 /** Days a failed renewal keeps full access while the payment is retried. */
 export const GRACE_DAYS = 3;
@@ -35,6 +36,11 @@ export type Access = {
   enforced: boolean;
   /** True only when enforcement is on and access has run out. */
   readOnly: boolean;
+  /** Who bills them — decides what "cancel" means in Settings. Null while trialing. */
+  provider: "razorpay" | "mor" | null;
+  /** Cancelled but paid up: access runs to `periodEnd`, then stops. */
+  cancelling: boolean;
+  periodEnd: Date | null;
 };
 
 /**
@@ -77,6 +83,11 @@ export const getAccess = cache(async (): Promise<Access | null> => {
     daysLeft: state === "trial" ? Math.max(1, Math.ceil((trialEnd - now) / DAY)) : null,
     enforced,
     readOnly: enforced && state === "expired",
+    provider: sub.provider === "razorpay" || sub.provider === "mor" ? sub.provider : null,
+    // Polar keeps a cancelled subscription "active" with this flag; Razorpay
+    // reports `cancelled` outright while the paid period still runs.
+    cancelling: sub.cancelAtPeriodEnd || (sub.status === "cancelled" && state === "active"),
+    periodEnd: sub.currentPeriodEnd,
   };
 });
 
@@ -91,4 +102,13 @@ export async function requireWriter() {
   const access = await getAccess();
   if (access?.readOnly) redirect("/pricing?trial=ended");
   return user;
+}
+
+/**
+ * Founding lifetime seats still on offer. Read on every render of the pricing
+ * surfaces, so the tier disappears at the hundredth sale — not when someone
+ * remembers to edit the copy.
+ */
+export async function lifetimeSeatsLeft(): Promise<number> {
+  return Math.max(0, LIFETIME_SEATS - (await lifetimeSeatsSold()));
 }

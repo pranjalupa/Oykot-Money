@@ -133,6 +133,51 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   Teams and sharing are still out — don't build toward them without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
+- 2026-09-24 — **Landing page back, rebuilt as premium fintech** from Pranjal's copy deck.
+  Signed out, `/` is the landing; signed in, the app. Supersedes the 2026-09-22 removal.
+  - **Served from `app/landing/`, by a middleware rewrite** — the address bar still says
+    `/`. Because `app/loading.tsx` (the app's skeleton) wraps *every* route beside it, and
+    a stranger's first frame was a grey dashboard. `app/landing/loading.tsx` is the Forest
+    band instead. `/landing` typed directly redirects to `/`. **`/pricing` still gets the
+    app skeleton for signed-out visitors** — same fix applies if that matters.
+  - **Forest bands are the one place Forest is a surface** (hero, privacy, final CTA), in
+    both themes. Scenery is `lp-`-prefixed in globals.css (`.lp-grid`, `.lp-grain`,
+    `.lp-lift`, `.lp-rise`, `.lp-drift`) and must never be used inside the app.
+  - **Serif moments: two, as bookends** — "*safe*" in the hero, "*Start knowing.*" at the
+    end. Plus the /pricing h1. Don't add more.
+  - **`HeroDemo`** plays the product in four seconds: an expense lands, the day's number
+    counts down. Runs only while on screen; reduced motion reads the preference with
+    `useSyncExternalStore` and shows the finished state (**not** setState in an effect —
+    the linter rejects it). The reset plays in reverse — snapping looked like a glitch.
+  - **The deck's claims were checked against the app and five changed:** prices are the
+    real ones from `PRICES`, not the deck's $4.99/$39; "any currency" → "8 currencies"
+    (two-decimal only, `MINOR_PER_UNIT`); "nothing leaves unless you export" → "never sold
+    or shared" (it's stored on our servers); "export as CSV" → CSV *or* JSON; "cancel in
+    one click" → "cancel from Settings" (there's a confirm step). **Check the app before
+    publishing a claim about it.**
+  - Comparison table: icons carry judgement, so only our column gets positive ones.
+  - **Audit the landing on `next start` and wait for `main#main` to be visible** — the
+    browser pane pauses rAF when hidden, and React's streaming swap waits on it. Zero axe
+    violations, light/dark × 375/1280.
+- 2026-09-24 — **Lifetime tier: $79 / ₹3,999 once, founding 100.** Pranjal's call on the
+  dollar price; ₹3,999 was chosen here (about two years of yearly, like $79).
+  - **The cap is enforced**, not claimed: `lifetimeSeatsLeft()` counts active lifetime
+    rows; the tier isn't rendered at 0 and checkout refuses at 0. A full refund frees a seat.
+  - One-time, so different APIs: Razorpay **Orders** (`order.paid`, `refund.processed`),
+    Polar one-time product (`order.paid`, `order.refunded`, matched on
+    `POLAR_PRODUCT_LIFETIME` since renewals raise `order.paid` too). Lifetime = status
+    `active` with no period end, which `getAccess` already reads as for good.
+  - **`applySubscriptionUpdate` won't let a non-lifetime event overwrite an active lifetime
+    row** (`setWhere`), and lifetime can't be bought over a running subscription — both
+    would otherwise double-charge or strip access someone paid for.
+  - Lifetime is the full-width Forest panel under the two cards — the reference's slot.
+- 2026-09-24 — **Cancelling works from Settings → Billing.** It didn't: the pricing FAQ
+  already said "any time, from Settings" and there was nothing there. Polar customers get
+  the hosted portal; Razorpay has none, so rupee customers get a button
+  (`cancelRupeeSubscription`, cancel at cycle end, id from the user's own row, never the
+  form). `markCancelling()` in store.ts bridges the gap until Razorpay's event arrives.
+- 2026-09-24 — **No em dashes in public copy** (landing, pricing, auth, legal), at
+  Pranjal's request: a comma or a full stop instead. Code comments are exempt.
 - 2026-09-23 — **Pricing page rebuilt as two cards**, to a reference Pranjal supplied
   (serif question headline, a tray holding two cornered cards, a full-width closing
   panel). Refund window on yearly **30 → 14 days**, at his call.
@@ -440,8 +485,11 @@ Annotation tool (owner-only) on again since 2026-09-18 (`ANNOTATIONS_ENABLED`). 
 live since 2026-09-14.
 **Not built yet:** statement import or any automated entry (deliberately deferred; see the
 `merchant_rules` note above).
-**Next:** payments — Razorpay, then a Merchant of Record, in test mode (`PRODUCT.md` §13.6,
-phases 3–4). Turn on `ACCESS_ENFORCED` only once checkout works. Legal pages are drafts.
+Landing page live at `/` for signed-out visitors (2026-09-24). Payments built in test mode
+(monthly, yearly, lifetime) with cancel in Settings; untested end to end until Pranjal
+creates the provider accounts (`docs/payments-setup.md`).
+**Next:** provider accounts and a real test payment per currency. Turn on
+`ACCESS_ENFORCED` only after that. Legal pages are drafts.
 **Lint, typecheck and build:** clean.
 
 <!-- BEGIN:nextjs-agent-rules -->

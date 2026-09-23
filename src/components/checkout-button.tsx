@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { startCheckout } from "@/app/checkout/actions";
-import type { PriceCurrency } from "@/lib/pricing";
+import type { Plan, PriceCurrency } from "@/lib/pricing";
 
 /**
  * One button, two checkouts.
@@ -27,6 +27,12 @@ declare global {
   }
 }
 
+const DESCRIPTION: Record<Plan, string> = {
+  monthly: "Monthly plan",
+  yearly: "Yearly plan",
+  lifetime: "Lifetime, founding member",
+};
+
 export function CheckoutButton({
   plan,
   currency,
@@ -34,7 +40,7 @@ export function CheckoutButton({
   disabled,
   className,
 }: {
-  plan: "monthly" | "yearly";
+  plan: Plan;
   currency: PriceCurrency;
   label: string;
   disabled?: boolean;
@@ -63,9 +69,10 @@ export function CheckoutButton({
 
       new window.Razorpay({
         key: result.keyId,
-        subscription_id: result.subscriptionId,
+        // A one-time lifetime payment is an order; the plans are subscriptions.
+        ...(result.orderId ? { order_id: result.orderId } : { subscription_id: result.subscriptionId }),
         name: "Oykot Money",
-        description: plan === "yearly" ? "Yearly plan" : "Monthly plan",
+        description: DESCRIPTION[plan],
         prefill: { name: result.name ?? "", email: result.email ?? "" },
         theme: { color: "#004437" },
         // Nothing is unlocked here. The webhook decides, because this callback

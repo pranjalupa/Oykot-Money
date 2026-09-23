@@ -43,7 +43,12 @@ the plan worth pushing.
    - Secret: invent a long random string (this is *yours*, not Razorpay's).
    - Events: `subscription.activated`, `subscription.charged`,
      `subscription.pending`, `subscription.halted`, `subscription.cancelled`,
-     `subscription.completed`.
+     `subscription.completed`, **and** `order.paid` and `refund.processed`
+     for lifetime. Miss those two and a lifetime payment is taken but never
+     unlocks anything.
+
+   **Lifetime needs no plan here.** It's a one-time *order*, created by the
+   app at checkout for ₹3,999 from `PRICES` — the keys are all it needs.
 
 ## 2. Polar — everyone else, in dollars
 
@@ -63,12 +68,13 @@ once in sandbox now, once in production when you go live.
 1. **Sign up** at <https://sandbox.polar.sh> with GitHub or email, and create
    an organisation. The slug becomes part of your checkout URLs, so pick the
    name you'd want customers to see.
-2. **Create two products** — Products → New Product:
+2. **Create three products** — Products → New Product:
    - *Oykot Money — Monthly*: recurring, **monthly**, **$6**.
    - *Oykot Money — Yearly*: recurring, **yearly**, **$36**.
+   - *Oykot Money — Lifetime*: **one-time**, **$79**.
    No benefits or licence keys needed — access is decided by our own
    subscriptions table, not by Polar's entitlements.
-   Copy both product ids (they look like `xxxxxxxx-xxxx-…`).
+   Copy all three product ids (they look like `xxxxxxxx-xxxx-…`).
 3. **Access token** — Settings → Developers → New Token. Scope it to
    `checkouts:write`, `customers:read`, `subscriptions:read` and
    `webhooks:read`. Copy it once; it isn't shown again.
@@ -76,7 +82,8 @@ once in sandbox now, once in production when you go live.
    - URL: `https://oykot-money.vercel.app/api/webhooks/polar`
    - Format: **Raw** (not Discord or Slack)
    - Events: `subscription.active`, `subscription.updated`,
-     `subscription.canceled`, `subscription.uncanceled`, `subscription.revoked`
+     `subscription.canceled`, `subscription.uncanceled`, `subscription.revoked`,
+     **and** `order.paid` and `order.refunded` for lifetime
    - Copy the signing secret.
 5. **Payout account** — Finance → Payout Account → connect Stripe Express with
    your PAN and Indian bank details. This can wait until you're ready to take
@@ -98,6 +105,7 @@ POLAR_ACCESS_TOKEN=polar_oat_…
 POLAR_WEBHOOK_SECRET=…
 POLAR_PRODUCT_MONTHLY=…
 POLAR_PRODUCT_YEARLY=…
+POLAR_PRODUCT_LIFETIME=…
 POLAR_SERVER=sandbox                # "production" only when going live
 
 NEXT_PUBLIC_SITE_URL=https://oykot-money.vercel.app
@@ -161,6 +169,31 @@ Practically that means:
   immutable — a new price is a new plan, and old subscriptions keep running on
   the old one, so the lock holds by default. On Polar, raise the price by
   creating a new product and leaving the old one live for existing customers.
+
+## Lifetime, and the founding 100
+
+A one-time **$79 / ₹3,999**, offered to the first 100 buyers across both
+currencies. The count is real: `lifetimeSeatsLeft()` counts paid lifetime
+rows on every render, the tier disappears at zero, and checkout refuses a
+101st sale even from a page that was open before the last seat went. A full
+refund revokes lifetime and gives the seat back.
+
+Two guards worth knowing about:
+
+- **Lifetime can't be bought over a running subscription.** It would leave
+  the subscription charging. The checkout says to cancel first.
+- **Nothing a subscription does can take lifetime away.** Someone who
+  cancelled a yearly plan and then bought lifetime will still receive that
+  yearly plan's final events; `store.ts` ignores them for a lifetime row.
+
+**Only keep "first 100" if you mean it.** Raising `LIFETIME_SEATS` later is
+allowed by the code and dishonest to the people who bought because of it.
+
+## Cancelling
+
+Settings → Billing. Dollar customers get Polar's hosted portal; rupee
+customers get a button that cancels at the end of the paid period (Razorpay
+has no hosted portal). Nobody has to email anyone to stop paying.
 
 ## What the code does with all this
 

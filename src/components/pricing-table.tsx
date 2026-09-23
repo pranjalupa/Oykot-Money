@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Lock, ShieldCheck, Sparkle } from "@phosphor-icons/react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
+  LIFETIME_SEATS,
   MONTHLY_REFUND_DAYS,
   PLAN_FEATURES,
   PRICES,
@@ -33,11 +34,19 @@ export function PricingTable({
   defaultCurrency,
   viewer,
   checkout,
+  lifetimeSeats = 0,
 }: {
   defaultCurrency: PriceCurrency;
   viewer: Viewer;
   /** Which providers are configured, and whether they're in test mode. */
-  checkout?: { razorpay: boolean; polar: boolean; test: boolean };
+  checkout?: {
+    razorpay: boolean;
+    polar: boolean;
+    test: boolean;
+    lifetime?: { INR: boolean; USD: boolean };
+  };
+  /** Founding lifetime seats left. At 0 the tier isn't offered at all. */
+  lifetimeSeats?: number;
 }) {
   const [currency, setCurrency] = useState<PriceCurrency>(defaultCurrency);
   const monthsFree = yearlyMonthsFree(currency);
@@ -88,9 +97,19 @@ export function PricingTable({
         />
       </div>
 
+      {lifetimeSeats > 0 && (
+        <LifetimePanel
+          currency={currency}
+          viewer={viewer}
+          seatsLeft={lifetimeSeats}
+          ready={!!checkout?.lifetime?.[currency]}
+          testMode={testMode}
+        />
+      )}
+
       <div className="mt-3 rounded-3xl border border-border px-6 py-5">
         <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-          In both plans
+          In every plan
         </h3>
         <ul className="mt-3 grid gap-2.5 text-sm sm:grid-cols-2">
           {PLAN_FEATURES.map((f) => (
@@ -156,7 +175,7 @@ function PlanCard({
         {yearly ? (
           <>
             <span className="line-through">{formatPrice(twelveMonths(currency), currency)}</span> if
-            you paid monthly — that&rsquo;s {formatPrice(perMonth, currency)} a month, billed once.
+            you paid monthly. That&rsquo;s {formatPrice(perMonth, currency)} a month, billed once.
           </>
         ) : (
           <>{formatPrice(twelveMonths(currency), currency)} over a year, in twelve charges.</>
@@ -203,6 +222,119 @@ function PlanCard({
         />
       </div>
     </div>
+  );
+}
+
+/**
+ * Lifetime, as the full-width panel under the pair — the slot the reference
+ * gives its "something else" offer. Forest, because it's the one tier worth
+ * a different surface: it's scarce, and the seat count says so honestly.
+ *
+ * The count is live (`lifetimeSeatsLeft()`), and the panel isn't rendered at
+ * all once it reaches zero, so "first 100" is enforced rather than claimed.
+ */
+function LifetimePanel({
+  currency,
+  viewer,
+  seatsLeft,
+  ready,
+  testMode,
+}: {
+  currency: PriceCurrency;
+  viewer: Viewer;
+  seatsLeft: number;
+  ready: boolean;
+  testMode: boolean;
+}) {
+  const taken = LIFETIME_SEATS - seatsLeft;
+  const yearsToPayOff = PRICES[currency].lifetime / PRICES[currency].yearly;
+
+  return (
+    <div className="relative mt-3 overflow-hidden rounded-3xl bg-forest-900 px-6 py-7 text-white sm:px-8">
+      {/* A soft Lemon glow off the corner — depth without a picture. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-24 -right-16 size-72 rounded-full bg-lemon-400/20 blur-3xl"
+      />
+      <div className="relative grid gap-6 md:grid-cols-[1fr_auto] md:items-end">
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="font-heading text-xl font-bold">Lifetime</h2>
+            <span className="rounded-full bg-lemon-400 px-2.5 py-1 text-xs font-semibold text-forest-950">
+              Founding members
+            </span>
+          </div>
+          <p className="mt-3 flex items-baseline gap-2">
+            <span className="font-heading text-4xl font-extrabold">
+              {formatPrice(PRICES[currency].lifetime, currency)}
+            </span>
+            <span className="text-sm text-white/70">once</span>
+          </p>
+          <p className="mt-2 max-w-md text-sm text-white/75">
+            Pay once, keep it for good. It costs about {Math.round(yearsToPayOff)} years of the
+            yearly plan, and every update after is included. Full refund inside{" "}
+            {YEARLY_OFFER.refundDays} days.
+          </p>
+
+          <div className="mt-5 max-w-sm">
+            <div
+              className="h-1.5 overflow-hidden rounded-full bg-white/15"
+              role="img"
+              aria-label={`${taken} of ${LIFETIME_SEATS} founding seats taken`}
+            >
+              <div
+                className="h-full rounded-full bg-lemon-400"
+                style={{ width: `${Math.max(2, (taken / LIFETIME_SEATS) * 100)}%` }}
+              />
+            </div>
+            <p className="mt-2 text-xs text-white/70">
+              {seatsLeft} of {LIFETIME_SEATS} founding seats left. When they&rsquo;re gone, this goes.
+            </p>
+          </div>
+        </div>
+
+        <div className="md:w-64">
+          <LifetimeAction viewer={viewer} ready={ready} currency={currency} testMode={testMode} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LifetimeAction({
+  viewer,
+  ready,
+  currency,
+  testMode,
+}: {
+  viewer: Viewer;
+  ready: boolean;
+  currency: PriceCurrency;
+  testMode: boolean;
+}) {
+  const lemon = "w-full rounded-full bg-lemon-400 text-forest-950 hover:bg-lemon-300 sm:h-11";
+  if (viewer === "paid") {
+    return <p className="text-sm text-white/75">Lifetime is for accounts without a running plan.</p>;
+  }
+  if (viewer === "guest") {
+    return (
+      <Link href="/signup" className={cn(buttonVariants({ size: "lg" }), lemon)}>
+        Start free, decide later
+      </Link>
+    );
+  }
+  if (!ready) {
+    return (
+      <Button size="lg" className={lemon} disabled>
+        Checkout opens soon
+      </Button>
+    );
+  }
+  return (
+    <>
+      <CheckoutButton plan="lifetime" currency={currency} label="Pay once" className={lemon} />
+      {testMode && <p className="mt-2 text-center text-xs text-white/70">Test mode. No real money moves.</p>}
+    </>
   );
 }
 
@@ -303,7 +435,7 @@ function PlanAction({
         className="rounded-full sm:h-11"
       />
       <p className="mt-2 text-center text-xs text-muted-foreground">
-        {testMode ? "Test mode — no real money moves." : "Cancel any time from Settings."}
+        {testMode ? "Test mode. No real money moves." : "Cancel any time from Settings."}
       </p>
     </>
   );

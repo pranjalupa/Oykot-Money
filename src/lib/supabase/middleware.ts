@@ -52,8 +52,29 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
-  // "/" is the landing page when signed out, the app when signed in.
-  // "/" is not public: with the landing page gone it redirects to /login.
+
+  // The landing page's real home is /landing, but nobody should see that
+  // address: send it back to "/", which serves it (below).
+  if (pathname === "/landing") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/";
+    return NextResponse.redirect(url);
+  }
+
+  // Signed out, "/" is the landing page. It's served from its own segment by
+  // a rewrite — the address bar still says "/" — because app/loading.tsx wraps
+  // every route beside it, and a visitor's first frame would otherwise be a
+  // grey skeleton of a budget they don't have. app/landing/loading.tsx is the
+  // Forest band instead, so any flash is seamless.
+  if (!user && pathname === "/") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/landing";
+    const rewrite = NextResponse.rewrite(url, { request });
+    // Keep whatever Supabase set (clearing a stale session, say).
+    for (const cookie of response.cookies.getAll()) rewrite.cookies.set(cookie);
+    return rewrite;
+  }
+
   const isPublic = APP_FILES.includes(pathname) || PUBLIC_PATHS.some((p) => pathname.startsWith(p));
 
   if (!user && !isPublic) {
