@@ -133,6 +133,21 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   Teams and sharing are still out — don't build toward them without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
+- 2026-09-23 — **Pricing page rebuilt as two cards**, to a reference Pranjal supplied
+  (serif question headline, a tray holding two cornered cards, a full-width closing
+  panel). Refund window on yearly **30 → 14 days**, at his call.
+  - **Both ways to pay are on screen at once**, no billing toggle. A toggle hides the
+    comparison at the moment someone is making it. **Yearly is first in the markup as
+    well as on screen** — no `order` swapping, so tab order always matches the page.
+  - **`MonthsStrip`**: twelve ticks, the free ones hollow. The offer as a shape rather
+    than a percentage. Decorative (`aria-hidden`); the caption under it carries meaning.
+  - **The shared feature list is printed once**, under the pair. Both cards carrying the
+    same eight lines doubled their height and said nothing — cards now hold only what
+    differs: price, the strip, and either the refund/price-lock block or monthly's note.
+  - The h1 uses `accent-note` (Instrument Serif italic). **This is the one serif moment
+    on the page** and the only heading in the app allowed it — don't spread it.
+  - `CheckoutButton` takes a `className` so the pricing CTAs can be pills.
+  - Zero axe violations, both themes, desktop and 375px, both currencies.
 - 2026-09-23 — **Yearly is sold with an offer, not a discount.** The pricing page
   leads with the saving in **months free** (6 on USD, 4 on INR), strikes the
   twelve-month total, and answers the real objection to committing for a year with

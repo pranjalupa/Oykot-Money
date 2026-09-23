@@ -138,7 +138,7 @@ Yearly isn't sold on a percentage. The pricing page leads with the saving in
 picture, and then answers the real objection to paying for a year — *what if
 I stop using it* — with two promises:
 
-- **A 30-day refund window on a yearly plan.** Ask inside a month and
+- **A 14-day refund window on a yearly plan.** Ask inside a fortnight and
   the whole year goes back. Monthly keeps its 7 days.
 - **The price is locked** for as long as the subscription runs unbroken.
 

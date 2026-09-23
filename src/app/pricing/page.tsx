@@ -5,6 +5,9 @@ import { PublicFooter, PublicHeader } from "@/components/public-chrome";
 import { getUser } from "@/lib/auth";
 import { getAccess } from "@/lib/access";
 import { priceCurrencyForCountry, TRIAL_DAYS, YEARLY_OFFER } from "@/lib/pricing";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { LEGAL } from "@/lib/legal";
 import { configured as razorpayReady, isTestMode } from "@/lib/payments/razorpay";
 
 export const metadata = { title: "Pricing · Oykot Money" };
@@ -55,10 +58,9 @@ export default async function PricingPage({
           </p>
         )}
         <div className="mb-8 text-center">
-          <h1 className="font-heading text-3xl font-extrabold">One plan. Everything in it.</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Try it free for {TRIAL_DAYS} days. Then pay monthly, or pay for a year and get
-            several of them free.
+          <h1 className="accent-note text-4xl sm:text-5xl">How would you like to pay?</h1>
+          <p className="mt-3 text-sm text-muted-foreground">
+            One plan, everything in it. Free for {TRIAL_DAYS} days — no card.
           </p>
         </div>
 
@@ -72,7 +74,24 @@ export default async function PricingPage({
           }}
         />
 
-        <section className="mx-auto mt-14 max-w-2xl">
+        <section className="mx-auto mt-4 grid max-w-4xl gap-6 rounded-3xl bg-muted px-6 py-7 sm:grid-cols-[1fr_auto] sm:items-center">
+          <div>
+            <h2 className="font-heading text-xl font-bold">Something missing?</h2>
+            <p className="mt-2 max-w-prose text-sm text-muted-foreground">
+              Budgets are personal, and this one is shaped around how one person keeps theirs.
+              If it doesn&rsquo;t fit the way you do it, say so — that&rsquo;s how the next
+              version gets decided.
+            </p>
+          </div>
+          <a
+            href={`mailto:${LEGAL.email}`}
+            className={cn(buttonVariants({ size: "lg" }), "rounded-full px-6 sm:h-11")}
+          >
+            Tell us what you need
+          </a>
+        </section>
+
+        <section className="mx-auto mt-14 max-w-4xl">
           <h2 className="font-heading text-xl font-bold">Questions</h2>
           <dl className="mt-4 divide-y divide-border rounded-xl border border-border bg-card">
             {FAQ.map((f) => (

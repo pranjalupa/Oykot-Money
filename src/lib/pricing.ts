@@ -29,7 +29,7 @@ export type PriceCurrency = keyof typeof PRICES;
  */
 export const YEARLY_OFFER = {
   /** Days to ask for a full refund on a yearly plan. Monthly keeps 7. */
-  refundDays: 30,
+  refundDays: 14,
   /** The price is held for as long as the subscription runs unbroken. */
   priceLock: true,
 } as const;

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Script from "next/script";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { startCheckout } from "@/app/checkout/actions";
 import type { PriceCurrency } from "@/lib/pricing";
 
@@ -31,11 +32,13 @@ export function CheckoutButton({
   currency,
   label,
   disabled,
+  className,
 }: {
   plan: "monthly" | "yearly";
   currency: PriceCurrency;
   label: string;
   disabled?: boolean;
+  className?: string;
 }) {
   const [busy, setBusy] = useState(false);
 
@@ -84,7 +87,7 @@ export function CheckoutButton({
       {currency === "INR" && (
         <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
       )}
-      <Button size="lg" className="w-full" onClick={go} disabled={busy || disabled}>
+      <Button size="lg" className={cn("w-full", className)} onClick={go} disabled={busy || disabled}>
         {busy ? "Opening checkout…" : label}
       </Button>
     </>
