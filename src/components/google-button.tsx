@@ -47,7 +47,7 @@ export function GoogleButton({ next }: { next: string }) {
         <button
           type="submit"
           disabled={pending}
-          className="flex h-9 w-full items-center justify-center gap-2.5 rounded-md border border-input bg-card text-sm font-medium shadow-xs transition-colors hover:bg-muted focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none disabled:opacity-60"
+          className="flex h-11 w-full items-center justify-center gap-2.5 rounded-xl border border-input bg-card text-sm font-medium shadow-xs transition-colors hover:bg-muted focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none disabled:opacity-60"
         >
           <GoogleMark />
           {pending ? "Redirecting…" : "Continue with Google"}

@@ -25,7 +25,7 @@ export function QuickActions() {
           key={label}
           href={href}
           title={hint}
-          className="flex min-h-[76px] flex-col items-center justify-center gap-1.5 rounded-2xl border border-border bg-card px-1 py-3 transition-colors active:bg-muted"
+          className="flex min-h-[76px] flex-col items-center justify-center gap-1.5 rounded-2xl border border-border bg-card px-1 py-3 transition-[background-color,transform] duration-150 active:scale-[0.96] active:bg-muted"
         >
           <span className="flex size-10 items-center justify-center rounded-full bg-muted text-foreground">
             <Icon size={20} weight="bold" />

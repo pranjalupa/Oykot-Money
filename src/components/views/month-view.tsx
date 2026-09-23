@@ -63,7 +63,7 @@ export async function MonthView({ month }: { month: string }) {
       {nothingPlanned && (
         <div className="rounded-2xl border border-dashed border-border p-8 text-center">
           <p className="font-heading text-base font-bold">Nothing budgeted yet</p>
-          <p className="accent-note mx-auto mt-1 max-w-md text-sm text-muted-foreground">
+          <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
             Set what you expect to spend in each category, and the rest of the app
             starts working.
           </p>

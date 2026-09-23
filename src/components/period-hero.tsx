@@ -1,4 +1,4 @@
-import { Money } from "@/components/money";
+import { AnimatedMoney } from "@/components/animated-money";
 
 /**
  * The one number a screen exists to answer, in the shape Daily's hero set:
@@ -28,7 +28,7 @@ export function PeriodHero({
     <section className="rounded-2xl border border-border bg-card p-5 sm:p-8">
       <p className="text-sm font-medium text-muted-foreground">{label}</p>
       <p className="mt-1.5 font-heading text-[2.75rem] leading-none font-bold tracking-tight sm:text-5xl">
-        <Money minor={amountMinor} tone={tone} />
+        <AnimatedMoney minor={amountMinor} tone={tone} />
       </p>
 
       {progress && (
@@ -41,7 +41,7 @@ export function PeriodHero({
           className="mt-5 h-2.5 overflow-hidden rounded-full bg-muted"
         >
           <div
-            className={`h-full rounded-full ${progress.over ? "bg-negative" : "bg-primary"}`}
+            className={`h-full rounded-full transition-[width,background-color] duration-700 ease-out ${progress.over ? "bg-negative" : "bg-primary"}`}
             style={{ width: `${Math.min(Math.max(progress.percent, 0), 100)}%` }}
           />
         </div>

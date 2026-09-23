@@ -40,10 +40,9 @@ set `user.email` before the first commit.
   through an explicit map in `src/components/category-icon.tsx` (not a namespace import —
   keeps the bundle honest and degrades to a Tag icon on an unknown name). Picked from a
   grouped, searchable grid (`icon-picker.tsx`), never a list of raw icon names.
-- **Fonts:** Archivo (headings) · Inter (body/UI) · Instrument Serif *italic* (accent only —
-  pull quotes and insight lines, never buttons/nav/labels; it's the one serif moment in an
-  all-sans system and only reads as intentional if it stays rare). Use the `accent-note`
-  utility class, don't reach for the font variable directly.
+- **Fonts:** Archivo (headings) · Inter (body/UI). That's all. Instrument Serif italic was
+  removed on 2026-09-24 at Pranjal's call ("I don't like the italic"), with the font and
+  the `accent-note` utility — don't bring a serif back without asking.
 - **Database: Supabase Postgres via Drizzle** (`postgres-js`, pooled). Provisioned through
   the Vercel Marketplace, so env vars are managed by Vercel — `vercel env pull .env.local`
   to refresh. Migrated off local SQLite when the project went multi-user.
@@ -133,6 +132,51 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   Teams and sharing are still out — don't build toward them without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
+- 2026-09-24 — **Landing, pricing and sign-in redesigned light and editorial**, from
+  Pranjal's references. Supersedes today's earlier Forest-band landing (below).
+  - **No gradients, anywhere on these pages, and no italic.** Flat colour; depth comes
+    from `.lp-phone-shadow` / `.lp-float-shadow` on white cards over grey (`bg-muted`)
+    panels. The Forest bands, grid, grain, glows and cursor spotlight are gone. One flat
+    Forest panel remains (privacy), plus the lifetime tier.
+  - **Mockups, not screenshots:** `components/landing-mockups.tsx` has `PhoneFrame`, the
+    Daily screen (`DailyScreen`), `FloatCard`, `SplitCard`. The hero is that phone playing
+    the demo with cards floating off it; panels crop their mockups at the edge. Pass
+    `logged` for a static phone — **never show the after-lunch number without the lunch
+    row** (it did, briefly, on three phones).
+  - Pricing is one container after the Starter/Team reference: Monthly on white, **Yearly
+    on grey, second, highlighted**, listing only "Everything in Monthly, plus". This
+    reverses "yearly first in the markup" from earlier today; the reference wins. Plan
+    names take `headingLevel` (2 on /pricing, 3 under the landing's h2) — axe caught h1→h3.
+  - Sign-in/up: white container with logo and footer, grey panel with a statement and a
+    phone. **No testimonial** — there are no customers, and an invented quote is a fake
+    review. Auth controls are 44px, rounded-xl.
+  - The FAQ is its own module (`faq-list.tsx`) so /pricing can use it without importing
+    landing.tsx — which would pull GSAP into /pricing's bundle.
+  - **Removed, unused after this:** `landing-motion.tsx` (`Reveal`, `CountUp`), five of the
+    six `product-preview.tsx` cards (only `PaceMini` is left), and the `.reveal` /
+    `.fill-bar` CSS. Older entries below still mention them; they're history.
+- 2026-09-24 — **GSAP on the landing only** (`landing-motion-gsap.tsx`, wired by `data-lp-*`
+  attributes; the page stays a server component). Checked: GSAP is in /landing's chunks and
+  no app route's.
+  - **The hero headline never waits for JS** — its entrance is CSS (`.lp-rise`), so LCP
+    isn't held back. **Reveals animate opacity, never visibility** — `autoAlpha` would
+    drop unrevealed buttons out of the tab order. Reduced motion: none of it runs.
+  - **Start only once the page has a layout.** Opened in a background tab, the page
+    hydrated inside React's display:none streaming container, ScrollTrigger measured zero
+    everywhere, and the hero parked at its end state until a resize. A ResizeObserver now
+    starts it on the first real size and refreshes on later height changes.
+  - **Nav state is derived from scrollY on every update**, not enter/leave callbacks: with
+    `end: "max"`, landing exactly on the page bottom counts as *leaving*.
+  - SplitText masks clip descenders at tight leading — `.lp-word-mask` extends the box.
+  - **Auditing the landing:** the browser pane pauses rAF when hidden, so animations stall
+    there; pin the animated elements' final state (and `.lp-rise`) before running axe.
+- 2026-09-24 — **App microinteractions, restrained, no GSAP.** The hero figure ticks from
+  old to new value when it changes (`AnimatedMoney`; never on first render, so it doesn't
+  replay on every visit), its bar glides, buttons and quick-action tiles press, the phone
+  tab icon pops once on arrival (`.tab-pop`). All under the global reduced-motion rule.
+- 2026-09-24 — **No em dashes in any user-visible copy, app-wide** (48 found by walking the
+  TypeScript AST, so comments were untouched). Empty-value dashes became words: Not yet,
+  No activity, No budget, No target.
 - 2026-09-24 — **Landing page back, rebuilt as premium fintech** from Pranjal's copy deck.
   Signed out, `/` is the landing; signed in, the app. Supersedes the 2026-09-22 removal.
   - **Served from `app/landing/`, by a middleware rewrite** — the address bar still says

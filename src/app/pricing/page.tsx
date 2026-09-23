@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { Info } from "@phosphor-icons/react/dist/ssr";
+import { FaqList } from "@/components/faq-list";
 import { PricingTable } from "@/components/pricing-table";
 import { PublicFooter, PublicHeader } from "@/components/public-chrome";
 import { getUser } from "@/lib/auth";
@@ -60,7 +61,7 @@ export default async function PricingPage({
   return (
     <div className="min-h-svh">
       {!user && <PublicHeader />}
-      <main className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6">
+      <main className="mx-auto w-full max-w-5xl px-4 py-12 sm:px-6 sm:py-16">
         {trial === "ended" && (
           <p className="mx-auto mb-8 flex max-w-md items-start gap-2 rounded-lg bg-muted px-4 py-3 text-sm">
             <Info size={18} weight="duotone" className="mt-0.5 shrink-0" />
@@ -68,9 +69,14 @@ export default async function PricingPage({
             it. Choose a plan to keep adding.
           </p>
         )}
-        <div className="mb-8 text-center">
-          <h1 className="accent-note text-4xl sm:text-5xl">How would you like to pay?</h1>
-          <p className="mt-3 text-sm text-muted-foreground">
+        <div className="mb-10 text-center">
+          <p className="inline-flex items-center rounded-full border border-border bg-card px-3 py-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+            Pricing
+          </p>
+          <h1 className="mt-4 font-heading text-[clamp(2.2rem,5vw,3.6rem)] leading-[1.02] font-extrabold tracking-[-0.035em]">
+            How would you like to pay?
+          </h1>
+          <p className="mt-4 text-muted-foreground">
             One plan, everything in it. Free for {TRIAL_DAYS} days, no card.
           </p>
         </div>
@@ -88,9 +94,10 @@ export default async function PricingPage({
             },
           }}
           lifetimeSeats={lifetimeSeats}
+          headingLevel={2}
         />
 
-        <section className="mx-auto mt-4 grid max-w-4xl gap-6 rounded-3xl bg-muted px-6 py-7 sm:grid-cols-[1fr_auto] sm:items-center">
+        <section className="mx-auto mt-3 grid max-w-4xl gap-6 rounded-[2rem] bg-muted px-6 py-7 sm:grid-cols-[1fr_auto] sm:items-center sm:px-10">
           <div>
             <h2 className="font-heading text-xl font-bold">Something missing?</h2>
             <p className="mt-2 max-w-prose text-sm text-muted-foreground">
@@ -107,16 +114,13 @@ export default async function PricingPage({
           </a>
         </section>
 
-        <section className="mx-auto mt-14 max-w-4xl">
-          <h2 className="font-heading text-xl font-bold">Questions</h2>
-          <dl className="mt-4 divide-y divide-border rounded-xl border border-border bg-card">
-            {FAQ.map((f) => (
-              <div key={f.q} className="px-5 py-4">
-                <dt className="text-sm font-semibold">{f.q}</dt>
-                <dd className="mt-1 text-sm text-muted-foreground">{f.a}</dd>
-              </div>
-            ))}
-          </dl>
+        <section className="mx-auto mt-20 max-w-3xl">
+          <h2 className="text-center font-heading text-[clamp(1.8rem,4vw,2.6rem)] font-extrabold tracking-[-0.03em]">
+            Questions, answered.
+          </h2>
+          <div className="mt-8">
+            <FaqList items={FAQ} />
+          </div>
         </section>
       </main>
       {!user && <PublicFooter />}

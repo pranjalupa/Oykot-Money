@@ -19,7 +19,7 @@ function Header({ title, note }: { title: string; note: string }) {
     <div className="mb-7 text-center">
       <LogoMark size={44} className="mx-auto" />
       <h1 className="mt-4 font-heading text-xl font-bold">{title}</h1>
-      <p className="accent-note mt-1 text-sm text-muted-foreground">{note}</p>
+      <p className="mt-1 text-sm text-muted-foreground">{note}</p>
     </div>
   );
 }

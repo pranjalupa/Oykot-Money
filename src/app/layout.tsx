@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { cookies } from "next/headers";
-import { Archivo, Inter, Instrument_Serif } from "next/font/google";
+import { Archivo, Inter } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -25,13 +25,6 @@ const archivo = Archivo({
   weight: ["500", "600", "700", "800"],
 });
 
-// One weight is all this face ships; it's an accent, never body copy.
-const instrumentSerif = Instrument_Serif({
-  variable: "--font-instrument-serif",
-  subsets: ["latin"],
-  weight: "400",
-  style: ["normal", "italic"],
-});
 
 export const metadata: Metadata = {
   title: "Oykot Money",
@@ -76,7 +69,7 @@ export default async function RootLayout({
   return (
     <html lang="en" data-sidebar={sidebarCollapsed ? "collapsed" : "expanded"} suppressHydrationWarning>
       <body
-        className={`${inter.variable} ${archivo.variable} ${instrumentSerif.variable} antialiased`}
+        className={`${inter.variable} ${archivo.variable} antialiased`}
       >
         <ThemeProvider
           attribute="class"

@@ -1,24 +1,29 @@
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { LEGAL } from "@/lib/legal";
 import { LogoMark, Wordmark } from "@/components/logo";
 
+/** The signed-out header on pricing and the legal pages — the landing nav's twin. */
 export function PublicHeader() {
   return (
-    <header className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-4 py-5 sm:px-6">
-      <Link href="/" className="flex items-center gap-2" aria-label="Oykot Money">
-        <LogoMark size={28} />
+    <header className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
+      <Link href="/" className="flex items-center gap-2.5" aria-label="Oykot Money, home">
+        <LogoMark size={30} />
         <Wordmark height={17} />
       </Link>
-      <nav aria-label="Main" className="flex shrink-0 items-center gap-0.5 text-sm whitespace-nowrap sm:gap-3">
-        <Link href="/pricing" className="rounded-md px-2 py-1.5 text-muted-foreground hover:text-foreground">
+      <nav aria-label="Main" className="flex shrink-0 items-center gap-1 text-sm whitespace-nowrap sm:gap-1.5">
+        <Link href="/pricing" className="lp-nav-link rounded-full px-3 py-2">
           Pricing
         </Link>
-        <Link href="/login" className="rounded-md px-2 py-1.5 text-muted-foreground hover:text-foreground">
+        <Link href="/login" className="lp-nav-link rounded-full px-3 py-2">
           Sign in
         </Link>
-        <Link href="/signup" className={buttonVariants({ size: "sm" })}>
-          Start free trial
+        <Link
+          href="/signup"
+          className={cn(buttonVariants(), "ml-1 h-10 rounded-full px-4 font-semibold sm:h-10 sm:px-4")}
+        >
+          Start free
         </Link>
       </nav>
     </header>

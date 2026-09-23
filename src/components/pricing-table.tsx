@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Lock, ShieldCheck, Sparkle } from "@phosphor-icons/react";
+import { Check } from "@phosphor-icons/react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   LIFETIME_SEATS,
@@ -23,18 +23,23 @@ type Viewer = "guest" | "trial" | "expired" | "paid";
 type Period = "monthly" | "yearly";
 
 /**
- * Both ways to pay, side by side, rather than one price behind a toggle.
+ * Both ways to pay in one container, after the Starter/Team reference:
+ * Monthly on white, Yearly on grey with the badge — the highlighted column.
  *
- * A toggle hides the comparison at the moment someone is making it. Two cards
- * put twelve charges next to one, and let the yearly card carry the offer —
- * the months it doesn't charge for, a window to change your mind, and a price
- * that can't rise — in the same glance as its number.
+ * Yearly lists only what it adds ("Everything in Monthly, plus"), so the
+ * app's features appear once and the offer is the whole of yearly's column:
+ * the months it doesn't charge for, a window to change your mind, a price
+ * that can't rise. Where the reference has illustrations, each column ends
+ * with the twelve months drawn as ticks — the free ones hollow.
+ *
+ * Lifetime, when seats remain, is the full-width panel underneath.
  */
 export function PricingTable({
   defaultCurrency,
   viewer,
   checkout,
   lifetimeSeats = 0,
+  headingLevel = 3,
 }: {
   defaultCurrency: PriceCurrency;
   viewer: Viewer;
@@ -47,17 +52,23 @@ export function PricingTable({
   };
   /** Founding lifetime seats left. At 0 the tier isn't offered at all. */
   lifetimeSeats?: number;
+  /**
+   * The plan names' heading level: 3 under the landing's "One plan" h2, 2 on
+   * /pricing where the page's h1 is the only heading above them.
+   */
+  headingLevel?: 2 | 3;
 }) {
+  const H = headingLevel === 2 ? "h2" : "h3";
   const [currency, setCurrency] = useState<PriceCurrency>(defaultCurrency);
   const monthsFree = yearlyMonthsFree(currency);
-  const monthsPaid = 12 - monthsFree;
   // A provider that isn't set up shouldn't show a button that can't work.
   const ready = currency === "INR" ? !!checkout?.razorpay : !!checkout?.polar;
   const testMode = !!checkout?.test;
+  const perMonth = Math.round(PRICES[currency].yearly / 12);
 
   return (
     <div className="mx-auto w-full max-w-4xl">
-      <div className="mb-4 flex justify-center">
+      <div className="mb-5 flex justify-center">
         <label className="flex items-center gap-2 text-sm text-muted-foreground">
           Pay in
           <select
@@ -71,34 +82,53 @@ export function PricingTable({
         </label>
       </div>
 
-      {/* The two cards sit in one tray, so they read as a pair of answers to
-          the same question rather than two unrelated offers. Yearly is first
-          in the markup, not just on screen, so tab order matches the page. */}
-      <div className="grid gap-2 rounded-3xl bg-muted p-2 sm:p-3 md:grid-cols-2 md:gap-3">
-        <PlanCard
-          period="yearly"
-          currency={currency}
-          viewer={viewer}
-          ready={ready}
-          testMode={testMode}
-          qualifier="per year"
-          badge={`${monthsFree} months free`}
-          months={{ paid: monthsPaid, free: monthsFree }}
-        />
-        <PlanCard
-          period="monthly"
-          currency={currency}
-          viewer={viewer}
-          ready={ready}
-          testMode={testMode}
-          qualifier="per month"
-          months={{ paid: 12, free: 0 }}
-          note={`Month to month, cancel whenever. Full refund inside ${MONTHLY_REFUND_DAYS} days of your first charge.`}
-        />
+      {viewer === "paid" && (
+        <p className="mb-4 rounded-2xl bg-muted px-4 py-3 text-center text-sm font-medium">
+          You&rsquo;re all set. These are the plans, for reference.
+        </p>
+      )}
+
+      <div className="rounded-[2rem] border border-border bg-card p-2">
+        <div className="grid md:grid-cols-2">
+          <Column
+            H={H}
+            period="monthly"
+            title="Monthly"
+            tagline="Month to month. Cancel whenever."
+            price={formatPrice(PRICES[currency].monthly, currency)}
+            unit={["per month", "billed monthly"]}
+            listLabel="What’s in it:"
+            list={PLAN_FEATURES}
+            months={{ paid: 12, free: 0 }}
+            action={<PlanAction period="monthly" {...{ currency, viewer, ready, testMode }} />}
+            note={`Full refund inside ${MONTHLY_REFUND_DAYS} days of your first charge.`}
+          />
+          <Column
+            H={H}
+            period="yearly"
+            title="Yearly"
+            badge={`${monthsFree} months free`}
+            tagline="Best value. One charge a year."
+            price={formatPrice(PRICES[currency].yearly, currency)}
+            unit={["per year", `that’s ${formatPrice(perMonth, currency)} a month`]}
+            struck={formatPrice(twelveMonths(currency), currency)}
+            listLabel="Everything in Monthly, plus:"
+            list={[
+              `${monthsFree} months free, against paying monthly`,
+              `Full refund inside ${YEARLY_OFFER.refundDays} days`,
+              ...(YEARLY_OFFER.priceLock ? ["Your price is locked for as long as you stay"] : []),
+              "One charge a year, nothing to remember",
+            ]}
+            months={{ paid: 12 - monthsFree, free: monthsFree }}
+            action={<PlanAction period="yearly" primary {...{ currency, viewer, ready, testMode }} />}
+            className="rounded-[1.6rem] bg-muted"
+          />
+        </div>
       </div>
 
       {lifetimeSeats > 0 && (
         <LifetimePanel
+          H={H}
           currency={currency}
           viewer={viewer}
           seatsLeft={lifetimeSeats}
@@ -106,253 +136,112 @@ export function PricingTable({
           testMode={testMode}
         />
       )}
-
-      <div className="mt-3 rounded-3xl border border-border px-6 py-5">
-        <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-          In every plan
-        </h3>
-        <ul className="mt-3 grid gap-2.5 text-sm sm:grid-cols-2">
-          {PLAN_FEATURES.map((f) => (
-            <li key={f} className="flex items-start gap-2.5">
-              <Sparkle
-                size={14}
-                weight="fill"
-                aria-hidden
-                className="mt-1 shrink-0 text-muted-foreground"
-              />
-              {f}
-            </li>
-          ))}
-        </ul>
-      </div>
     </div>
   );
 }
 
-function PlanCard({
+function Column({
+  H,
   period,
-  currency,
-  viewer,
-  ready,
-  testMode,
-  qualifier,
+  title,
   badge,
+  tagline,
+  price,
+  unit,
+  struck,
+  listLabel,
+  list,
   months,
+  action,
   note,
+  className,
 }: {
+  H: "h2" | "h3";
   period: Period;
-  currency: PriceCurrency;
-  viewer: Viewer;
-  ready: boolean;
-  testMode: boolean;
-  qualifier: string;
+  title: string;
   badge?: string;
+  tagline: string;
+  price: string;
+  unit: [string, string];
+  struck?: string;
+  listLabel: string;
+  list: readonly string[];
   months: { paid: number; free: number };
+  action: React.ReactNode;
   note?: string;
+  className?: string;
 }) {
-  const yearly = period === "yearly";
-  const price = PRICES[currency][period];
-  const perMonth = Math.round(PRICES[currency].yearly / 12);
-
   return (
-    <div className="relative flex h-full flex-col rounded-2xl border border-border bg-card p-6">
-      <CornerMarks />
-
-      <div className="flex items-start justify-between gap-3">
-        <h2 className="font-heading text-xl font-bold capitalize">{period}</h2>
+    <section aria-label={`${title} plan`} className={cn("flex flex-col p-6 sm:p-8", className)}>
+      <div className="flex flex-wrap items-center gap-2">
+        <H className="font-heading text-xl font-bold">{title}</H>
         {badge && (
-          <span className="rounded-full bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground">
+          <span className="rounded-full bg-primary px-2.5 py-0.5 text-xs font-semibold text-primary-foreground">
             {badge}
           </span>
         )}
       </div>
+      <p className="mt-1 text-sm text-muted-foreground">{tagline}</p>
 
-      <p className="mt-3 flex items-baseline gap-2">
-        <span className="font-heading text-4xl font-extrabold">{formatPrice(price, currency)}</span>
-        <span className="text-sm text-muted-foreground">{qualifier}</span>
-      </p>
-      <p className="mt-1 text-xs text-muted-foreground">
-        {yearly ? (
+      <div className="mt-6 flex items-end gap-2.5">
+        <span className="font-heading text-5xl leading-none font-extrabold tracking-[-0.03em] tabular-nums">
+          {price}
+        </span>
+        <span className="pb-0.5 text-xs leading-tight text-muted-foreground">
+          {unit[0]}
+          <br />
+          {unit[1]}
+        </span>
+      </div>
+      <p className="mt-2 h-4 text-xs text-muted-foreground">
+        {struck && (
           <>
-            <span className="line-through">{formatPrice(twelveMonths(currency), currency)}</span> if
-            you paid monthly. That&rsquo;s {formatPrice(perMonth, currency)} a month, billed once.
+            <span className="line-through">{struck}</span> if you paid monthly
           </>
-        ) : (
-          <>{formatPrice(twelveMonths(currency), currency)} over a year, in twelve charges.</>
         )}
       </p>
 
-      <MonthsStrip paid={months.paid} free={months.free} />
+      <div className="mt-6">{action}</div>
 
-      <hr className="my-5 border-border" />
-
-      {/* Only what differs between the two. The eight things both plans include
-          are listed once, under the pair — printing them twice made the cards
-          twice as long and said nothing. */}
-      {yearly ? (
-        <ul className="flex flex-col gap-2.5 text-sm">
-          <li className="flex items-start gap-2.5">
-            <ShieldCheck size={16} weight="duotone" aria-hidden className="mt-0.5 shrink-0 text-primary" />
-            <span>
-              <strong className="font-medium">{YEARLY_OFFER.refundDays} days to change your mind.</strong>{" "}
-              Ask inside {YEARLY_OFFER.refundDays} days and the whole year goes back.
-            </span>
-          </li>
-          {YEARLY_OFFER.priceLock && (
-            <li className="flex items-start gap-2.5">
-              <Lock size={16} weight="duotone" aria-hidden className="mt-0.5 shrink-0 text-primary" />
-              <span>
-                <strong className="font-medium">Your price is locked.</strong> It stays{" "}
-                {formatPrice(price, currency)} for as long as you keep the plan.
-              </span>
-            </li>
-          )}
-        </ul>
-      ) : (
-        <p className="max-w-[34ch] text-sm text-muted-foreground">{note}</p>
-      )}
-
-      <div className="mt-6 flex-1 pt-1 content-end">
-        <PlanAction
-          period={period}
-          currency={currency}
-          viewer={viewer}
-          ready={ready}
-          testMode={testMode}
-        />
-      </div>
-    </div>
-  );
-}
-
-/**
- * Lifetime, as the full-width panel under the pair — the slot the reference
- * gives its "something else" offer. Forest, because it's the one tier worth
- * a different surface: it's scarce, and the seat count says so honestly.
- *
- * The count is live (`lifetimeSeatsLeft()`), and the panel isn't rendered at
- * all once it reaches zero, so "first 100" is enforced rather than claimed.
- */
-function LifetimePanel({
-  currency,
-  viewer,
-  seatsLeft,
-  ready,
-  testMode,
-}: {
-  currency: PriceCurrency;
-  viewer: Viewer;
-  seatsLeft: number;
-  ready: boolean;
-  testMode: boolean;
-}) {
-  const taken = LIFETIME_SEATS - seatsLeft;
-  const yearsToPayOff = PRICES[currency].lifetime / PRICES[currency].yearly;
-
-  return (
-    <div className="relative mt-3 overflow-hidden rounded-3xl bg-forest-900 px-6 py-7 text-white sm:px-8">
-      {/* A soft Lemon glow off the corner — depth without a picture. */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -top-24 -right-16 size-72 rounded-full bg-lemon-400/20 blur-3xl"
-      />
-      <div className="relative grid gap-6 md:grid-cols-[1fr_auto] md:items-end">
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="font-heading text-xl font-bold">Lifetime</h2>
-            <span className="rounded-full bg-lemon-400 px-2.5 py-1 text-xs font-semibold text-forest-950">
-              Founding members
-            </span>
-          </div>
-          <p className="mt-3 flex items-baseline gap-2">
-            <span className="font-heading text-4xl font-extrabold">
-              {formatPrice(PRICES[currency].lifetime, currency)}
-            </span>
-            <span className="text-sm text-white/70">once</span>
-          </p>
-          <p className="mt-2 max-w-md text-sm text-white/75">
-            Pay once, keep it for good. It costs about {Math.round(yearsToPayOff)} years of the
-            yearly plan, and every update after is included. Full refund inside{" "}
-            {YEARLY_OFFER.refundDays} days.
-          </p>
-
-          <div className="mt-5 max-w-sm">
-            <div
-              className="h-1.5 overflow-hidden rounded-full bg-white/15"
-              role="img"
-              aria-label={`${taken} of ${LIFETIME_SEATS} founding seats taken`}
+      <p className="mt-7 text-sm font-semibold">{listLabel}</p>
+      <ul className="mt-3 flex flex-col gap-2.5 text-sm">
+        {list.map((item) => (
+          <li key={item} className="flex items-start gap-2.5">
+            <span
+              className={cn(
+                "mt-0.5 grid size-4 shrink-0 place-items-center rounded-[5px]",
+                period === "yearly" ? "bg-primary text-primary-foreground" : "bg-muted text-foreground",
+              )}
             >
-              <div
-                className="h-full rounded-full bg-lemon-400"
-                style={{ width: `${Math.max(2, (taken / LIFETIME_SEATS) * 100)}%` }}
-              />
-            </div>
-            <p className="mt-2 text-xs text-white/70">
-              {seatsLeft} of {LIFETIME_SEATS} founding seats left. When they&rsquo;re gone, this goes.
-            </p>
-          </div>
-        </div>
+              <Check size={10} weight="bold" />
+            </span>
+            {item}
+          </li>
+        ))}
+      </ul>
 
-        <div className="md:w-64">
-          <LifetimeAction viewer={viewer} ready={ready} currency={currency} testMode={testMode} />
-        </div>
+      <div className="mt-auto pt-8">
+        <MonthsStrip paid={months.paid} free={months.free} />
+        {note && <p className="mt-3 text-xs text-muted-foreground">{note}</p>}
       </div>
-    </div>
-  );
-}
-
-function LifetimeAction({
-  viewer,
-  ready,
-  currency,
-  testMode,
-}: {
-  viewer: Viewer;
-  ready: boolean;
-  currency: PriceCurrency;
-  testMode: boolean;
-}) {
-  const lemon = "w-full rounded-full bg-lemon-400 text-forest-950 hover:bg-lemon-300 sm:h-11";
-  if (viewer === "paid") {
-    return <p className="text-sm text-white/75">Lifetime is for accounts without a running plan.</p>;
-  }
-  if (viewer === "guest") {
-    return (
-      <Link href="/signup" className={cn(buttonVariants({ size: "lg" }), lemon)}>
-        Start free, decide later
-      </Link>
-    );
-  }
-  if (!ready) {
-    return (
-      <Button size="lg" className={lemon} disabled>
-        Checkout opens soon
-      </Button>
-    );
-  }
-  return (
-    <>
-      <CheckoutButton plan="lifetime" currency={currency} label="Pay once" className={lemon} />
-      {testMode && <p className="mt-2 text-center text-xs text-white/70">Test mode. No real money moves.</p>}
-    </>
+    </section>
   );
 }
 
 /**
  * Twelve ticks, one per month, with the free ones hollow — the offer as a
- * shape rather than a percentage. Decorative: the caption underneath is what
- * carries the meaning, so the ticks stay out of the accessibility tree.
+ * shape rather than a percentage. Decorative; the caption carries the meaning.
  */
 function MonthsStrip({ paid, free }: { paid: number; free: number }) {
   return (
-    <div className="mt-4">
+    <div>
       <div aria-hidden className="flex gap-1">
         {Array.from({ length: 12 }, (_, i) => (
           <span
             key={i}
             className={cn(
-              "h-6 flex-1 rounded-sm",
-              i < paid ? "bg-primary/70" : "border border-dashed border-primary/50",
+              "h-7 flex-1 rounded-[5px]",
+              i < paid ? "bg-primary/75" : "border-[1.5px] border-dashed border-primary/55",
             )}
           />
         ))}
@@ -364,50 +253,36 @@ function MonthsStrip({ paid, free }: { paid: number; free: number }) {
   );
 }
 
-/** The corner ticks that give each card its drawn, plotted look. */
-function CornerMarks() {
-  return (
-    <span aria-hidden>
-      {["left-2.5 top-2.5", "right-2.5 top-2.5", "left-2.5 bottom-2.5", "right-2.5 bottom-2.5"].map(
-        (pos) => (
-          <span key={pos} className={cn("absolute size-1 rounded-full bg-foreground/15", pos)} />
-        ),
-      )}
-    </span>
-  );
-}
+const fullButton = "h-12 w-full rounded-xl text-[15px] font-semibold sm:h-12";
+const quietButton = "border-border bg-card text-foreground hover:bg-muted";
 
 function PlanAction({
   period,
+  primary = false,
   currency,
   viewer,
   ready,
   testMode,
 }: {
   period: Period;
+  /** The recommended column gets the filled button; the other is quieter. */
+  primary?: boolean;
   currency: PriceCurrency;
   viewer: Viewer;
   ready: boolean;
   testMode: boolean;
 }) {
-  if (viewer === "paid") {
-    return (
-      <p className="rounded-full bg-muted px-3 py-2.5 text-center text-sm">You&rsquo;re all set.</p>
-    );
-  }
+  const tone = primary ? "" : quietButton;
+
+  if (viewer === "paid") return null;
 
   if (viewer === "guest") {
     return (
       <>
-        <Link
-          href="/signup"
-          className={cn(buttonVariants({ size: "lg" }), "w-full rounded-full sm:h-11")}
-        >
+        <Link href="/signup" className={cn(buttonVariants(), fullButton, tone)}>
           Start {TRIAL_DAYS}-day free trial
         </Link>
-        <p className="mt-2 text-center text-xs text-muted-foreground">
-          No card needed. Pick a plan before the trial ends.
-        </p>
+        <p className="mt-2 text-center text-xs text-muted-foreground">No card needed.</p>
       </>
     );
   }
@@ -416,7 +291,7 @@ function PlanAction({
     // Honest about it: the flow is built, but there's nothing to pay with yet.
     return (
       <>
-        <Button className="w-full rounded-full sm:h-11" size="lg" disabled>
+        <Button className={cn(fullButton, tone)} disabled>
           Checkout opens soon
         </Button>
         <p className="mt-2 text-center text-xs text-muted-foreground">
@@ -432,11 +307,125 @@ function PlanAction({
         plan={period}
         currency={currency}
         label={period === "yearly" ? "Pay for a year" : "Pay monthly"}
-        className="rounded-full sm:h-11"
+        className={cn(fullButton, tone)}
       />
       <p className="mt-2 text-center text-xs text-muted-foreground">
         {testMode ? "Test mode. No real money moves." : "Cancel any time from Settings."}
       </p>
+    </>
+  );
+}
+
+/**
+ * Lifetime, as the full-width panel under the pair — the slot the reference
+ * gives its "something else" offer. Flat Forest: it's the one tier worth a
+ * different surface, because it's scarce and the seat count says so honestly.
+ *
+ * The count is live (`lifetimeSeatsLeft()`), and the panel isn't rendered at
+ * all once it reaches zero, so "first 100" is enforced rather than claimed.
+ */
+function LifetimePanel({
+  H,
+  currency,
+  viewer,
+  seatsLeft,
+  ready,
+  testMode,
+}: {
+  H: "h2" | "h3";
+  currency: PriceCurrency;
+  viewer: Viewer;
+  seatsLeft: number;
+  ready: boolean;
+  testMode: boolean;
+}) {
+  const taken = LIFETIME_SEATS - seatsLeft;
+  const yearsToPayOff = PRICES[currency].lifetime / PRICES[currency].yearly;
+
+  return (
+    <section
+      aria-label="Lifetime plan"
+      className="mt-3 grid gap-6 rounded-[2rem] bg-forest-900 px-6 py-7 text-white sm:px-10 md:grid-cols-[1fr_auto] md:items-end"
+    >
+      <div>
+        <div className="flex flex-wrap items-center gap-2">
+          <H className="font-heading text-xl font-bold">Lifetime</H>
+          <span className="rounded-full bg-lemon-400 px-2.5 py-0.5 text-xs font-semibold text-forest-950">
+            Founding members
+          </span>
+        </div>
+        <p className="mt-4 flex items-end gap-2.5">
+          <span className="font-heading text-5xl leading-none font-extrabold tracking-[-0.03em] tabular-nums">
+            {formatPrice(PRICES[currency].lifetime, currency)}
+          </span>
+          <span className="pb-0.5 text-xs leading-tight text-white/70">
+            once
+            <br />
+            yours for good
+          </span>
+        </p>
+        <p className="mt-3 max-w-md text-sm text-white/75">
+          It costs about {Math.round(yearsToPayOff)} years of the yearly plan, and every update after
+          is included. Full refund inside {YEARLY_OFFER.refundDays} days.
+        </p>
+
+        <div className="mt-5 max-w-sm">
+          <div
+            className="h-1.5 overflow-hidden rounded-full bg-white/15"
+            role="img"
+            aria-label={`${taken} of ${LIFETIME_SEATS} founding seats taken`}
+          >
+            <div
+              className="h-full rounded-full bg-lemon-400"
+              style={{ width: `${Math.max(2, (taken / LIFETIME_SEATS) * 100)}%` }}
+            />
+          </div>
+          <p className="mt-2 text-xs text-white/70">
+            {seatsLeft} of {LIFETIME_SEATS} founding seats left. When they&rsquo;re gone, this goes.
+          </p>
+        </div>
+      </div>
+
+      <div className="md:w-64">
+        <LifetimeAction viewer={viewer} ready={ready} currency={currency} testMode={testMode} />
+      </div>
+    </section>
+  );
+}
+
+function LifetimeAction({
+  viewer,
+  ready,
+  currency,
+  testMode,
+}: {
+  viewer: Viewer;
+  ready: boolean;
+  currency: PriceCurrency;
+  testMode: boolean;
+}) {
+  const lemon = "h-12 w-full rounded-xl bg-lemon-400 text-[15px] font-semibold text-forest-950 hover:bg-lemon-300 sm:h-12";
+  if (viewer === "paid") {
+    return <p className="text-sm text-white/75">Lifetime is for accounts without a running plan.</p>;
+  }
+  if (viewer === "guest") {
+    return (
+      <Link href="/signup" className={cn(buttonVariants(), lemon)}>
+        Start free, decide later
+      </Link>
+    );
+  }
+  if (!ready) {
+    return (
+      <Button className={lemon} disabled>
+        Checkout opens soon
+      </Button>
+    );
+  }
+  return (
+    <>
+      <CheckoutButton plan="lifetime" currency={currency} label="Pay once" className={lemon} />
+      {testMode && <p className="mt-2 text-center text-xs text-white/70">Test mode. No real money moves.</p>}
     </>
   );
 }

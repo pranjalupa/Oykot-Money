@@ -13,7 +13,9 @@ import { Label } from "@/components/ui/label";
 import { CurrencySelect } from "@/components/currency-select";
 import { DEFAULT_CURRENCY, type CurrencyCode } from "@/lib/currency";
 import { cn } from "@/lib/utils";
-import { LogoMark } from "@/components/logo";
+
+/** Taller, rounder controls than the app's compact desktop ones: this page is nothing but a form. */
+const field = "h-11 rounded-xl sm:h-11";
 
 export function AuthForm({
   mode,
@@ -38,12 +40,11 @@ export function AuthForm({
 
   return (
     <div className="w-full max-w-sm">
-      <div className="mb-7 text-center">
-        <LogoMark size={44} className="mx-auto" />
-        <h1 className="mt-4 font-heading text-xl font-bold">
+      <div className="mb-8 text-center">
+        <h1 className="font-heading text-[1.9rem] leading-tight font-bold tracking-[-0.02em]">
           {isSignUp ? "Create your account" : "Welcome back"}
         </h1>
-        <p className="accent-note mt-1 text-sm text-muted-foreground">
+        <p className="mt-2 text-sm text-muted-foreground">
           {isSignUp
             ? "Your budget, your numbers, nobody else's."
             : "Pick up where your money left off."}
@@ -68,6 +69,7 @@ export function AuthForm({
               required
               maxLength={80}
               placeholder="What should we call you?"
+              className={field}
             />
           </div>
         )}
@@ -81,6 +83,7 @@ export function AuthForm({
             autoComplete="email"
             required
             placeholder="you@example.com"
+            className={field}
           />
         </div>
 
@@ -103,13 +106,14 @@ export function AuthForm({
             required
             minLength={isSignUp ? 8 : undefined}
             placeholder={isSignUp ? "At least 8 characters" : "••••••••"}
+            className={field}
           />
         </div>
 
         {isSignUp && (
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="currency">Currency</Label>
-            <CurrencySelect id="currency" defaultValue={defaultCurrency} />
+            <CurrencySelect id="currency" defaultValue={defaultCurrency} className={field} />
             <p className="text-xs text-muted-foreground">
               What your budget is counted in. You can change it later in Settings.
             </p>
@@ -144,7 +148,7 @@ export function AuthForm({
           </p>
         )}
 
-        <Button type="submit" disabled={pending} className="mt-1 w-full">
+        <Button type="submit" disabled={pending} className={cn(field, "mt-1 w-full font-semibold")}>
           {pending
             ? isSignUp
               ? "Creating account…"

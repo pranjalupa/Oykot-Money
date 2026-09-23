@@ -98,7 +98,7 @@ export default async function GroupPage({
         />
       </section>
 
-      <p className="accent-note text-center text-xs text-muted-foreground">
+      <p className="text-center text-xs text-muted-foreground">
         Tap any planned figure to change it.
       </p>
     </div>
