@@ -34,7 +34,7 @@ the plan worth pushing.
    test mode works immediately, so you can finish the rest before it lands.
 2. **Create two plans** — Dashboard → Subscriptions → Plans:
    - Monthly: ₹249, billing cycle *monthly*.
-   - Yearly: ₹1,999, billing cycle *yearly*.
+   - Yearly: ₹1,990, billing cycle *yearly*.
    Copy each `plan_…` id.
 3. **API keys** — Settings → API Keys → *Generate Test Key*. You get a key id
    and a secret; the secret is shown once.
@@ -131,14 +131,36 @@ In order, not before:
 3. A real payment made by you, in each currency, and refunded.
 4. Only then `ACCESS_ENFORCED=true`.
 
-## A decision still open
+## The yearly offer — and what it commits you to
 
-Yearly ($36) costs the same as six monthly charges ($72/year), so the pricing
-page advertises **50% off**. That's deliberate — one charge a year costs ~8%
-in fees against ~15% for twelve — but it is a steep discount. If you'd rather
-it read −33%, set yearly to $48 in `lib/pricing.ts` and update the Polar
-product to match. The two must always agree: the app shows its own price,
-Polar charges its own.
+Yearly isn't sold on a percentage. The pricing page leads with the saving in
+**months** (6 free on dollars, 4 on rupees), because that's what people
+picture, and then answers the real objection to paying for a year — *what if
+I stop using it* — with two promises:
+
+- **A 30-day refund window on a yearly plan.** Ask inside a month and
+  the whole year goes back. Monthly keeps its 7 days.
+- **The price is locked** for as long as the subscription runs unbroken.
+
+Both are set in `lib/pricing.ts` (`YEARLY_OFFER`) and the refund policy page
+reads from the same constants, so they can't drift apart. **They are promises
+to a paying customer, not marketing copy** — honour them or change them, in
+that one file, before anyone buys.
+
+Practically that means:
+
+- **Refunds are manual.** Razorpay: Dashboard → Transactions → the payment →
+  Refund. Polar: the refund is issued by them, from the order in their
+  dashboard. Neither is automated in the app, and at this volume neither needs
+  to be.
+- **Yearly INR is ₹1,990, not ₹1,999.** At ₹1,999 the saving is 3.97 months,
+  and "4 months free" would be a lie by ₹7. `yearlyMonthsFree()` floors rather
+  than rounds, so the claim is always true at the till; the nine rupees buy
+  the right to say it. The Razorpay plan must be ₹1,990 to match.
+- **A price rise doesn't touch existing subscribers.** Razorpay plans are
+  immutable — a new price is a new plan, and old subscriptions keep running on
+  the old one, so the lock holds by default. On Polar, raise the price by
+  creating a new product and leaving the old one live for existing customers.
 
 ## What the code does with all this
 

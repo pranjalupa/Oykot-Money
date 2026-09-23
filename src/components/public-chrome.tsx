@@ -10,7 +10,7 @@ export function PublicHeader() {
         <LogoMark size={28} />
         <Wordmark height={17} />
       </Link>
-      <nav className="flex shrink-0 items-center gap-0.5 text-sm whitespace-nowrap sm:gap-3">
+      <nav aria-label="Main" className="flex shrink-0 items-center gap-0.5 text-sm whitespace-nowrap sm:gap-3">
         <Link href="/pricing" className="rounded-md px-2 py-1.5 text-muted-foreground hover:text-foreground">
           Pricing
         </Link>
@@ -32,7 +32,7 @@ export function PublicFooter() {
         <p>
           © 2026 {LEGAL.product} · {LEGAL.location}
         </p>
-        <nav className="flex flex-wrap gap-4">
+        <nav aria-label="Legal" className="flex flex-wrap gap-4">
           <Link href="/pricing" className="hover:text-foreground">Pricing</Link>
           <Link href="/legal/privacy" className="hover:text-foreground">Privacy</Link>
           <Link href="/legal/terms" className="hover:text-foreground">Terms</Link>

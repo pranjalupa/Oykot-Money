@@ -1,6 +1,6 @@
 // DRAFT for review — not legal advice.
 import { LegalPage, Contact } from "@/components/legal-page";
-import { TRIAL_DAYS } from "@/lib/pricing";
+import { MONTHLY_REFUND_DAYS, TRIAL_DAYS, YEARLY_OFFER } from "@/lib/pricing";
 
 export const metadata = { title: "Refund policy · Oykot Money" };
 
@@ -18,12 +18,21 @@ export default function RefundsPage() {
       <section>
         <h2>Refunds</h2>
         <ul>
-          <li>If you ask within 7 days of your first paid charge, we&rsquo;ll refund it in full.</li>
+          {/* The yearly window is the offer on the pricing page; the two are the
+              same promise and have to move together. */}
+          <li>On a <strong>yearly</strong> plan, ask within {YEARLY_OFFER.refundDays} days of your first charge and we&rsquo;ll refund the whole year.</li>
+          <li>On a <strong>monthly</strong> plan, ask within {MONTHLY_REFUND_DAYS} days of your first charge and we&rsquo;ll refund it in full.</li>
           <li>Renewals aren&rsquo;t refunded, except for a duplicate or mistaken charge, which we always refund.</li>
           <li>Refunds go back to the original payment method, usually within 5–10 working days depending on your bank.</li>
           <li>If you paid through our merchant of record (outside India), the refund is issued by them under the same terms.</li>
         </ul>
       </section>
+      {YEARLY_OFFER.priceLock && (
+        <section>
+          <h2>Your price</h2>
+          <p>The price you subscribe at is the price you keep, for as long as the subscription runs without a break. If we raise prices, it applies to new subscriptions — not yours. Cancel and come back later and you pay whatever the price is then.</p>
+        </section>
+      )}
       <section>
         <h2>How to ask</h2>
         <p>Email <Contact /> from the address on your account.</p>

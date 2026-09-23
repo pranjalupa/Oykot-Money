@@ -133,6 +133,25 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   Teams and sharing are still out — don't build toward them without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
+- 2026-09-23 — **Yearly is sold with an offer, not a discount.** The pricing page
+  leads with the saving in **months free** (6 on USD, 4 on INR), strikes the
+  twelve-month total, and answers the real objection to committing for a year with
+  a **30-day refund window** and a **locked price**. Monthly keeps its 7 days.
+  - `YEARLY_OFFER` in `lib/pricing.ts` is the source; `/legal/refunds` reads the same
+    constants so the promise can't drift from the page selling it. **These are
+    commitments to a paying customer** — refunds are manual in each dashboard.
+  - **Yearly INR ₹1,999 → ₹1,990.** `yearlyMonthsFree()` **floors**, so at ₹1,999 it
+    returns 3 — the saving is 3.97 months and "4 months free" would be false. Nine
+    rupees buy a claim that's true at the till. **Never round a months-free figure up.**
+  - Monthly shows a one-tap "get N months free" row above the subscribe button rather
+    than hiding monthly — a nudge, not a dark pattern.
+  - **Fixed in passing:** the two `<nav>` landmarks in `public-chrome.tsx` had no
+    labels (axe `landmark-unique`), and the upsell button's text is split across spans
+    so it computed **no accessible name** — it carries an explicit `aria-label`.
+  - **Auditing a streamed page:** axe on the *dev* server reports `landmark-one-main`
+    and `page-has-heading-one` on `/pricing` even when both exist — the real tree is
+    still in a `display:none` div while `loading.tsx` shows. Run the audit against
+    `next start`, not `next dev`. Zero violations there, both themes.
 - 2026-09-22 — **Dollar monthly $4 → $6.** An MoR takes ~6.5% + 50¢ on an international
   card: 19% of a $4 charge, 13% of a $6 one, 8% of the $36 yearly. The fixed part is what
   hurts at small amounts — **check the fee against the price before setting either**. Yearly

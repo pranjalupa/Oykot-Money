@@ -4,7 +4,7 @@ import { PricingTable } from "@/components/pricing-table";
 import { PublicFooter, PublicHeader } from "@/components/public-chrome";
 import { getUser } from "@/lib/auth";
 import { getAccess } from "@/lib/access";
-import { priceCurrencyForCountry, TRIAL_DAYS } from "@/lib/pricing";
+import { priceCurrencyForCountry, TRIAL_DAYS, YEARLY_OFFER } from "@/lib/pricing";
 import { configured as razorpayReady, isTestMode } from "@/lib/payments/razorpay";
 
 export const metadata = { title: "Pricing · Oykot Money" };
@@ -16,6 +16,14 @@ const FAQ = [
     a: "You choose monthly or yearly. If you don't, your account becomes read-only — you can still see and export everything, you just can't add to it until you subscribe.",
   },
   { q: "Can I cancel?", a: "Any time, from Settings. You keep access until the end of the period you've paid for." },
+  {
+    q: "What if I pay for a year and stop using it?",
+    a: `Ask within ${YEARLY_OFFER.refundDays} days of the charge and you get the whole year back, no questions. After that you keep access to the end of the year you paid for.`,
+  },
+  {
+    q: "Will the price go up?",
+    a: "Not yours. The price you subscribe at is held for as long as the subscription runs without a break.",
+  },
   { q: "Do you convert my money between currencies?", a: "No. Your budget stays in the currency you chose; the price you pay is set separately." },
   { q: "Is my data private?", a: "Yes. It's only ever used to run your budget — no ads, no selling it. See the privacy policy." },
 ];
@@ -49,7 +57,8 @@ export default async function PricingPage({
         <div className="mb-8 text-center">
           <h1 className="font-heading text-3xl font-extrabold">One plan. Everything in it.</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Try it free for {TRIAL_DAYS} days, then pay monthly or save with yearly.
+            Try it free for {TRIAL_DAYS} days. Then pay monthly, or pay for a year and get
+            several of them free.
           </p>
         </div>
 
