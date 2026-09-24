@@ -132,6 +132,27 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   Teams and sharing are still out — don't build toward them without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
+- 2026-09-24 — **New prices and a trial that differs by region**, from Pranjal's table.
+  **₹99 / ₹799** and **$7.99 / $59**; trial **7 days** (was 14). Rules live in `TRIAL`.
+  - **India: no card.** Trial starts at signup. From day 6 (`autopayDue`, two days left or
+    fewer) the trial banner and pricing page ask for **UPI Autopay**, and the Razorpay
+    subscription is created with `start_at` = the trial's end, so nothing is charged
+    inside the 7 days.
+  - **Elsewhere: card required.** The trial starts at Polar checkout (7-day trial set on
+    the products). New users there get a **`pending`** row, not a trial: no free access
+    until checkout, which only locks anything once ACCESS_ENFORCED is on. `pending` is an
+    app-level status (no DB constraint). Region comes from the profile.
+  - **Fixed before it could bite:** the Polar webhook mapped every status but active and
+    past_due to "cancelled", so a card trial would have been recorded as cancelled. It
+    maps `trialing` now, stores Polar's `trialEnd`, and handles `subscription.created`.
+  - Trial users with a provider (card or mandate) can cancel from Settings. "Cancel before
+    day 7 and pay nothing" depends on it.
+  - **"No card" is now only said to India.** Landing, pricing, auth panel, terms and refunds
+    all say each region's truth.
+  - Prices can have cents now: `formatPrice` shows $7.99 but $59; `yearlyPerMonth` rounds
+    rupees whole and dollars to the cent.
+  - **₹799 earns "3 months free", not 4** (3.93 months; the floor rule). Pranjal's table said
+    4; ₹792 or less would make it true. Left at ₹799 pending his call.
 - 2026-09-24 — **Lifetime removed, and the twelve-month strip is off pricing**, at
   Pranjal's call. Supersedes the lifetime entry below. Removed end to end, not just hidden:
   a checkout and webhooks left live would still sell a tier nobody offers. Gone: the price,

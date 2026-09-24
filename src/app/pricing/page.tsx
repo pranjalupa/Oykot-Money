@@ -3,9 +3,10 @@ import { Info } from "@phosphor-icons/react/dist/ssr";
 import { FaqList } from "@/components/faq-list";
 import { PricingTable } from "@/components/pricing-table";
 import { PublicFooter, PublicHeader } from "@/components/public-chrome";
-import { getUser } from "@/lib/auth";
+import { getUser, getUserPrefs } from "@/lib/auth";
 import { getAccess } from "@/lib/access";
-import { priceCurrencyForCountry, TRIAL_DAYS, YEARLY_OFFER } from "@/lib/pricing";
+import { priceCurrencyForCountry, TRIAL, TRIAL_DAYS, YEARLY_OFFER } from "@/lib/pricing";
+import { formatDay } from "@/lib/dates";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { LEGAL } from "@/lib/legal";
@@ -16,8 +17,12 @@ export const dynamic = "force-dynamic";
 
 const FAQ = [
   {
-    q: "What happens when the trial ends?",
-    a: "You choose monthly or yearly. If you don't, your account becomes read-only. You can still see and export everything, you just can't add to it until you subscribe.",
+    q: "How does the free trial work?",
+    a: `${TRIAL_DAYS} days, everything included. In India there's no card: on day ${TRIAL.INR.autopayFromDay} we'll ask you to set up UPI Autopay, and nothing is charged until the ${TRIAL_DAYS} days are up. Everywhere else a card starts the trial and is charged when it ends, unless you cancel before then.`,
+  },
+  {
+    q: "What if I don't continue?",
+    a: "Your account becomes read-only. You can still see and export everything, you just can't add to it until you subscribe.",
   },
   { q: "Can I cancel?", a: "Any time, from Settings. You keep access until the end of the period you've paid for." },
   {
@@ -38,14 +43,23 @@ export default async function PricingPage({
   searchParams: Promise<{ trial?: string }>;
 }) {
   const [{ trial }, user, h] = await Promise.all([searchParams, getUser(), headers()]);
-  const access = user ? await getAccess() : null;
+  const [access, prefs] = user ? await Promise.all([getAccess(), getUserPrefs()]) : [null, null];
   const viewer = !access
     ? "guest"
     : access.state === "active" || access.state === "complimentary"
       ? "paid"
       : access.state === "expired"
         ? "expired"
-        : "trial";
+        : access.state === "pending"
+          ? "pending"
+          : "trial";
+  // Signed in, prices follow the region their trial follows (their profile),
+  // not wherever their connection happens to be today.
+  const currency = access?.priceCurrency ?? priceCurrencyForCountry(h.get("x-vercel-ip-country"));
+  const trialEnds =
+    access?.state === "trial"
+      ? formatDay(access.trialEndsAt.toISOString(), prefs?.locale ?? "en-IN", { day: "numeric", month: "long" })
+      : undefined;
 
   return (
     <div className="min-h-svh">
@@ -66,12 +80,14 @@ export default async function PricingPage({
             How would you like to pay?
           </h1>
           <p className="mt-4 text-muted-foreground">
-            One plan, everything in it. Free for {TRIAL_DAYS} days, no card.
+            One plan, everything in it. Free for {TRIAL_DAYS} days
+            {TRIAL[currency].card ? "." : ", no card."}
           </p>
         </div>
 
         <PricingTable
-          defaultCurrency={priceCurrencyForCountry(h.get("x-vercel-ip-country"))}
+          defaultCurrency={currency}
+          trialEnds={trialEnds}
           viewer={viewer}
           checkout={{
             razorpay: razorpayReady(),

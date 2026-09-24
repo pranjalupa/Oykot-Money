@@ -1,6 +1,5 @@
 import { AppNav } from "@/components/app-nav";
 import { TrialBanner } from "@/components/trial-banner";
-import type { AccessState } from "@/lib/access";
 
 export function AppShell({
   signedIn,
@@ -13,7 +12,7 @@ export function AppShell({
   signedIn: boolean;
   email: string | null;
   name: string | null;
-  trial: { state: AccessState; daysLeft: number | null; enforced: boolean } | null;
+  trial: React.ComponentProps<typeof TrialBanner> | null;
   sidebarCollapsed: boolean;
   children: React.ReactNode;
 }) {

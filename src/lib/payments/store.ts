@@ -27,6 +27,8 @@ export type SubscriptionUpdate = {
   providerSubscriptionId?: string | null;
   /** When the paid period runs out. Access survives until then even on cancel. */
   currentPeriodEnd?: Date | null;
+  /** A provider-run trial's end (Polar's card trial). Left alone when not given. */
+  trialEndsAt?: Date | null;
   cancelAtPeriodEnd?: boolean;
 };
 
@@ -49,6 +51,7 @@ export async function applySubscriptionUpdate(update: SubscriptionUpdate) {
     providerSubscriptionId = null,
     currentPeriodEnd = null,
     cancelAtPeriodEnd = false,
+    trialEndsAt = null,
   } = update;
 
   const values = {
@@ -61,9 +64,9 @@ export async function applySubscriptionUpdate(update: SubscriptionUpdate) {
     providerSubscriptionId,
     currentPeriodEnd,
     cancelAtPeriodEnd,
-    // Only used if this is the first row for the user; a paid account isn't
-    // trialing, but the column is NOT NULL.
-    trialEndsAt: new Date(Date.now() + TRIAL_DAYS * DAY),
+    // A provider's trial end if it sent one; otherwise only used for a first
+    // row, since the column is NOT NULL.
+    trialEndsAt: trialEndsAt ?? new Date(Date.now() + TRIAL_DAYS * DAY),
     updatedAt: new Date(),
   };
 
@@ -82,6 +85,8 @@ export async function applySubscriptionUpdate(update: SubscriptionUpdate) {
         currentPeriodEnd: values.currentPeriodEnd,
         cancelAtPeriodEnd: values.cancelAtPeriodEnd,
         updatedAt: values.updatedAt,
+        // Only overwrite the trial end when the provider actually told us one.
+        ...(trialEndsAt ? { trialEndsAt } : {}),
       },
     });
 }

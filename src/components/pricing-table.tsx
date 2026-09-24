@@ -8,17 +8,22 @@ import {
   MONTHLY_REFUND_DAYS,
   PLAN_FEATURES,
   PRICES,
-  TRIAL_DAYS,
   YEARLY_OFFER,
   formatPrice,
+  TRIAL,
   twelveMonths,
+  yearlyPerMonth,
   yearlyMonthsFree,
   type PriceCurrency,
 } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
 import { CheckoutButton } from "@/components/checkout-button";
 
-type Viewer = "guest" | "trial" | "expired" | "paid";
+/**
+ * Where the viewer stands. `pending` is a card-required region's user who
+ * hasn't started the trial yet — for them checkout *is* the trial.
+ */
+type Viewer = "guest" | "trial" | "pending" | "expired" | "paid";
 type Period = "monthly" | "yearly";
 
 /**
@@ -35,6 +40,7 @@ export function PricingTable({
   viewer,
   checkout,
   headingLevel = 3,
+  trialEnds,
 }: {
   defaultCurrency: PriceCurrency;
   viewer: Viewer;
@@ -45,6 +51,8 @@ export function PricingTable({
    * /pricing where the page's h1 is the only heading above them.
    */
   headingLevel?: 2 | 3;
+  /** A running trial's last day, formatted — a rupee subscription starts then. */
+  trialEnds?: string;
 }) {
   const H = headingLevel === 2 ? "h2" : "h3";
   const [currency, setCurrency] = useState<PriceCurrency>(defaultCurrency);
@@ -52,7 +60,7 @@ export function PricingTable({
   // A provider that isn't set up shouldn't show a button that can't work.
   const ready = currency === "INR" ? !!checkout?.razorpay : !!checkout?.polar;
   const testMode = !!checkout?.test;
-  const perMonth = Math.round(PRICES[currency].yearly / 12);
+  const perMonth = yearlyPerMonth(currency);
 
   return (
     <div className="mx-auto w-full max-w-4xl">
@@ -87,7 +95,7 @@ export function PricingTable({
             unit={["per month", "billed monthly"]}
             listLabel="What’s in it:"
             list={PLAN_FEATURES}
-            action={<PlanAction period="monthly" {...{ currency, viewer, ready, testMode }} />}
+            action={<PlanAction period="monthly" {...{ currency, viewer, ready, testMode, trialEnds }} />}
             note={`Full refund inside ${MONTHLY_REFUND_DAYS} days of your first charge.`}
           />
           <Column
@@ -106,7 +114,7 @@ export function PricingTable({
               ...(YEARLY_OFFER.priceLock ? ["Your price is locked for as long as you stay"] : []),
               "One charge a year, nothing to remember",
             ]}
-            action={<PlanAction period="yearly" primary {...{ currency, viewer, ready, testMode }} />}
+            action={<PlanAction period="yearly" primary {...{ currency, viewer, ready, testMode, trialEnds }} />}
             className="rounded-[1.6rem] bg-muted"
           />
         </div>
@@ -209,6 +217,7 @@ function PlanAction({
   viewer,
   ready,
   testMode,
+  trialEnds,
 }: {
   period: Period;
   /** The recommended column gets the filled button; the other is quieter. */
@@ -217,8 +226,11 @@ function PlanAction({
   viewer: Viewer;
   ready: boolean;
   testMode: boolean;
+  trialEnds?: string;
 }) {
   const tone = primary ? "" : quietButton;
+  const rules = TRIAL[currency];
+  const price = formatPrice(PRICES[currency][period], currency);
 
   if (viewer === "paid") return null;
 
@@ -226,9 +238,11 @@ function PlanAction({
     return (
       <>
         <Link href="/signup" className={cn(buttonVariants(), fullButton, tone)}>
-          Start {TRIAL_DAYS}-day free trial
+          Start {rules.days}-day free trial
         </Link>
-        <p className="mt-2 text-center text-xs text-muted-foreground">No card needed.</p>
+        <p className="mt-2 text-center text-xs text-muted-foreground">
+          {rules.card ? `Card required. Cancel before day ${rules.days} and pay nothing.` : "No card needed."}
+        </p>
       </>
     );
   }
@@ -247,17 +261,30 @@ function PlanAction({
     );
   }
 
+  // What the button does, said plainly. A card-region user who hasn't had a
+  // trial starts it here; an Indian user mid-trial sets up Autopay, and the
+  // subscription starts when the trial ends.
+  const startsTrial = rules.card && viewer === "pending";
+  const setsUpAutopay = !rules.card && viewer === "trial";
+  const label = startsTrial
+    ? `Start ${rules.days}-day free trial`
+    : setsUpAutopay
+      ? "Set up UPI Autopay"
+      : period === "yearly"
+        ? "Pay for a year"
+        : "Pay monthly";
+  const caption = testMode
+    ? "Test mode. No real money moves."
+    : startsTrial
+      ? `${price} after ${rules.days} days. Cancel before then and pay nothing.`
+      : setsUpAutopay
+        ? `First charge of ${price} on ${trialEnds ?? "the day your trial ends"}.`
+        : "Cancel any time from Settings.";
+
   return (
     <>
-      <CheckoutButton
-        plan={period}
-        currency={currency}
-        label={period === "yearly" ? "Pay for a year" : "Pay monthly"}
-        className={cn(fullButton, tone)}
-      />
-      <p className="mt-2 text-center text-xs text-muted-foreground">
-        {testMode ? "Test mode. No real money moves." : "Cancel any time from Settings."}
-      </p>
+      <CheckoutButton plan={period} currency={currency} label={label} className={cn(fullButton, tone)} />
+      <p className="mt-2 text-center text-xs text-muted-foreground">{caption}</p>
     </>
   );
 }

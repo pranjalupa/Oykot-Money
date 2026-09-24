@@ -1,7 +1,7 @@
 // DRAFT for review — not legal advice.
 import { LegalPage, Contact } from "@/components/legal-page";
 import { LEGAL } from "@/lib/legal";
-import { TRIAL_DAYS } from "@/lib/pricing";
+import { TRIAL, TRIAL_DAYS } from "@/lib/pricing";
 
 export const metadata = { title: "Terms · Oykot Money" };
 
@@ -26,7 +26,7 @@ export default function TermsPage() {
       <section>
         <h2>Trial and subscription</h2>
         <ul>
-          <li>New accounts get a {TRIAL_DAYS}-day free trial with no card required.</li>
+          <li>Every account gets a {TRIAL_DAYS}-day free trial. In India no card is needed; from day {TRIAL.INR.autopayFromDay} you&rsquo;ll be asked to set up UPI Autopay, and nothing is charged before the trial ends. Everywhere else a card is needed to start the trial, and it&rsquo;s charged when the trial ends unless you cancel before then.</li>
           <li>Once payments launch, paid plans renew automatically each month or year until you cancel. You can cancel any time and keep access until the end of the paid period.</li>
           <li>If a trial or subscription ends, your account becomes read-only: you can still view and export your data.</li>
           <li>We&rsquo;ll give at least 30 days&rsquo; notice before any price change affects you.</li>

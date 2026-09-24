@@ -4,7 +4,7 @@ import { Check, CheckCircle } from "@phosphor-icons/react/dist/ssr";
 import { DailyScreen, FloatCard, PhoneFrame, SAMPLE, SplitCard, mockMoney } from "@/components/landing-mockups";
 import { LogoMark, Wordmark } from "@/components/logo";
 import { LEGAL } from "@/lib/legal";
-import { TRIAL_DAYS, priceCurrencyForCountry } from "@/lib/pricing";
+import { TRIAL, TRIAL_DAYS, priceCurrencyForCountry } from "@/lib/pricing";
 
 /**
  * Sign in and sign up, after the Kravio / workspace references: the form in a
@@ -61,7 +61,11 @@ export async function AuthSplit({ children }: { children: React.ReactNode }) {
               <span className="text-muted-foreground">before you spend it.</span>
             </p>
             <ul className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted-foreground">
-              {[`Free for ${TRIAL_DAYS} days, no card`, "No bank login", "Export any time"].map((p) => (
+              {[
+                TRIAL[currency].card ? `Free for ${TRIAL_DAYS} days` : `Free for ${TRIAL_DAYS} days, no card`,
+                "No bank login",
+                "Export any time",
+              ].map((p) => (
                 <li key={p} className="flex items-center gap-1.5">
                   <Check size={14} weight="bold" className="text-primary" />
                   {p}

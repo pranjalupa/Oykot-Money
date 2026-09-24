@@ -21,8 +21,24 @@ sees a choice:
 consumer means VAT is owed from the first euro, with no threshold for a
 non-EU seller. Same story in the UK and a dozen others. An MoR becomes the
 seller, so those registrations are theirs, not yours. It costs about 6.5% +
-50¢ per charge — which is why the dollar monthly price is $6 and yearly is
-the plan worth pushing.
+50¢ per charge — 13% of the $7.99 monthly, 7% of the $59 yearly — which is
+why yearly is the plan worth pushing.
+
+## The trial, by region
+
+Both are 7 days. They work differently because the rails do:
+
+| | India (Razorpay) | Everywhere else (Polar) |
+| --- | --- | --- |
+| Starts | At signup, no card | At checkout, with a card |
+| The ask | From day 6 the app asks them to set up UPI Autopay | None: the card's already there |
+| First charge | When the trial ends: the subscription is created with `start_at` = trial end | When the trial ends: set on the Polar products |
+| Walk away | Skip Autopay; nothing is ever charged | Cancel in Settings before day 7; nothing is charged |
+
+The rules live in `TRIAL` in `lib/pricing.ts`. A user's region comes from
+their profile; a card-region user who hasn't checked out is `pending`, which
+only locks anything once `ACCESS_ENFORCED` is on. The day-6 ask is in the app
+only (the trial banner and pricing page). There's no email yet.
 
 ---
 
@@ -33,8 +49,11 @@ the plan worth pushing.
    in the same name, and an address proof. Approval is usually a day or two;
    test mode works immediately, so you can finish the rest before it lands.
 2. **Create two plans** — Dashboard → Subscriptions → Plans:
-   - Monthly: ₹249, billing cycle *monthly*.
-   - Yearly: ₹1,990, billing cycle *yearly*.
+   - Monthly: ₹99, billing cycle *monthly*.
+   - Yearly: ₹799, billing cycle *yearly*.
+   No trial on the plans: the app starts the subscription at the trial's end
+   itself (`start_at`), so the customer approves the UPI Autopay mandate on
+   day 6 and the first charge lands on day 7.
    Copy each `plan_…` id.
 3. **API keys** — Settings → API Keys → *Generate Test Key*. You get a key id
    and a secret; the secret is shown once.
@@ -64,8 +83,14 @@ once in sandbox now, once in production when you go live.
    an organisation. The slug becomes part of your checkout URLs, so pick the
    name you'd want customers to see.
 2. **Create two products** — Products → New Product:
-   - *Oykot Money — Monthly*: recurring, **monthly**, **$6**.
-   - *Oykot Money — Yearly*: recurring, **yearly**, **$36**.
+   - *Oykot Money — Monthly*: recurring, **monthly**, **$7.99**, with a
+     **7-day free trial**.
+   - *Oykot Money — Yearly*: recurring, **yearly**, **$59**, with a
+     **7-day free trial**.
+   The trial on the product is what makes the global trial "card required":
+   checkout takes the card and Polar charges it when the 7 days end. Check
+   whether Polar lets you limit trials to one per customer and turn that on,
+   or someone who cancels can check out again for another 7 days.
    No benefits or licence keys needed — access is decided by our own
    subscriptions table, not by Polar's entitlements.
    Copy both product ids (they look like `xxxxxxxx-xxxx-…`).
@@ -75,8 +100,10 @@ once in sandbox now, once in production when you go live.
 4. **Webhook** — Settings → Webhooks → Add Endpoint:
    - URL: `https://oykot-money.vercel.app/api/webhooks/polar`
    - Format: **Raw** (not Discord or Slack)
-   - Events: `subscription.active`, `subscription.updated`,
-     `subscription.canceled`, `subscription.uncanceled`, `subscription.revoked`
+   - Events: `subscription.created`, `subscription.active`,
+     `subscription.updated`, `subscription.canceled`, `subscription.uncanceled`,
+     `subscription.revoked`. **`subscription.created` is new with the card
+     trial**: it's the event that says a trial has started.
    - Copy the signing secret.
 5. **Payout account** — Finance → Payout Account → connect Stripe Express with
    your PAN and Indian bank details. This can wait until you're ready to take
@@ -153,10 +180,11 @@ Practically that means:
   Refund. Polar: the refund is issued by them, from the order in their
   dashboard. Neither is automated in the app, and at this volume neither needs
   to be.
-- **Yearly INR is ₹1,990, not ₹1,999.** At ₹1,999 the saving is 3.97 months,
-  and "4 months free" would be a lie by ₹7. `yearlyMonthsFree()` floors rather
-  than rounds, so the claim is always true at the till; the nine rupees buy
-  the right to say it. The Razorpay plan must be ₹1,990 to match.
+- **"Months free" is floored, never rounded.** `yearlyMonthsFree()` makes the
+  claim true at the till. At ₹99 / ₹799 the saving is 3.93 months, so the
+  rupee badge says **3 months free**; ₹792 or less would earn 4. The dollar
+  side ($7.99 / $59) is 4.6 months, so it says 4. Whatever the price, the
+  Razorpay plan and Polar product must carry the same amount as `PRICES`.
 - **A price rise doesn't touch existing subscribers.** Razorpay plans are
   immutable — a new price is a new plan, and old subscriptions keep running on
   the old one, so the lock holds by default. On Polar, raise the price by

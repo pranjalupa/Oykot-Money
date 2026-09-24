@@ -131,6 +131,11 @@ export const profiles = pgTable("profiles", {
 /* -------------------------------------------------------------------------- */
 
 export const SUBSCRIPTION_STATUSES = [
+  /**
+   * Card-required regions only: signed up, trial not started, because that
+   * trial begins at checkout. App-level enum — no DB constraint to migrate.
+   */
+  "pending",
   "trialing",
   "active",
   "past_due",

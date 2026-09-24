@@ -23,6 +23,8 @@ type PolarSubscription = {
   id: string;
   status?: string | null;
   currentPeriodEnd?: string | Date | null;
+  /** Set while a card trial runs; the card is charged when it passes. */
+  trialEnd?: string | Date | null;
   cancelAtPeriodEnd?: boolean | null;
   customerId?: string | null;
   customer?: { id?: string | null; externalId?: string | null } | null;
@@ -31,6 +33,28 @@ type PolarSubscription = {
 };
 
 const PLAN: Record<string, string> = { month: "monthly", year: "yearly" };
+
+/**
+ * Polar's status, in ours. `trialing` has to survive the trip: the
+ * card-required trial is Polar's, and reading it as anything else would
+ * either cut a trial short or hand out a paid plan nobody paid for.
+ */
+function statusOf(sub: PolarSubscription): SubscriptionStatus {
+  switch (sub.status) {
+    case "trialing":
+      return "trialing";
+    case "active":
+      return "active";
+    case "past_due":
+    case "unpaid":
+      return "past_due";
+    case "incomplete":
+    case "incomplete_expired":
+      return "expired";
+    default:
+      return "cancelled";
+  }
+}
 
 async function write(sub: PolarSubscription, status: SubscriptionStatus) {
   const userId = sub.customer?.externalId;
@@ -52,29 +76,41 @@ async function write(sub: PolarSubscription, status: SubscriptionStatus) {
     providerSubscriptionId: sub.id,
     currentPeriodEnd: sub.currentPeriodEnd ? new Date(sub.currentPeriodEnd) : null,
     cancelAtPeriodEnd: Boolean(sub.cancelAtPeriodEnd),
+    trialEndsAt: sub.trialEnd ? new Date(sub.trialEnd) : null,
   });
 }
 
 const handler = Webhooks({
   webhookSecret: process.env.POLAR_WEBHOOK_SECRET ?? "",
 
-  // Paid and running.
+  // Checkout done. With the 7-day trial set on the products this arrives as
+  // `trialing`; the card is charged when the trial ends.
+  onSubscriptionCreated: async ({ data }) => {
+    const sub = data as PolarSubscription;
+    await write(sub, statusOf(sub));
+  },
+
+  // Paid and running — the trial converted, or a plan without one started.
   onSubscriptionActive: async ({ data }) => write(data as PolarSubscription, "active"),
 
-  // Cancelled but *not* over: Polar keeps it live to the end of the period,
-  // and so do we — they paid for it.
-  onSubscriptionCanceled: async ({ data }) => write(data as PolarSubscription, "active"),
-  onSubscriptionUncanceled: async ({ data }) => write(data as PolarSubscription, "active"),
+  // Cancelled but *not* over: Polar keeps it live to the end of the period
+  // (or of the trial), and so do we. Polar's own status says which.
+  onSubscriptionCanceled: async ({ data }) => {
+    const sub = data as PolarSubscription;
+    await write(sub, statusOf(sub) === "trialing" ? "trialing" : "active");
+  },
+  onSubscriptionUncanceled: async ({ data }) => {
+    const sub = data as PolarSubscription;
+    await write(sub, statusOf(sub) === "trialing" ? "trialing" : "active");
+  },
 
   // Actually finished — access stops here.
   onSubscriptionRevoked: async ({ data }) => write(data as PolarSubscription, "expired"),
 
-  // Covers plan changes and renewals; status comes from Polar itself.
+  // Covers plan changes, renewals and a trial converting; status from Polar.
   onSubscriptionUpdated: async ({ data }) => {
     const sub = data as PolarSubscription;
-    const status: SubscriptionStatus =
-      sub.status === "active" ? "active" : sub.status === "past_due" ? "past_due" : "cancelled";
-    await write(sub, status);
+    await write(sub, statusOf(sub));
   },
 });
 

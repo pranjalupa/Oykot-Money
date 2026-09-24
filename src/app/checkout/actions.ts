@@ -1,6 +1,9 @@
 "use server";
 
 import { headers } from "next/headers";
+import { eq } from "drizzle-orm";
+import { db } from "@/db";
+import { subscriptions } from "@/db/schema";
 import { requireUser, getProfile } from "@/lib/auth";
 import { createSubscription, configured as razorpayReady } from "@/lib/payments/razorpay";
 import type { Plan, PriceCurrency } from "@/lib/pricing";
@@ -38,6 +41,7 @@ export async function startCheckout(plan: Plan, currency: PriceCurrency): Promis
         userId: user.id,
         email: user.email ?? null,
         name: profile?.displayName ?? null,
+        startAt: await trialEndIfRunning(user.id),
       });
       return {
         ok: true,
@@ -70,4 +74,15 @@ export async function startCheckout(plan: Plan, currency: PriceCurrency): Promis
   if (profile?.displayName) url.searchParams.set("customerName", profile.displayName);
 
   return { ok: true, provider: "polar", url: url.toString() };
+}
+
+/**
+ * The end of a no-card trial that's still running, so a subscription set up
+ * during it starts when it ends. Razorpay wants a start comfortably in the
+ * future; inside the last hour, just start now — the trial's all but over.
+ */
+async function trialEndIfRunning(userId: string): Promise<Date | undefined> {
+  const [sub] = await db.select().from(subscriptions).where(eq(subscriptions.userId, userId)).limit(1);
+  if (sub?.status !== "trialing") return undefined;
+  return sub.trialEndsAt.getTime() - Date.now() > 60 * 60 * 1000 ? sub.trialEndsAt : undefined;
 }

@@ -38,10 +38,14 @@ export default async function SettingsPage() {
         : access?.state === "active"
           ? `Paid · ${access.plan ?? "monthly"}${periodEnd ? `, renews ${periodEnd}` : ""}`
           : access?.state === "trial"
-            ? `Free trial · ends ${formatDay(access.trialEndsAt.toISOString(), locale, { day: "numeric", month: "long" })}`
-            : access?.state === "grace"
-              ? "Payment problem. Update your payment to keep going."
-              : "Trial ended";
+            ? `Free trial · ends ${formatDay(access.trialEndsAt.toISOString(), locale, { day: "numeric", month: "long" })}${
+                !access.provider ? "" : access.cancelling ? " · cancelled, nothing will be charged" : ` · then ${access.plan ?? "your plan"}`
+              }`
+            : access?.state === "pending"
+              ? "Free trial not started. It begins when you add a card."
+              : access?.state === "grace"
+                ? "Payment problem. Update your payment to keep going."
+                : "Trial ended";
 
   return (
     <div className="flex flex-col gap-8">
@@ -76,14 +80,23 @@ export default async function SettingsPage() {
       <section className="rounded-xl border border-border bg-card p-5">
         <h2 className="font-heading text-lg font-bold">Billing</h2>
         <p className="mt-0.5 text-sm text-muted-foreground">{planLabel}</p>
-        {access && access.state !== "complimentary" && access.state !== "active" && (
+        {access && !access.provider && access.state !== "complimentary" && access.state !== "active" && (
           <p className="mt-2 text-xs text-muted-foreground">
             Payments aren&rsquo;t live yet, so there&rsquo;s nothing to pay. You keep full access
             until they are.
           </p>
         )}
-        {access?.state === "active" && access.provider && !access.cancelling ? (
-          <BillingControls provider={access.provider} periodEnd={periodEnd} />
+        {/* A trial that's already attached to a card or mandate can be cancelled
+            too — "cancel before day 7 and pay nothing" depends on it. */}
+        {(access?.state === "active" || access?.state === "trial") && access.provider && !access.cancelling ? (
+          <BillingControls
+            provider={access.provider}
+            periodEnd={
+              access.state === "trial"
+                ? formatDay(access.trialEndsAt.toISOString(), locale, { day: "numeric", month: "long", year: "numeric" })
+                : periodEnd
+            }
+          />
         ) : (
           access?.state !== "complimentary" && (
             <Link

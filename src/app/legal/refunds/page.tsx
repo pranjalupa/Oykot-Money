@@ -9,7 +9,7 @@ export default function RefundsPage() {
     <LegalPage title="Refund policy">
       <section>
         <h2>Try before you pay</h2>
-        <p>Every account starts with a {TRIAL_DAYS}-day free trial, no card needed, so you can decide before paying anything.</p>
+        <p>Every account starts with a {TRIAL_DAYS}-day free trial, so you can decide before paying anything. In India no card is needed. Everywhere else the trial starts with a card; cancel before it ends and you&rsquo;re never charged.</p>
       </section>
       <section>
         <h2>Cancelling</h2>

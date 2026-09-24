@@ -74,11 +74,18 @@ export async function createSubscription({
   userId,
   email,
   name,
+  startAt,
 }: {
   plan: "monthly" | "yearly";
   userId: string;
   email: string | null;
   name: string | null;
+  /**
+   * When the first charge happens. Set to the trial's end for someone still
+   * in the no-card trial: the UPI Autopay mandate is approved now, and the
+   * trial they were promised stays free.
+   */
+  startAt?: Date;
 }) {
   const e = env();
   if (!e) throw new Error("Razorpay isn't configured");
@@ -87,6 +94,7 @@ export async function createSubscription({
     // Yearly: 5 years of renewals before Razorpay asks again. Monthly: 60.
     total_count: plan === "yearly" ? 5 : 60,
     customer_notify: 1,
+    ...(startAt ? { start_at: Math.floor(startAt.getTime() / 1000) } : {}),
     notes: { userId, plan, email: email ?? "", name: name ?? "" },
   });
 }

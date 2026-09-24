@@ -8,6 +8,7 @@ import { AppShell } from "@/components/app-shell";
 import { getUser, getProfile, getUserPrefs } from "@/lib/auth";
 import { TimezoneSync } from "@/components/timezone-sync";
 import { getAccess } from "@/lib/access";
+import { formatDay } from "@/lib/dates";
 import { DEFAULT_REGION } from "@/lib/region";
 import { CurrencyProvider } from "@/components/currency-provider";
 import { DEFAULT_CURRENCY } from "@/lib/currency";
@@ -91,7 +92,20 @@ export default async function RootLayout({
                 signedIn={!!user}
                 email={user?.email ?? null}
                 name={name}
-                trial={access ? { state: access.state, daysLeft: access.daysLeft, enforced: access.enforced } : null}
+                trial={
+                  access
+                    ? {
+                        state: access.state,
+                        daysLeft: access.daysLeft,
+                        enforced: access.enforced,
+                        autopayDue: access.autopayDue,
+                        trialEnds: formatDay(access.trialEndsAt.toISOString(), prefs?.locale ?? "en-IN", {
+                          day: "numeric",
+                          month: "long",
+                        }),
+                      }
+                    : null
+                }
                 sidebarCollapsed={sidebarCollapsed}
               >
                 {children}

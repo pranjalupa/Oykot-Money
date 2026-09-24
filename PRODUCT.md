@@ -573,8 +573,9 @@ inline icons, Chart / Table switch) are unchanged.
 
 | Question | Proposal | Why |
 |---|---|---|
-| Global price | **$6 / month, $36 / year** | Raised from $4 on 2026-09-22: a merchant of record takes ~6.5% + 50¢ on an international card, which is 19% of a $4 charge and 13% of a $6 one. Yearly works out to $3/month — half price, and one charge instead of twelve |
-| India price | **₹249 / month, ₹1,990 / year** — set deliberately, not converted. ₹1,990 so "4 months free" is true | A straight conversion of $4 lands above ₹300. Worth testing, not a settled number |
+| Global price | **$7.99 / month, $59 / year** (set 2026-09-24) | A merchant of record takes ~6.5% + 50¢: 13% of $7.99, 7% of $59. Yearly is $4.92/month, 4 months free |
+| India price | **₹99 / month, ₹799 / year** (set 2026-09-24), not converted | Yearly is ₹67/month. The saving is 3.93 months, so the badge honestly says 3 months free; ₹792 would earn 4 |
+| Trial | **7 days.** India: no card, UPI Autopay asked for from day 6, first charge at the trial's end. Elsewhere: card at checkout, charged at the end unless cancelled | See `TRIAL` in lib/pricing.ts and docs/payments-setup.md |
 | Trial length | **14 days** | Enough to set a budget and live with it for two weeks. Longer trials delay the decision without adding much |
 | Card to start the trial | **No card needed** | A budgeting app has to earn trust with your money data before asking for a card |
 | After the trial | **Read-only, never locked out** | You can still see and export everything; you just can't add or edit. Matches principle 3 — your history is never taken from you |

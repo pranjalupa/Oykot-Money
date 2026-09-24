@@ -1,25 +1,42 @@
 /**
  * Prices, trial terms and the yearly offer — the one place to change them.
  *
- * ₹249 / ₹1,990 and $6 / $36. The rupee price is set on its own rather than
- * converted, so it can be tuned for India.
+ * ₹99 / ₹799 and $7.99 / $59, set 2026-09-24. The rupee price is set on its
+ * own rather than converted, so it can be tuned for India.
  *
- * The dollar monthly went $4 → $6 on 2026-09-22. A merchant of record takes
- * roughly 6.5% + 50¢ on an international card, which is **19% of a $4 charge**
- * — the fixed part, not the percentage, is what hurts at small amounts. At $6
- * it's 13%, and the yearly plan (one charge instead of twelve) is 8%.
- * Shared by client and server; the payment providers will need matching plans.
+ * Check the fee against the price before changing either: a merchant of
+ * record takes roughly 6.5% + 50¢ on an international card — 13% of a $7.99
+ * charge, 7% of the $59 yearly. Razorpay's ~2.4% on rupees is flat enough
+ * that ₹99 still works. Shared by client and server; the payment providers'
+ * plans and products must carry the same amounts.
  */
-export const TRIAL_DAYS = 14;
-
 export const PRICES = {
-  INR: { monthly: 249, yearly: 1990 },
-  USD: { monthly: 6, yearly: 36 },
+  INR: { monthly: 99, yearly: 799 },
+  USD: { monthly: 7.99, yearly: 59 },
 } as const;
 
 export type Plan = "monthly" | "yearly";
 
 export type PriceCurrency = keyof typeof PRICES;
+
+/**
+ * How the free trial works, by where someone pays.
+ *
+ * - **India:** no card. The trial starts at signup; from `autopayFromDay` the
+ *   app asks them to set up UPI Autopay, and the subscription it creates starts
+ *   when the trial ends, so nothing is charged inside it.
+ * - **Everywhere else:** card required. The trial starts at checkout (the
+ *   7 days are set on the Polar products) and the card is charged when it
+ *   ends unless they cancel first. Until then there's no free access — which
+ *   only bites once ACCESS_ENFORCED is on.
+ */
+export const TRIAL = {
+  INR: { days: 7, card: false, autopayFromDay: 6 },
+  USD: { days: 7, card: true, autopayFromDay: null },
+} as const;
+
+/** Both regions run the same length; kept for the places that just need the number. */
+export const TRIAL_DAYS = 7;
 
 /**
  * What makes yearly worth choosing beyond the smaller number.
@@ -44,17 +61,30 @@ export function priceCurrencyForCountry(country: string | null | undefined): Pri
   return (country ?? "").toUpperCase() === "IN" ? "INR" : "USD";
 }
 
+/** Whole amounts without decimals ($59), the rest with cents ($7.99). */
 export function formatPrice(amount: number, currency: PriceCurrency) {
+  const whole = Number.isInteger(amount);
   return new Intl.NumberFormat(currency === "INR" ? "en-IN" : "en-US", {
     style: "currency",
     currency,
-    maximumFractionDigits: 0,
+    minimumFractionDigits: whole ? 0 : 2,
+    maximumFractionDigits: whole ? 0 : 2,
   }).format(amount);
+}
+
+/** Round the way each currency is actually charged: rupees whole, dollars to the cent. */
+function roundFor(currency: PriceCurrency, n: number) {
+  return currency === "INR" ? Math.round(n) : Math.round(n * 100) / 100;
 }
 
 /** What twelve monthly charges would cost — the figure yearly is struck against. */
 export function twelveMonths(currency: PriceCurrency) {
-  return PRICES[currency].monthly * 12;
+  return roundFor(currency, PRICES[currency].monthly * 12);
+}
+
+/** The yearly price as a monthly figure: ₹67, $4.92. */
+export function yearlyPerMonth(currency: PriceCurrency) {
+  return roundFor(currency, PRICES[currency].yearly / 12);
 }
 
 /** Yearly against twelve months, as a whole percentage. */

@@ -29,7 +29,7 @@ import { PricingTable } from "@/components/pricing-table";
 import { buttonVariants } from "@/components/ui/button";
 import { CURRENCIES } from "@/lib/currency";
 import { LEGAL } from "@/lib/legal";
-import { PRICES, TRIAL_DAYS, formatPrice, type PriceCurrency } from "@/lib/pricing";
+import { PRICES, TRIAL, TRIAL_DAYS, formatPrice, type PriceCurrency } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
 
 /**
@@ -45,6 +45,13 @@ import { cn } from "@/lib/utils";
  * Motion is wired by `data-lp-*` attributes and lives in
  * components/landing-motion-gsap.tsx.
  */
+
+/** The trial's terms in a few words, per region — "no card" is only true in India. */
+function trialTerms(currency: PriceCurrency) {
+  return TRIAL[currency].card
+    ? { short: `Cancel before day ${TRIAL[currency].days}, pay nothing`, sentence: `Cancel before day ${TRIAL[currency].days} and pay nothing.` }
+    : { short: "No card needed", sentence: "No card needed." };
+}
 
 const cta = "h-12 rounded-full px-6 text-[15px] font-semibold sm:h-12 sm:px-6";
 const ghost =
@@ -65,7 +72,7 @@ export function Landing({ currency }: { currency: PriceCurrency }) {
         <Features currency={currency} />
         <Comparison currency={currency} />
         <Pricing currency={currency} />
-        <Faq />
+        <Faq currency={currency} />
         <FinalCta currency={currency} />
       </main>
       <Footer />
@@ -141,7 +148,7 @@ function Hero({ currency }: { currency: PriceCurrency }) {
             style={{ animationDelay: "300ms" }}
           >
             <li className="flex items-center gap-1.5">
-              <Check size={14} weight="bold" className="text-primary" /> No card needed
+              <Check size={14} weight="bold" className="text-primary" /> {trialTerms(currency).short}
             </li>
             <li className="flex items-center gap-1.5">
               <Check size={14} weight="bold" className="text-primary" /> Cancel from Settings
@@ -643,7 +650,7 @@ function Pricing({ currency }: { currency: PriceCurrency }) {
   return (
     <section id="pricing" className="mx-auto w-full max-w-6xl scroll-mt-20 px-4 py-24 sm:px-6 lg:py-32">
       <SectionHead eyebrow="Pricing" title="One plan. Everything in it." center>
-        Free for {TRIAL_DAYS} days, no card needed.
+        Free for {TRIAL_DAYS} days. {trialTerms(currency).sentence}
       </SectionHead>
       <div data-lp-reveal className="mt-12">
         {/* The same component as /pricing, so the two can never disagree. */}
@@ -653,7 +660,7 @@ function Pricing({ currency }: { currency: PriceCurrency }) {
   );
 }
 
-const FAQ = [
+const faqFor = (currency: PriceCurrency) => [
   {
     q: "Why no bank sync?",
     a: "Because your money data is yours. Manual logging also makes you notice every spend, and that's half the point.",
@@ -668,19 +675,21 @@ const FAQ = [
   },
   {
     q: "What happens after the trial?",
-    a: "Pick a plan or walk away. We never charge without asking, and there's no card on file to charge.",
+    a: TRIAL[currency].card
+      ? `Your card is charged when the ${TRIAL[currency].days} days are up. Cancel from Settings before then and you pay nothing.`
+      : `On day ${TRIAL.INR.autopayFromDay} we'll ask you to set up UPI Autopay. Set it up and your plan starts when the trial ends; skip it and nothing is ever charged.`,
   },
 ];
 
 
-function Faq() {
+function Faq({ currency }: { currency: PriceCurrency }) {
   return (
     <section className="mx-auto w-full max-w-3xl px-4 py-24 sm:px-6 lg:py-32">
       <SectionHead eyebrow="FAQ" title="Questions, answered." center>
         Everything worth knowing before you start.
       </SectionHead>
       <div data-lp-reveal className="mt-12">
-        <FaqList items={FAQ} />
+        <FaqList items={faqFor(currency)} />
       </div>
     </section>
   );
@@ -703,7 +712,7 @@ function FinalCta({ currency }: { currency: PriceCurrency }) {
           </Link>
         </div>
         <p data-lp-reveal className="mt-5 text-sm text-muted-foreground">
-          No card. No bank login. Cancel from Settings, any time.
+          No bank login. {trialTerms(currency).sentence}
         </p>
         {/* The phone rises out of the panel's bottom edge and is cut off by it. */}
         <div aria-hidden className="mt-14 flex h-72 justify-center overflow-hidden sm:h-80">
