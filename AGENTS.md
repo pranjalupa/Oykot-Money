@@ -132,6 +132,17 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   Teams and sharing are still out — don't build toward them without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
+- 2026-09-24 — **The public site is always light**; the bento's dark-mode card is gone.
+  - `ThemeProvider` passes next-themes a `forcedTheme="light"` when signed out (every page
+    a signed-out visitor can reach is public: landing, pricing, auth, legal) and on
+    `/auth` (a reset link arrives with a recovery session). Forcing doesn't touch the
+    saved preference, so signing in brings dark mode back, and the pre-paint script
+    carries it, so there's no dark flash. Checked with the device set to dark.
+  - Signed-in users see /pricing inside the app in **their own** theme: forcing light
+    there would flip the sidebar too.
+  - Dark mode isn't a feature worth a bento slot. It's replaced by **Settlements**
+    ("Lend, borrow, settle up."), mocked in the app's own words: You'll get / Settled /
+    You'll give. Net worth would be the next candidate.
 - 2026-09-24 — **New prices and a trial that differs by region**, from Pranjal's table.
   **₹99 / ₹799** and **$7.99 / $59**; trial **7 days** (was 14). Rules live in `TRIAL`.
   - **India: no card.** Trial starts at signup. From day 6 (`autopayDue`, two days left or

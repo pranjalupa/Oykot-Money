@@ -73,6 +73,7 @@ export default async function RootLayout({
         className={`${inter.variable} ${archivo.variable} antialiased`}
       >
         <ThemeProvider
+          signedIn={Boolean(user)}
           attribute="class"
           defaultTheme="system"
           enableSystem

@@ -7,9 +7,8 @@ import {
   Globe,
   LockKey,
   Minus,
-  Moon,
   ShieldCheck,
-  Sun,
+  Handshake,
   Trash,
 } from "@phosphor-icons/react/dist/ssr";
 import { HeroDemo } from "@/components/landing-hero-demo";
@@ -475,7 +474,6 @@ function Privacy() {
 /* -------------------------------------------------------------------------- */
 
 function Features({ currency }: { currency: PriceCurrency }) {
-  const s = SAMPLE[currency];
   const f = (n: number) => mockMoney(n, currency);
   const head = (title: string, body: string) => (
     <div className="px-6 pt-6">
@@ -544,25 +542,30 @@ function Features({ currency }: { currency: PriceCurrency }) {
         </Panel>
 
         <Panel className="flex flex-col md:col-span-2">
-          {head("Dark mode and light mode.", "Obviously.")}
-          {/* Fixed colours, not tokens: this card has to show the *other*
-              theme, whichever one you're in. */}
-          <div aria-hidden className="relative mt-auto h-40 px-6 pt-6">
-            <div data-lp-rise className="relative mx-auto h-full w-[230px]">
-              <div className="lp-float-shadow absolute top-0 left-0 w-[150px] -rotate-6 rounded-2xl border border-[#e7e6e2] bg-white p-3.5 text-[#1d1d1b]">
-                <Sun size={15} weight="duotone" />
-                <p className="mt-2 font-heading text-lg font-bold tabular-nums">{f(s.daily - s.logged.amount)}</p>
-                <div className="mt-2 h-1.5 rounded-full bg-[#ecebe7]">
-                  <div className="h-full w-3/5 rounded-full bg-forest-900" />
-                </div>
-              </div>
-              <div className="lp-float-shadow absolute top-5 right-0 w-[150px] rotate-6 rounded-2xl border border-[#2c2c2a] bg-[#171716] p-3.5 text-[#f2f2f0]">
-                <Moon size={15} weight="duotone" />
-                <p className="mt-2 font-heading text-lg font-bold tabular-nums">{f(s.daily - s.logged.amount)}</p>
-                <div className="mt-2 h-1.5 rounded-full bg-[#2c2c2a]">
-                  <div className="h-full w-3/5 rounded-full bg-lemon-400" />
-                </div>
-              </div>
+          {head("Lend, borrow, settle up.", "Who owes whom, in words, not minus signs. It counts in the month it happens.")}
+          {/* The Settlements list as the app draws it: a balance per person in
+              words, and the one action that closes it. */}
+          <div aria-hidden className="relative mt-auto grid place-items-center px-6 pt-8 pb-8">
+            <div data-lp-rise className="relative">
+              <FloatCard className="w-[230px] p-2">
+                {[
+                  { name: "Rahul", note: `You'll get ${f(currency === "INR" ? 2_000 : 40)}`, tone: "text-positive" },
+                  { name: "Aman", note: "Settled", tone: "text-muted-foreground" },
+                  { name: "Priya", note: `You'll give ${f(currency === "INR" ? 450 : 12)}`, tone: "text-negative" },
+                ].map((p) => (
+                  <div key={p.name} className="flex items-center gap-2.5 rounded-xl px-1.5 py-1.5">
+                    <span className="grid size-8 shrink-0 place-items-center rounded-full bg-muted text-[11px] font-semibold">
+                      {p.name[0]}
+                    </span>
+                    <span className="min-w-0 flex-1 text-[12.5px] font-medium">{p.name}</span>
+                    <span className={cn("text-[11.5px] font-semibold tabular-nums", p.tone)}>{p.note}</span>
+                  </div>
+                ))}
+              </FloatCard>
+              <FloatCard className="absolute -right-4 -bottom-4 flex items-center gap-1.5 bg-primary px-3 py-1.5 text-[10.5px] font-semibold text-primary-foreground">
+                <Handshake size={13} weight="bold" />
+                Settle up
+              </FloatCard>
             </div>
           </div>
         </Panel>
