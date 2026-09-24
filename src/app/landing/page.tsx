@@ -1,6 +1,5 @@
 import { headers } from "next/headers";
 import { Landing } from "@/components/landing";
-import { lifetimeSeatsLeft } from "@/lib/access";
 import { priceCurrencyForCountry } from "@/lib/pricing";
 
 /**
@@ -20,11 +19,6 @@ export const metadata = {
 };
 
 export default async function LandingPage() {
-  const [h, lifetimeSeats] = await Promise.all([headers(), lifetimeSeatsLeft()]);
-  return (
-    <Landing
-      currency={priceCurrencyForCountry(h.get("x-vercel-ip-country"))}
-      lifetimeSeats={lifetimeSeats}
-    />
-  );
+  const h = await headers();
+  return <Landing currency={priceCurrencyForCountry(h.get("x-vercel-ip-country"))} />;
 }

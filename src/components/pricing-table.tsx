@@ -5,7 +5,6 @@ import Link from "next/link";
 import { Check } from "@phosphor-icons/react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
-  LIFETIME_SEATS,
   MONTHLY_REFUND_DAYS,
   PLAN_FEATURES,
   PRICES,
@@ -29,29 +28,18 @@ type Period = "monthly" | "yearly";
  * Yearly lists only what it adds ("Everything in Monthly, plus"), so the
  * app's features appear once and the offer is the whole of yearly's column:
  * the months it doesn't charge for, a window to change your mind, a price
- * that can't rise. Where the reference has illustrations, each column ends
- * with the twelve months drawn as ticks — the free ones hollow.
- *
- * Lifetime, when seats remain, is the full-width panel underneath.
+ * that can't rise.
  */
 export function PricingTable({
   defaultCurrency,
   viewer,
   checkout,
-  lifetimeSeats = 0,
   headingLevel = 3,
 }: {
   defaultCurrency: PriceCurrency;
   viewer: Viewer;
   /** Which providers are configured, and whether they're in test mode. */
-  checkout?: {
-    razorpay: boolean;
-    polar: boolean;
-    test: boolean;
-    lifetime?: { INR: boolean; USD: boolean };
-  };
-  /** Founding lifetime seats left. At 0 the tier isn't offered at all. */
-  lifetimeSeats?: number;
+  checkout?: { razorpay: boolean; polar: boolean; test: boolean };
   /**
    * The plan names' heading level: 3 under the landing's "One plan" h2, 2 on
    * /pricing where the page's h1 is the only heading above them.
@@ -99,7 +87,6 @@ export function PricingTable({
             unit={["per month", "billed monthly"]}
             listLabel="What’s in it:"
             list={PLAN_FEATURES}
-            months={{ paid: 12, free: 0 }}
             action={<PlanAction period="monthly" {...{ currency, viewer, ready, testMode }} />}
             note={`Full refund inside ${MONTHLY_REFUND_DAYS} days of your first charge.`}
           />
@@ -119,23 +106,12 @@ export function PricingTable({
               ...(YEARLY_OFFER.priceLock ? ["Your price is locked for as long as you stay"] : []),
               "One charge a year, nothing to remember",
             ]}
-            months={{ paid: 12 - monthsFree, free: monthsFree }}
             action={<PlanAction period="yearly" primary {...{ currency, viewer, ready, testMode }} />}
             className="rounded-[1.6rem] bg-muted"
           />
         </div>
       </div>
 
-      {lifetimeSeats > 0 && (
-        <LifetimePanel
-          H={H}
-          currency={currency}
-          viewer={viewer}
-          seatsLeft={lifetimeSeats}
-          ready={!!checkout?.lifetime?.[currency]}
-          testMode={testMode}
-        />
-      )}
     </div>
   );
 }
@@ -151,7 +127,6 @@ function Column({
   struck,
   listLabel,
   list,
-  months,
   action,
   note,
   className,
@@ -166,7 +141,6 @@ function Column({
   struck?: string;
   listLabel: string;
   list: readonly string[];
-  months: { paid: number; free: number };
   action: React.ReactNode;
   note?: string;
   className?: string;
@@ -220,36 +194,8 @@ function Column({
         ))}
       </ul>
 
-      <div className="mt-auto pt-8">
-        <MonthsStrip paid={months.paid} free={months.free} />
-        {note && <p className="mt-3 text-xs text-muted-foreground">{note}</p>}
-      </div>
+      {note && <p className="mt-auto pt-8 text-xs text-muted-foreground">{note}</p>}
     </section>
-  );
-}
-
-/**
- * Twelve ticks, one per month, with the free ones hollow — the offer as a
- * shape rather than a percentage. Decorative; the caption carries the meaning.
- */
-function MonthsStrip({ paid, free }: { paid: number; free: number }) {
-  return (
-    <div>
-      <div aria-hidden className="flex gap-1">
-        {Array.from({ length: 12 }, (_, i) => (
-          <span
-            key={i}
-            className={cn(
-              "h-7 flex-1 rounded-[5px]",
-              i < paid ? "bg-primary/75" : "border-[1.5px] border-dashed border-primary/55",
-            )}
-          />
-        ))}
-      </div>
-      <p className="mt-2 text-xs text-muted-foreground">
-        {free > 0 ? `${paid} months paid, ${free} free` : "Twelve months, twelve charges"}
-      </p>
-    </div>
   );
 }
 
@@ -312,120 +258,6 @@ function PlanAction({
       <p className="mt-2 text-center text-xs text-muted-foreground">
         {testMode ? "Test mode. No real money moves." : "Cancel any time from Settings."}
       </p>
-    </>
-  );
-}
-
-/**
- * Lifetime, as the full-width panel under the pair — the slot the reference
- * gives its "something else" offer. Flat Forest: it's the one tier worth a
- * different surface, because it's scarce and the seat count says so honestly.
- *
- * The count is live (`lifetimeSeatsLeft()`), and the panel isn't rendered at
- * all once it reaches zero, so "first 100" is enforced rather than claimed.
- */
-function LifetimePanel({
-  H,
-  currency,
-  viewer,
-  seatsLeft,
-  ready,
-  testMode,
-}: {
-  H: "h2" | "h3";
-  currency: PriceCurrency;
-  viewer: Viewer;
-  seatsLeft: number;
-  ready: boolean;
-  testMode: boolean;
-}) {
-  const taken = LIFETIME_SEATS - seatsLeft;
-  const yearsToPayOff = PRICES[currency].lifetime / PRICES[currency].yearly;
-
-  return (
-    <section
-      aria-label="Lifetime plan"
-      className="mt-3 grid gap-6 rounded-[2rem] bg-forest-900 px-6 py-7 text-white sm:px-10 md:grid-cols-[1fr_auto] md:items-end"
-    >
-      <div>
-        <div className="flex flex-wrap items-center gap-2">
-          <H className="font-heading text-xl font-bold">Lifetime</H>
-          <span className="rounded-full bg-lemon-400 px-2.5 py-0.5 text-xs font-semibold text-forest-950">
-            Founding members
-          </span>
-        </div>
-        <p className="mt-4 flex items-end gap-2.5">
-          <span className="font-heading text-5xl leading-none font-extrabold tracking-[-0.03em] tabular-nums">
-            {formatPrice(PRICES[currency].lifetime, currency)}
-          </span>
-          <span className="pb-0.5 text-xs leading-tight text-white/70">
-            once
-            <br />
-            yours for good
-          </span>
-        </p>
-        <p className="mt-3 max-w-md text-sm text-white/75">
-          It costs about {Math.round(yearsToPayOff)} years of the yearly plan, and every update after
-          is included. Full refund inside {YEARLY_OFFER.refundDays} days.
-        </p>
-
-        <div className="mt-5 max-w-sm">
-          <div
-            className="h-1.5 overflow-hidden rounded-full bg-white/15"
-            role="img"
-            aria-label={`${taken} of ${LIFETIME_SEATS} founding seats taken`}
-          >
-            <div
-              className="h-full rounded-full bg-lemon-400"
-              style={{ width: `${Math.max(2, (taken / LIFETIME_SEATS) * 100)}%` }}
-            />
-          </div>
-          <p className="mt-2 text-xs text-white/70">
-            {seatsLeft} of {LIFETIME_SEATS} founding seats left. When they&rsquo;re gone, this goes.
-          </p>
-        </div>
-      </div>
-
-      <div className="md:w-64">
-        <LifetimeAction viewer={viewer} ready={ready} currency={currency} testMode={testMode} />
-      </div>
-    </section>
-  );
-}
-
-function LifetimeAction({
-  viewer,
-  ready,
-  currency,
-  testMode,
-}: {
-  viewer: Viewer;
-  ready: boolean;
-  currency: PriceCurrency;
-  testMode: boolean;
-}) {
-  const lemon = "h-12 w-full rounded-xl bg-lemon-400 text-[15px] font-semibold text-forest-950 hover:bg-lemon-300 sm:h-12";
-  if (viewer === "paid") {
-    return <p className="text-sm text-white/75">Lifetime is for accounts without a running plan.</p>;
-  }
-  if (viewer === "guest") {
-    return (
-      <Link href="/signup" className={cn(buttonVariants(), lemon)}>
-        Start free, decide later
-      </Link>
-    );
-  }
-  if (!ready) {
-    return (
-      <Button className={lemon} disabled>
-        Checkout opens soon
-      </Button>
-    );
-  }
-  return (
-    <>
-      <CheckoutButton plan="lifetime" currency={currency} label="Pay once" className={lemon} />
-      {testMode && <p className="mt-2 text-center text-xs text-white/70">Test mode. No real money moves.</p>}
     </>
   );
 }

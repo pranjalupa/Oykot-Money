@@ -55,45 +55,6 @@ async function write(sub: PolarSubscription, status: SubscriptionStatus) {
   });
 }
 
-/**
- * Lifetime is a one-time product, so Polar reports it as an *order*, not a
- * subscription. Subscription renewals raise `order.paid` too, which is why
- * this matches on the lifetime product id rather than the event alone.
- */
-type PolarOrder = {
-  id: string;
-  productId?: string | null;
-  totalAmount?: number | null;
-  refundedAmount?: number | null;
-  customerId?: string | null;
-  customer?: { id?: string | null; externalId?: string | null } | null;
-};
-
-function isLifetime(order: PolarOrder) {
-  const id = process.env.POLAR_PRODUCT_LIFETIME;
-  return Boolean(id && order.productId === id);
-}
-
-async function writeLifetime(order: PolarOrder, status: SubscriptionStatus) {
-  const userId = order.customer?.externalId;
-  if (!userId) {
-    console.warn("polar lifetime order with no customer external id", order.id);
-    return;
-  }
-  await applySubscriptionUpdate({
-    userId,
-    provider: "mor",
-    status,
-    plan: "lifetime",
-    currency: "USD",
-    providerCustomerId: order.customer?.id ?? order.customerId ?? null,
-    providerSubscriptionId: order.id,
-    // No end: lib/access.ts reads an active row with no period end as "for good".
-    currentPeriodEnd: null,
-    cancelAtPeriodEnd: false,
-  });
-}
-
 const handler = Webhooks({
   webhookSecret: process.env.POLAR_WEBHOOK_SECRET ?? "",
 
@@ -107,17 +68,6 @@ const handler = Webhooks({
 
   // Actually finished — access stops here.
   onSubscriptionRevoked: async ({ data }) => write(data as PolarSubscription, "expired"),
-
-  // Lifetime: paid is for good; a full refund takes it back and frees the seat.
-  onOrderPaid: async ({ data }) => {
-    const order = data as PolarOrder;
-    if (isLifetime(order)) await writeLifetime(order, "active");
-  },
-  onOrderRefunded: async ({ data }) => {
-    const order = data as PolarOrder;
-    const full = (order.refundedAmount ?? 0) >= (order.totalAmount ?? Infinity);
-    if (isLifetime(order) && full) await writeLifetime(order, "expired");
-  },
 
   // Covers plan changes and renewals; status comes from Polar itself.
   onSubscriptionUpdated: async ({ data }) => {

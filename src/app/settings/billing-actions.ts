@@ -19,7 +19,7 @@ export async function cancelRupeeSubscription(): Promise<{ ok: boolean; error?: 
   const user = await requireUser();
   const [sub] = await db.select().from(subscriptions).where(eq(subscriptions.userId, user.id)).limit(1);
 
-  if (sub?.provider !== "razorpay" || !sub.providerSubscriptionId || sub.plan === "lifetime") {
+  if (sub?.provider !== "razorpay" || !sub.providerSubscriptionId) {
     return { ok: false, error: "There's no rupee subscription on this account to cancel." };
   }
 

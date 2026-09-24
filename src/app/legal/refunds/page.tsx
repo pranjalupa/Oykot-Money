@@ -21,7 +21,6 @@ export default function RefundsPage() {
           {/* The yearly window is the offer on the pricing page; the two are the
               same promise and have to move together. */}
           <li>On a <strong>yearly</strong> plan, ask within {YEARLY_OFFER.refundDays} days of your first charge and we&rsquo;ll refund the whole year.</li>
-          <li>For <strong>lifetime</strong>, ask within {YEARLY_OFFER.refundDays} days of paying and we&rsquo;ll refund it in full. Lifetime access ends with the refund, and the founding seat goes back on offer.</li>
           <li>On a <strong>monthly</strong> plan, ask within {MONTHLY_REFUND_DAYS} days of your first charge and we&rsquo;ll refund it in full.</li>
           <li>Renewals aren&rsquo;t refunded, except for a duplicate or mistaken charge, which we always refund.</li>
           <li>Refunds go back to the original payment method, usually within 5–10 working days depending on your bank.</li>

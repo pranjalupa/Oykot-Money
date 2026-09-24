@@ -132,6 +132,13 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   Teams and sharing are still out — don't build toward them without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
+- 2026-09-24 — **Lifetime removed, and the twelve-month strip is off pricing**, at
+  Pranjal's call. Supersedes the lifetime entry below. Removed end to end, not just hidden:
+  a checkout and webhooks left live would still sell a tier nobody offers. Gone: the price,
+  `LIFETIME_SEATS`/`lifetimeSeatsLeft`, Razorpay orders, both providers' order-event
+  handlers, the store's lifetime guard, the refund clause, docs. Checkout is monthly and
+  yearly only. To bring it back, start from a72c5ba (it shipped with the landing page and
+  the cancel flow, so cherry-pick the pieces, don't revert).
 - 2026-09-24 — **Landing, pricing and sign-in redesigned light and editorial**, from
   Pranjal's references. Supersedes today's earlier Forest-band landing (below).
   - **No gradients, anywhere on these pages, and no italic.** Flat colour; depth comes

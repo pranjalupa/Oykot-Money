@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, count, eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { subscriptions, type SubscriptionStatus } from "@/db/schema";
 import { TRIAL_DAYS } from "@/lib/pricing";
@@ -20,7 +20,7 @@ export type SubscriptionUpdate = {
   userId: string;
   provider: Provider;
   status: SubscriptionStatus;
-  /** "monthly" | "yearly" | "lifetime", as the plan was sold. */
+  /** "monthly" | "yearly", as the plan was sold. */
   plan?: string | null;
   currency?: string | null;
   providerCustomerId?: string | null;
@@ -83,25 +83,9 @@ export async function applySubscriptionUpdate(update: SubscriptionUpdate) {
         cancelAtPeriodEnd: values.cancelAtPeriodEnd,
         updatedAt: values.updatedAt,
       },
-      // Lifetime outranks everything. Someone who bought it while an old
-      // subscription was still winding down will go on receiving that
-      // subscription's events — a halt, a cancel — and none of them may take
-      // lifetime away. Only a lifetime event (a refund, say) can change it.
-      setWhere:
-        plan === "lifetime"
-          ? undefined
-          : sql`not (${subscriptions.plan} = 'lifetime' and ${subscriptions.status} = 'active')`,
     });
 }
 
-/** Founding lifetime seats sold and still held — a refund gives one back. */
-export async function lifetimeSeatsSold(): Promise<number> {
-  const [row] = await db
-    .select({ n: count() })
-    .from(subscriptions)
-    .where(and(eq(subscriptions.plan, "lifetime"), eq(subscriptions.status, "active")));
-  return row?.n ?? 0;
-}
 
 /** The user behind a provider's subscription id, for events that carry no metadata. */
 export async function userIdForProviderSubscription(id: string): Promise<string | null> {

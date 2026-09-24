@@ -7,8 +7,7 @@ import { db } from "@/db";
 import { subscriptions } from "@/db/schema";
 import { getUser, requireUser } from "@/lib/auth";
 
-import { LIFETIME_SEATS, TRIAL_DAYS } from "@/lib/pricing";
-import { lifetimeSeatsSold } from "@/lib/payments/store";
+import { TRIAL_DAYS } from "@/lib/pricing";
 export { TRIAL_DAYS };
 /** Days a failed renewal keeps full access while the payment is retried. */
 export const GRACE_DAYS = 3;
@@ -104,11 +103,3 @@ export async function requireWriter() {
   return user;
 }
 
-/**
- * Founding lifetime seats still on offer. Read on every render of the pricing
- * surfaces, so the tier disappears at the hundredth sale — not when someone
- * remembers to edit the copy.
- */
-export async function lifetimeSeatsLeft(): Promise<number> {
-  return Math.max(0, LIFETIME_SEATS - (await lifetimeSeatsSold()));
-}

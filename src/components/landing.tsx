@@ -40,8 +40,7 @@ import { cn } from "@/lib/utils";
  * Every visual is a mockup of the app built in markup (components/
  * landing-mockups.tsx): a phone running the Daily screen, cards floating off
  * it, panels whose mockups are cropped by their edges. Every claim is one the
- * app keeps: currencies from `CURRENCIES`, prices from `PRICES`, the lifetime
- * seats from the database.
+ * app keeps: currencies from `CURRENCIES`, prices from `PRICES`.
  *
  * Motion is wired by `data-lp-*` attributes and lives in
  * components/landing-motion-gsap.tsx.
@@ -51,7 +50,7 @@ const cta = "h-12 rounded-full px-6 text-[15px] font-semibold sm:h-12 sm:px-6";
 const ghost =
   "inline-flex h-12 items-center rounded-full border border-border bg-card px-6 text-[15px] font-semibold transition-colors hover:bg-muted active:scale-[0.98]";
 
-export function Landing({ currency, lifetimeSeats }: { currency: PriceCurrency; lifetimeSeats: number }) {
+export function Landing({ currency }: { currency: PriceCurrency }) {
   return (
     <LandingMotion className="relative min-h-svh bg-background">
       <a href="#main" className="skip-link">
@@ -65,7 +64,7 @@ export function Landing({ currency, lifetimeSeats }: { currency: PriceCurrency; 
         <Privacy />
         <Features currency={currency} />
         <Comparison currency={currency} />
-        <Pricing currency={currency} lifetimeSeats={lifetimeSeats} />
+        <Pricing currency={currency} />
         <Faq />
         <FinalCta currency={currency} />
       </main>
@@ -640,7 +639,7 @@ function Sometimes() {
 
 /* -------------------------------------------------------------------------- */
 
-function Pricing({ currency, lifetimeSeats }: { currency: PriceCurrency; lifetimeSeats: number }) {
+function Pricing({ currency }: { currency: PriceCurrency }) {
   return (
     <section id="pricing" className="mx-auto w-full max-w-6xl scroll-mt-20 px-4 py-24 sm:px-6 lg:py-32">
       <SectionHead eyebrow="Pricing" title="One plan. Everything in it." center>
@@ -648,7 +647,7 @@ function Pricing({ currency, lifetimeSeats }: { currency: PriceCurrency; lifetim
       </SectionHead>
       <div data-lp-reveal className="mt-12">
         {/* The same component as /pricing, so the two can never disagree. */}
-        <PricingTable defaultCurrency={currency} viewer="guest" lifetimeSeats={lifetimeSeats} />
+        <PricingTable defaultCurrency={currency} viewer="guest" />
       </div>
     </section>
   );

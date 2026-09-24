@@ -30,7 +30,6 @@ declare global {
 const DESCRIPTION: Record<Plan, string> = {
   monthly: "Monthly plan",
   yearly: "Yearly plan",
-  lifetime: "Lifetime, founding member",
 };
 
 export function CheckoutButton({
@@ -69,8 +68,7 @@ export function CheckoutButton({
 
       new window.Razorpay({
         key: result.keyId,
-        // A one-time lifetime payment is an order; the plans are subscriptions.
-        ...(result.orderId ? { order_id: result.orderId } : { subscription_id: result.subscriptionId }),
+        subscription_id: result.subscriptionId,
         name: "Oykot Money",
         description: DESCRIPTION[plan],
         prefill: { name: result.name ?? "", email: result.email ?? "" },

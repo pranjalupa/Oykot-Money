@@ -107,39 +107,6 @@ export function verifyWebhook(rawBody: string, signature: string | null): boolea
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-export type RazorpayOrder = { id: string; amount: number; currency: string; status: string };
-
-/**
- * A one-time order, for lifetime. Subscriptions need a plan on Razorpay's
- * side; an order doesn't — the amount is set here, from `PRICES`, on the
- * server, so the price still never comes from the browser.
- *
- * `notes` does the same job as on a subscription: `order.paid` carries them
- * back, and `notes.userId` is how the payment finds its account.
- */
-export async function createOrder({
-  amount,
-  userId,
-  email,
-}: {
-  /** Whole rupees. Converted to paise here, the only place that knows. */
-  amount: number;
-  userId: string;
-  email: string | null;
-}) {
-  return call<RazorpayOrder>("/orders", {
-    amount: Math.round(amount * 100),
-    currency: "INR",
-    // Razorpay caps receipts at 40 chars; a user id is 36.
-    receipt: `lt_${userId.slice(0, 36)}`,
-    notes: { userId, plan: "lifetime", email: email ?? "" },
-  });
-}
-
-/** Rupee lifetime needs keys only — no plan to create in the dashboard. */
-export function lifetimeReady() {
-  return Boolean(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET);
-}
 
 /**
  * Stop renewals at the end of the period already paid for — never mid-period,

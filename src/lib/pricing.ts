@@ -13,19 +13,11 @@
 export const TRIAL_DAYS = 14;
 
 export const PRICES = {
-  INR: { monthly: 249, yearly: 1990, lifetime: 3999 },
-  USD: { monthly: 6, yearly: 36, lifetime: 79 },
+  INR: { monthly: 249, yearly: 1990 },
+  USD: { monthly: 6, yearly: 36 },
 } as const;
 
-export type Plan = "monthly" | "yearly" | "lifetime";
-
-/**
- * Lifetime is a founding offer, capped for real. The count comes from paid
- * lifetime rows in `subscriptions` (`lifetimeSeatsLeft()` in lib/access.ts),
- * so "first 100" stops being offered at the hundredth sale rather than being
- * a line of copy nobody enforces. Both currencies draw from the same 100.
- */
-export const LIFETIME_SEATS = 100;
+export type Plan = "monthly" | "yearly";
 
 export type PriceCurrency = keyof typeof PRICES;
 
@@ -38,7 +30,7 @@ export type PriceCurrency = keyof typeof PRICES;
  * refund policy page and the provider's own terms have to follow.
  */
 export const YEARLY_OFFER = {
-  /** Days to ask for a full refund on a yearly or lifetime plan. Monthly keeps 7. */
+  /** Days to ask for a full refund on a yearly plan. Monthly keeps 7. */
   refundDays: 14,
   /** The price is held for as long as the subscription runs unbroken. */
   priceLock: true,

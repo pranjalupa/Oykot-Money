@@ -30,21 +30,18 @@ export default async function SettingsPage() {
   const periodEnd = access?.periodEnd
     ? formatDay(access.periodEnd.toISOString(), locale, { day: "numeric", month: "long", year: "numeric" })
     : null;
-  const lifetime = access?.state === "active" && access.plan === "lifetime";
   const planLabel =
     access?.state === "complimentary"
       ? "Complimentary. Free for good."
-      : lifetime
-        ? "Lifetime · founding member"
-        : access?.state === "active" && access.cancelling
-          ? `Cancelled · yours until ${periodEnd ?? "the end of this period"}`
-          : access?.state === "active"
-        ? `Paid · ${access.plan ?? "monthly"}${periodEnd ? `, renews ${periodEnd}` : ""}`
-        : access?.state === "trial"
-          ? `Free trial · ends ${formatDay(access.trialEndsAt.toISOString(), locale, { day: "numeric", month: "long" })}`
-          : access?.state === "grace"
-            ? "Payment problem. Update your payment to keep going."
-            : "Trial ended";
+      : access?.state === "active" && access.cancelling
+        ? `Cancelled · yours until ${periodEnd ?? "the end of this period"}`
+        : access?.state === "active"
+          ? `Paid · ${access.plan ?? "monthly"}${periodEnd ? `, renews ${periodEnd}` : ""}`
+          : access?.state === "trial"
+            ? `Free trial · ends ${formatDay(access.trialEndsAt.toISOString(), locale, { day: "numeric", month: "long" })}`
+            : access?.state === "grace"
+              ? "Payment problem. Update your payment to keep going."
+              : "Trial ended";
 
   return (
     <div className="flex flex-col gap-8">
@@ -85,10 +82,9 @@ export default async function SettingsPage() {
             until they are.
           </p>
         )}
-        {access?.state === "active" && access.provider && !lifetime && !access.cancelling ? (
+        {access?.state === "active" && access.provider && !access.cancelling ? (
           <BillingControls provider={access.provider} periodEnd={periodEnd} />
         ) : (
-          !lifetime &&
           access?.state !== "complimentary" && (
             <Link
               href="/pricing"

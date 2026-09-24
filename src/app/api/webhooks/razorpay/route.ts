@@ -34,50 +34,6 @@ type Entity = {
   notes?: Record<string, string> | null;
 };
 
-type OrderEntity = { id: string; notes?: Record<string, string> | null };
-type PaymentEntity = { id: string; order_id?: string | null; amount?: number; amount_refunded?: number };
-
-/**
- * A lifetime purchase, or its refund. `order.paid` carries the notes we set
- * when the order was made, so identity comes from there. A refund carries
- * the payment, whose `order_id` finds the row we wrote. Only a *full* refund
- * takes lifetime back — and hands the founding seat back with it.
- */
-async function handleLifetime(
-  name: string,
-  payload: { order?: { entity?: OrderEntity }; payment?: { entity?: PaymentEntity } },
-) {
-  if (name === "order.paid") {
-    const order = payload.order?.entity;
-    if (!order || order.notes?.plan !== "lifetime" || !order.notes.userId) return;
-    await applySubscriptionUpdate({
-      userId: order.notes.userId,
-      provider: "razorpay",
-      status: "active",
-      plan: "lifetime",
-      currency: "INR",
-      providerSubscriptionId: order.id,
-      currentPeriodEnd: null,
-    });
-    return;
-  }
-
-  const payment = payload.payment?.entity;
-  if (!payment?.order_id) return;
-  const full = (payment.amount_refunded ?? 0) >= (payment.amount ?? Infinity);
-  const userId = await userIdForProviderSubscription(payment.order_id);
-  if (!full || !userId) return;
-  await applySubscriptionUpdate({
-    userId,
-    provider: "razorpay",
-    status: "expired",
-    plan: "lifetime",
-    currency: "INR",
-    providerSubscriptionId: payment.order_id,
-    currentPeriodEnd: null,
-  });
-}
-
 export async function POST(request: NextRequest) {
   // The signature covers the exact bytes, so read text and parse after.
   const raw = await request.text();
@@ -85,15 +41,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Bad signature" }, { status: 401 });
   }
 
-  let event: {
-    event?: string;
-    payload?: {
-      subscription?: { entity?: Entity };
-      order?: { entity?: OrderEntity };
-      payment?: { entity?: PaymentEntity };
-      refund?: { entity?: { amount?: number } };
-    };
-  };
+  let event: { event?: string; payload?: { subscription?: { entity?: Entity } } };
   try {
     event = JSON.parse(raw);
   } catch {
@@ -102,11 +50,6 @@ export async function POST(request: NextRequest) {
 
   const name = event.event ?? "";
 
-  // Lifetime is a one-time order, not a subscription.
-  if (name === "order.paid" || name === "refund.processed") {
-    await handleLifetime(name, event.payload ?? {});
-    return NextResponse.json({ ok: true });
-  }
 
   const entity = event.payload?.subscription?.entity;
   if (!name.startsWith("subscription.") || !entity?.id) {

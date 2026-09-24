@@ -4,16 +4,12 @@ import { FaqList } from "@/components/faq-list";
 import { PricingTable } from "@/components/pricing-table";
 import { PublicFooter, PublicHeader } from "@/components/public-chrome";
 import { getUser } from "@/lib/auth";
-import { getAccess, lifetimeSeatsLeft } from "@/lib/access";
+import { getAccess } from "@/lib/access";
 import { priceCurrencyForCountry, TRIAL_DAYS, YEARLY_OFFER } from "@/lib/pricing";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { LEGAL } from "@/lib/legal";
-import {
-  configured as razorpayReady,
-  isTestMode,
-  lifetimeReady as razorpayLifetimeReady,
-} from "@/lib/payments/razorpay";
+import { configured as razorpayReady, isTestMode } from "@/lib/payments/razorpay";
 
 export const metadata = { title: "Pricing · Oykot Money" };
 export const dynamic = "force-dynamic";
@@ -32,10 +28,6 @@ const FAQ = [
     q: "Will the price go up?",
     a: "Not yours. The price you subscribe at is held for as long as the subscription runs without a break.",
   },
-  {
-    q: "What does lifetime mean?",
-    a: "Pay once and keep every feature, and every update, for as long as Oykot Money runs. It's offered to the first 100 people only, and the count on this page is live.",
-  },
   { q: "Do you convert my money between currencies?", a: "No. Your budget stays in the currency you chose; the price you pay is set separately." },
   { q: "Is my data private?", a: "Yes. It's only ever used to run your budget. No ads, no selling it. See the privacy policy." },
 ];
@@ -46,10 +38,7 @@ export default async function PricingPage({
   searchParams: Promise<{ trial?: string }>;
 }) {
   const [{ trial }, user, h] = await Promise.all([searchParams, getUser(), headers()]);
-  const [access, lifetimeSeats] = await Promise.all([
-    user ? getAccess() : null,
-    lifetimeSeatsLeft(),
-  ]);
+  const access = user ? await getAccess() : null;
   const viewer = !access
     ? "guest"
     : access.state === "active" || access.state === "complimentary"
@@ -88,12 +77,7 @@ export default async function PricingPage({
             razorpay: razorpayReady(),
             polar: Boolean(process.env.POLAR_ACCESS_TOKEN && process.env.POLAR_PRODUCT_MONTHLY),
             test: isTestMode() || process.env.POLAR_SERVER !== "production",
-            lifetime: {
-              INR: razorpayLifetimeReady(),
-              USD: Boolean(process.env.POLAR_ACCESS_TOKEN && process.env.POLAR_PRODUCT_LIFETIME),
-            },
           }}
-          lifetimeSeats={lifetimeSeats}
           headingLevel={2}
         />
 
