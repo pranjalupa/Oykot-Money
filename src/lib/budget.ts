@@ -46,6 +46,8 @@ export type CategoryRow = {
    */
   assumedMinor: number;
   assumeSpent: boolean;
+  /** Retired, but shown because it has a budget or transactions this month. */
+  archived: boolean;
   children: CategoryRow[];
 };
 
@@ -90,7 +92,7 @@ export async function getMonthSummary(userId: string, month: string) {
     actualsRows.map((r) => [r.categoryId, Number(r.total ?? 0)]),
   );
 
-  const cats = await db
+  const allCats = await db
     .select({
       id: categories.id,
       name: categories.name,
@@ -99,6 +101,7 @@ export async function getMonthSummary(userId: string, month: string) {
       parentId: categories.parentId,
       budgetsSeparately: categories.budgetsSeparately,
       assumeSpent: categories.assumeSpent,
+      archived: categories.archived,
       plannedMinor: budgetLines.plannedMinor,
     })
     .from(categories)
@@ -109,8 +112,17 @@ export async function getMonthSummary(userId: string, month: string) {
         eq(budgetLines.month, month),
       ),
     )
-    .where(and(eq(categories.userId, userId), eq(categories.archived, false)))
+    .where(eq(categories.userId, userId))
     .orderBy(categories.sortOrder);
+
+  // A retired category stays in any month where it has a budget or a
+  // transaction. Dropping it everywhere took its spending out of past months'
+  // totals (the Yearly view, which reads transactions, still counted it), so
+  // retiring Health made old months look better. It only hides where it has
+  // nothing to show.
+  const cats = allCats.filter(
+    (c) => !c.archived || Number(c.plannedMinor ?? 0) !== 0 || actuals.has(c.id),
+  );
 
   // One-level tree. Children always roll actuals up into the parent; they roll
   // planned up only when they don't budget separately.
@@ -123,7 +135,7 @@ export async function getMonthSummary(userId: string, month: string) {
     // OWN budget line, before children roll up, so a parent can't assume an
     // amount that includes its children's plans.
     const assumedMinor =
-      c.assumeSpent && transacted === 0 && plannedMinor > 0 ? plannedMinor : 0;
+      c.assumeSpent && !c.archived && transacted === 0 && plannedMinor > 0 ? plannedMinor : 0;
 
     byId.set(c.id, {
       id: c.id,
@@ -133,6 +145,7 @@ export async function getMonthSummary(userId: string, month: string) {
       parentId: c.parentId,
       budgetsSeparately: c.budgetsSeparately,
       assumeSpent: c.assumeSpent,
+      archived: c.archived,
       plannedMinor,
       actualMinor: transacted + assumedMinor,
       assumedMinor,

@@ -216,6 +216,8 @@ function Row({
             >
               {cat.name}
             </Link>
+            {/* Shown in months where it still has a budget or spending. */}
+            {cat.archived && <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">Retired</span>}
             {assumed && (
               <Repeat
                 size={11}
@@ -326,6 +328,7 @@ function MobileRow({
         <div className="min-w-0 flex-1">
           <p className={cn("flex min-w-0 items-center gap-1.5 text-[15px]", idle ? "text-muted-foreground" : "font-medium")}>
             <span className="truncate">{cat.name}</span>
+            {cat.archived && <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">Retired</span>}
             {assumed && <Repeat size={11} weight="bold" aria-label="Assumed spent" className="shrink-0 text-muted-foreground" />}
           </p>
           <p className="mt-1 truncate text-[13px] text-muted-foreground">

@@ -321,7 +321,12 @@ export async function copyPlanFromPreviousMonth(
     .select()
     .from(budgetLines)
     .where(
-      and(eq(budgetLines.userId, user.id), eq(budgetLines.month, prev)),
+      and(
+        eq(budgetLines.userId, user.id),
+        eq(budgetLines.month, prev),
+        // Retired categories stay behind (see ensureMonthPlan).
+        sql`not exists (select 1 from ${categories} c where c.id = ${budgetLines.categoryId} and c.archived)`,
+      ),
     );
 
   if (!prevLines.length) return fail("Nothing planned last month to copy.");

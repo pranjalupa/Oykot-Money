@@ -57,7 +57,14 @@ export async function ensureMonthPlan(userId: string, month: string) {
     .select()
     .from(budgetLines)
     .where(
-      and(eq(budgetLines.userId, userId), eq(budgetLines.month, source.month)),
+      and(
+        eq(budgetLines.userId, userId),
+        eq(budgetLines.month, source.month),
+        // A retired category doesn't carry into new months. The month
+        // summary shows a retired one wherever it has a budget, so a copied
+        // line would bring it back every month.
+        sql`not exists (select 1 from ${categories} c where c.id = ${budgetLines.categoryId} and c.archived)`,
+      ),
     );
 
   if (!lines.length) return false;

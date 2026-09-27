@@ -391,7 +391,7 @@ percentages must add up to 100%, and *Reset this month to default* removes an ov
 
 | | Reorder | Archive | Delete |
 |---|---|---|---|
-| **Category** | Drag, within its group | *Retire* — hidden from new transactions, history kept | Transactions **stay** and count, but become uncategorised; sub-categories and its monthly repeats are deleted too. The confirm dialog shows the counts first |
+| **Category** | Drag, within its group | *Retire* — hidden from new transactions and new months; still shown, marked Retired, in any month where it has a budget or spending, so past totals don't change | Transactions **stay** and count, but become uncategorised; sub-categories and its monthly repeats are deleted too. The confirm dialog shows the counts first |
 | **Locked category** (Lent out, Paid back, Borrowed, Got paid back) | Drag | No | No — they back You gave / You got |
 | **Account / asset** | Drag | Yes — asks first if it still holds money, because archived items leave net worth | **Only if it has no transactions** — otherwise refused, with a suggestion to archive |
 | **Person** | Drag | Yes — same warning if they still owe or are owed | **Only if they have no transactions** — otherwise refused |

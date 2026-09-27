@@ -132,6 +132,12 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   Teams and sharing are still out — don't build toward them without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
+- 2026-09-28 — **Retiring a category no longer rewrites past months.** `getMonthSummary`
+  dropped retired categories from every month, so their spending left old months' totals
+  (Yearly, which reads transactions, still counted it). Now a retired category shows, marked
+  *Retired*, in any month where it has a budget or a transaction, and hides elsewhere. It
+  never assumes spend. Both plan copies (`ensureMonthPlan`, Copy last month) skip retired
+  categories, or a copied line would bring one back every month.
 - 2026-09-28 — **Phone transaction rows match the category rows; repeats flow fixed.**
   - Transactions on phones: name over category on the left, amount over account (or the
     route, for moves) on the right. Icons 40px. Desktop unchanged.
