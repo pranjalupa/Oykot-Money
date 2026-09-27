@@ -49,8 +49,9 @@ only (the trial banner and pricing page). There's no email yet.
    in the same name, and an address proof. Approval is usually a day or two;
    test mode works immediately, so you can finish the rest before it lands.
 2. **Create two plans** — Dashboard → Subscriptions → Plans:
-   - Monthly: ₹99, billing cycle *monthly*.
-   - Yearly: ₹799, billing cycle *yearly*.
+   - Monthly: ₹99, billing cycle *monthly*, every 1 month.
+   - Yearly: ₹799, billing cycle *yearly*, every 1 year. ₹799 is decided
+     (2026-09-28): the page says "3 months free", which is true at that price.
    No trial on the plans: the app starts the subscription at the trial's end
    itself (`start_at`), so the customer approves the UPI Autopay mandate on
    day 6 and the first charge lands on day 7.
@@ -60,9 +61,13 @@ only (the trial banner and pricing page). There's no email yet.
 4. **Webhook** — Settings → Webhooks → Add:
    - URL: `https://oykot-money.vercel.app/api/webhooks/razorpay`
    - Secret: invent a long random string (this is *yours*, not Razorpay's).
-   - Events: `subscription.activated`, `subscription.charged`,
-     `subscription.pending`, `subscription.halted`, `subscription.cancelled`,
-     `subscription.completed`.
+   - Events: `subscription.authenticated`, `subscription.activated`,
+     `subscription.charged`, `subscription.pending`, `subscription.halted`,
+     `subscription.cancelled`, `subscription.completed`.
+     **`subscription.authenticated` matters for the trial:** it's the event
+     that says the customer approved UPI Autopay on day 6. The first charge
+     (and `activated`) only comes on day 7, so without it the app keeps asking
+     them to set up Autopay they've already set up.
 
 ## 2. Polar — everyone else, in dollars
 

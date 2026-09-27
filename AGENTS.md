@@ -132,6 +132,10 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   Teams and sharing are still out — don't build toward them without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
+- 2026-09-28 — **Payments go live Razorpay-first**, sandbox/test mode, at Pranjal's call.
+  `docs/payments-setup.md` was missing `subscription.authenticated` from the Razorpay
+  webhook events, though the handler maps it to `trialing`: it's the day-6 Autopay approval,
+  and without it the trial banner keeps asking. Added.
 - 2026-09-28 — **Assume spent removed; safe-to-spend sets aside repeats still due instead.**
   Pranjal's call: it and "Repeat every month" did one job two ways and users couldn't pick.
   - `getDailyView` subtracts active Needs/Wants outflow repeats due after today and not yet
@@ -238,7 +242,7 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   - Prices can have cents now: `formatPrice` shows $7.99 but $59; `yearlyPerMonth` rounds
     rupees whole and dollars to the cent.
   - **₹799 earns "3 months free", not 4** (3.93 months; the floor rule). Pranjal's table said
-    4; ₹792 or less would make it true. Left at ₹799 pending his call.
+    4; ₹792 or less would make it true. **Decided 2026-09-28: stays ₹799**, badge stays 3.
 - 2026-09-24 — **Lifetime removed, and the twelve-month strip is off pricing**, at
   Pranjal's call. Supersedes the lifetime entry below. Removed end to end, not just hidden:
   a checkout and webhooks left live would still sell a tier nobody offers. Gone: the price,
