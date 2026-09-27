@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { ArrowSquareOut } from "@phosphor-icons/react/dist/ssr";
+import { ArrowSquareOut, SignOut } from "@phosphor-icons/react/dist/ssr";
+import { signOut } from "@/app/auth/actions";
+import { Button } from "@/components/ui/button";
 import { CategoryManager } from "@/components/category-manager";
 import { FlowGuide, ResetGuidesButton } from "@/components/flow-guide";
 import { RecurringList } from "@/components/recurring-list";
@@ -54,6 +56,13 @@ export default async function SettingsPage() {
         <p className="mt-0.5 text-sm text-muted-foreground">
           Signed in as {user.email}.
         </p>
+        {/* Phones only: the desktop sidebar has its own. */}
+        <form action={signOut} className="mt-3 lg:hidden">
+          <Button type="submit" variant="outline">
+            <SignOut size={16} weight="bold" />
+            Sign out
+          </Button>
+        </form>
         <div className="mt-2 text-muted-foreground">
           <ResetGuidesButton />
         </div>
@@ -147,7 +156,7 @@ export default async function SettingsPage() {
         <h2 className="font-heading text-lg font-bold">Money and people</h2>
         <p className="mt-0.5 text-sm text-muted-foreground">
           Accounts and assets live on Money; anyone you lend to or borrow from
-          lives in Settlements, on Money.
+          lives in People, on Money.
         </p>
         <div className="mt-3 flex flex-wrap gap-4">
           <Link
@@ -161,7 +170,7 @@ export default async function SettingsPage() {
             href="/money#settlements"
             className="inline-flex items-center gap-1.5 text-sm font-medium underline underline-offset-4"
           >
-            Settlements
+            People
             <ArrowSquareOut size={14} weight="bold" />
           </Link>
         </div>

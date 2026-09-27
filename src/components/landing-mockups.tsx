@@ -190,7 +190,7 @@ export function DailyScreen({
   const actions = [
     { label: "Add", icon: Plus },
     { label: "Budget", icon: ChartPieSlice },
-    { label: "Settle", icon: Handshake },
+    { label: "People", icon: Handshake },
     { label: "Money", icon: Wallet },
   ];
 

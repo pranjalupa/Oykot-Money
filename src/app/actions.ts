@@ -618,7 +618,7 @@ export async function createAccount(
   // People own their loan ledgers — createPerson makes both together. A loan
   // account made here would belong to nobody: invisible on Money and People,
   // yet still counted in net worth and offered in the transfer picker.
-  if (kind === "loan") return fail("Add people from Settlements on the Money page.");
+  if (kind === "loan") return fail("Add people from People on the Money page.");
 
   const opening = parseAmount(formData.get("openingBalance")) ?? 0;
   const value = parseAmount(formData.get("currentValue")) ?? 0;

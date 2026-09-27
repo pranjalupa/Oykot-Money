@@ -224,6 +224,18 @@ export function TooltipBox({
 }
 
 /** X-axis styling. There is no y-axis anywhere: labels and tooltips carry values. */
+/**
+ * A light value axis: three compact ticks (₹20K, ₹40K), no line. Charts had
+ * none, so a bar or line showed shape but never how much (UX audit F-07).
+ */
+export const Y_AXIS = {
+  tick: { fill: "var(--muted-foreground)", fontSize: 11 },
+  axisLine: false,
+  tickLine: false,
+  tickCount: 3,
+  width: 44,
+} as const;
+
 export const X_AXIS = {
   tick: { fill: "var(--muted-foreground)", fontSize: 12 },
   axisLine: false,

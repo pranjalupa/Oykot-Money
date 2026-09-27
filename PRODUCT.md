@@ -85,8 +85,9 @@ becomes **Over budget**, in red, once it goes below zero.
 Theme toggle and Sign out sit at the bottom, with your name and email. A button at the top
 collapses it to icons; the choice is remembered.
 
-**Phones:** a slim top bar (logo, theme, sign out) and a **bottom tab bar** — Home · Groups
-(opens a sheet with the four groups) · **+** (Add transaction) · Money · Settings.
+**Phones:** a slim top bar (logo, theme) and a **bottom tab bar** — Home · Groups
+(opens a sheet with the four groups) · **+** (Add transaction) · Money · Settings. Sign out
+is a labelled button at the top of Settings, not an icon in the top bar.
 
 | Route | Screen | Signed out? |
 |---|---|---|
@@ -185,20 +186,21 @@ The same **budget summary** and **Last six months** chart as the group pages.
 
 ### 5.4 Money — `/money`
 Top to bottom:
-- **Net worth** headline, broken down into **Cash · Assets · Owed to you · You owe**, with a
-  *See who* link down to Settlements when anyone owes or is owed.
+- **Net worth** headline, broken down into **In accounts · Assets · You'll get · You'll give**, with a
+  *See who* link down to People when anyone owes or is owed.
 - **Accounts** — your spending accounts, with balances and subtype (Bank, Cash, UPI wallet —
   "Wallet" outside India — Credit card). **Move money** in the header moves between them.
-- **Settlements** (§5.5) — the people you lend to and borrow from.
+- **People** (§5.5) — the people you lend to and borrow from.
 - **Assets** — with their value and when it was last updated.
 - **Net worth over time** — a line, one point per month. History starts 2026-09-11; it can't
   be rebuilt backwards because assets keep no history.
 - Per account row: **drag to reorder**, **edit**, **archive**, **delete**.
 - **Add account** — Spending (name, type, current balance) or Asset (name, current value).
-  People are added in Settlements. Spending accounts can be excluded from net worth.
+  People are added in the People section. Spending accounts can be excluded from net worth.
 
-### 5.5 Settlements — `/money#settlements`
-Was the separate People page until 2026-09-13; `/people` redirects here.
+### 5.5 People — `/money#settlements`
+Was the separate People page until 2026-09-13; `/people` redirects here. Called Settlements
+until 2026-09-27: one name now, People, with **Person** as the Add tab (the anchor kept its id).
 - **Owed to you** and **You owe** totals.
 - One row per person: icon, name, optional handle, **owes you / you owe / settled up**, and the
   amount.
@@ -223,7 +225,7 @@ Was the separate People page until 2026-09-13; `/people` redirects here.
   icon), assume-spent toggle (Needs only), retire/restore, delete — each a word beside its
   icon, not an icon alone. Retired ones are hidden
   behind a toggle.
-- **Money and settlements** — links to Money and its Settlements section.
+- **Money and people** — links to Money and its People section.
 - **Billing** — trial or plan status, a link to pricing, and a note that payments aren't live.
 - **Your data** — download transactions (CSV) or everything (JSON), and **delete your account**
   (type DELETE to confirm). Both work whatever your plan.
@@ -326,7 +328,7 @@ edit share the same fields and the same validation. Archived accounts, people an
 categories aren't offered — except those an entry being edited already uses.
 
 ### 6.4 Lending and borrowing
-Start from the person (Money → Settlements → tap them), or the **Person** tab in Add.
+Start from the person (Money → People → tap them), or the **Person** tab in Add.
 You only ever choose **You gave** or **You got**. Each payment moves your account, moves the
 person's balance, and counts in that month's budget in one of four **locked categories**, picked
 from the balance before it:
@@ -502,7 +504,7 @@ inline icons, Chart / Table switch) are unchanged.
   - Historical note, so the reasoning isn't lost: the retired forms were a ring for
   "how much is used", a donut for "where did it go", an area for a trend, a calendar for
   "which days", bars from a centre line for over/under and who-owes-whom.
-  - Quiet by default: generous space, no y-axis, a faint grid or none, soft fills, rounded ends.
+  - Quiet by default: generous space, a light compact value axis (three ticks, ₹20K), a faint grid or none, soft fills, rounded ends.
   - Every chart ends with **one plain-language takeaway** and a small **View as table** link.
   - Group colours come from chart-only shades (`--chart-needs`, `--chart-wants`,
     `--chart-investments`), checked for colour-blind separation and contrast in both themes.

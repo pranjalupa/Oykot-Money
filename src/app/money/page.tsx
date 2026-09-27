@@ -72,7 +72,8 @@ export default async function MoneyPage() {
           <Money minor={net.total} />
         </p>
         <dl className="mt-5 grid grid-cols-2 gap-4 border-t border-border pt-4 sm:grid-cols-4">
-          <Stat label="Cash" minor={net.cash} />
+          {/* Not "Cash": that's also the name of an account, which holds less (UX audit F-06). */}
+          <Stat label="In accounts" minor={net.cash} />
           <Stat label="Assets" minor={net.assets} />
           <Stat label="You'll get" minor={net.owedToYou} />
           <Stat label="You'll give" minor={net.youOwe} tone={net.youOwe ? "negative" : "muted"} />
@@ -119,7 +120,7 @@ export default async function MoneyPage() {
       <section id="settlements" className="flex scroll-mt-20 flex-col gap-4">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 className="font-heading text-lg font-bold">Settlements</h2>
+            <h2 className="font-heading text-lg font-bold">People</h2>
             <p className="mt-0.5 hidden text-sm text-muted-foreground sm:block">
               Tap a person to record money you gave or got, settle up, or see the history.
             </p>

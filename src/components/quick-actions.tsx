@@ -1,36 +1,35 @@
 import Link from "next/link";
-import { Plus, Target, Wallet, HandCoins } from "@phosphor-icons/react/dist/ssr";
+import { Target, HandCoins } from "@phosphor-icons/react/dist/ssr";
 
 /**
- * The four things you actually do, one tap from the number that made you open
- * the app. Phones only: on desktop the sidebar is already on screen and the
- * header carries Add.
+ * Shortcuts the tab bar doesn't already give you, one tap from the number that
+ * made you open the app. Phones only: on desktop the sidebar is on screen.
  *
- * Each tile is its own link with a 44px-plus target, and the labels are words
- * rather than icons alone — an icon grid you have to decode is worse than the
- * menu it replaced.
+ * Two, not four. Add and Money were here too, and both sit in the tab bar a
+ * thumb's width away (UX audit F-10). The room they leave goes to the hint,
+ * now visible instead of a title attribute nobody on a phone can see.
  */
 const ACTIONS = [
-  { href: "/?add=1", label: "Add", icon: Plus, hint: "Log money in or out" },
   { href: "/needs", label: "Budget", icon: Target, hint: "Set this month's plan" },
-  { href: "/money#settlements", label: "Settle", icon: HandCoins, hint: "Money with people" },
-  { href: "/money", label: "Money", icon: Wallet, hint: "Accounts and net worth" },
+  { href: "/money#settlements", label: "People", icon: HandCoins, hint: "Who owes whom" },
 ] as const;
 
 export function QuickActions() {
   return (
-    <nav aria-label="Quick actions" className="grid grid-cols-4 gap-2 sm:hidden">
+    <nav aria-label="Quick actions" className="grid grid-cols-2 gap-2 sm:hidden">
       {ACTIONS.map(({ href, label, icon: Icon, hint }) => (
         <Link
           key={label}
           href={href}
-          title={hint}
-          className="flex min-h-[76px] flex-col items-center justify-center gap-1.5 rounded-2xl border border-border bg-card px-1 py-3 transition-[background-color,transform] duration-150 active:scale-[0.96] active:bg-muted"
+          className="flex min-h-[64px] items-center gap-3 rounded-2xl border border-border bg-card px-3 py-3 transition-[background-color,transform] duration-150 active:scale-[0.96] active:bg-muted"
         >
-          <span className="flex size-10 items-center justify-center rounded-full bg-muted text-foreground">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted text-foreground">
             <Icon size={20} weight="bold" />
           </span>
-          <span className="text-xs font-medium">{label}</span>
+          <span className="min-w-0">
+            <span className="block text-sm font-medium">{label}</span>
+            <span className="block truncate text-xs text-muted-foreground">{hint}</span>
+          </span>
         </Link>
       ))}
     </nav>

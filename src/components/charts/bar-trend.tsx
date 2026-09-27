@@ -2,7 +2,9 @@
 
 import { Bar, BarChart, Cell, CartesianGrid, ReferenceLine, Tooltip, XAxis, YAxis } from "recharts";
 import { ChartContainer } from "@/components/ui/chart";
-import { TooltipBox, X_AXIS } from "@/components/charts/chart-card";
+import { TooltipBox, X_AXIS, Y_AXIS } from "@/components/charts/chart-card";
+import { useCurrency } from "@/components/currency-provider";
+import { formatCompact } from "@/lib/money";
 
 export type BarPoint = {
   label: string;
@@ -37,6 +39,7 @@ export function BarTrend({
   referenceLabel?: string;
   height?: number;
 }) {
+  const currency = useCurrency();
   const anyHighlight = data.some((d) => d.highlight);
 
   return (
@@ -46,10 +49,10 @@ export function BarTrend({
       className={height ? "aspect-auto w-full" : "aspect-auto h-[170px] w-full sm:h-[220px]"}
       style={height ? { height } : undefined}
     >
-      <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 8 }}>
+      <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
         <CartesianGrid vertical={false} strokeDasharray="3 3" />
         <XAxis dataKey="label" {...X_AXIS} interval="preserveStartEnd" minTickGap={6} />
-        <YAxis hide />
+        <YAxis {...Y_AXIS} tickFormatter={(v: number) => formatCompact(v, currency)} />
         {/* Pinned to the top edge, clear of the thumb doing the tapping. */}
         <Tooltip
           position={{ y: 0 }}
@@ -78,7 +81,7 @@ export function BarTrend({
             strokeDasharray="4 4"
             label={
               referenceLabel
-                ? { value: referenceLabel, position: "insideTopRight", fill: "var(--muted-foreground)", fontSize: 11 }
+                ? { value: `${referenceLabel} ${formatCompact(reference, currency)}`, position: "insideTopRight", fill: "var(--muted-foreground)", fontSize: 11 }
                 : undefined
             }
           />

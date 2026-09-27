@@ -4,7 +4,7 @@ import { Money } from "@/components/money";
 import { ChartCard } from "@/components/charts/chart-card";
 import { LineTrend } from "@/components/charts/line-trend";
 import { useCurrency, useLocale } from "@/components/currency-provider";
-import { formatMoney } from "@/lib/money";
+import { formatMoney, MINOR_PER_UNIT } from "@/lib/money";
 import { formatDay } from "@/lib/dates";
 
 type Day = { date: string; totalMinor: number };
@@ -53,7 +53,12 @@ export function DailyHero({
           kept to one bar and one line — a grid of stats beside it only ever
           restated this figure. */}
       <p className="mt-1.5 font-heading text-[2.75rem] leading-none font-bold tracking-tight sm:text-5xl">
-        <Money minor={safePerDayMinor} tone={over ? "negative" : "default"} />
+        {/* Whole units, rounded down: paise on a per-day allowance is false
+            precision, and a "safe" figure should never round up. */}
+        <Money
+          minor={Math.floor(safePerDayMinor / MINOR_PER_UNIT) * MINOR_PER_UNIT}
+          tone={over ? "negative" : "default"}
+        />
         <span className="ml-1.5 font-sans text-base font-medium tracking-normal text-muted-foreground">
           / day
         </span>

@@ -317,10 +317,9 @@ export function AppNav({
             <LogoMark size={26} />
             <Wordmark height={15} />
           </Link>
-          <div className="flex items-center gap-1">
-            <ThemeToggle />
-            <SignOutButton />
-          </div>
+          {/* Theme only. Sign out sat beside it on every screen, one unlabelled
+              tap from a mis-tap; it's in Settings now (UX audit F-09). */}
+          <ThemeToggle />
         </div>
       </header>
 

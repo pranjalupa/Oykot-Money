@@ -16,7 +16,7 @@ export const GUIDES = {
     title: "How Daily works",
     steps: [
       "Safe to spend is what's left in Needs and Wants, divided by the days left in the month.",
-      "Tap Add (or + on your phone) whenever money moves: Spent, Received, or Lend / Borrow.",
+      "Tap Add (or + on your phone) whenever money moves: Spent, Received, or Person.",
       "Spending pace shows your spending against an even pace. Under the dashed line means on track.",
     ],
   },
@@ -63,7 +63,7 @@ export const GUIDES = {
     title: "Adding a transaction",
     steps: [
       "Spent and Received need a category, so they count in your budget.",
-      "Lend / Borrow is for money with a person or a bank. Pick who, and whether you gave or got.",
+      "Person is for money with a friend or a bank. Pick who, and whether you gave or got.",
       "Tick Repeat every month for rent, SIP or salary.",
     ],
   },
@@ -72,7 +72,7 @@ export const GUIDES = {
     steps: [
       "Drag to reorder. The pencil renames a category or moves it to another group.",
       "Retire hides a category but keeps its history; delete removes the label.",
-      "The four locked categories are used by Lend / Borrow and can only be budgeted.",
+      "The four locked categories are used by the Person tab and can only be budgeted.",
     ],
   },
 } as const satisfies Record<string, { title: string; steps: readonly string[] }>;

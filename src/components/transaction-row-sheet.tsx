@@ -49,7 +49,11 @@ export function TransactionRowSheet({
           </DialogHeader>
           <div className="rounded-xl bg-muted/60 px-4 py-4">
             <p className="font-heading text-3xl font-bold">
-              <Money minor={t.direction === "inflow" ? t.amountMinor : -t.amountMinor} tone={t.direction === "inflow" ? "positive" : "default"} />
+              {/* Unsigned for a move between accounts, as in the list. */}
+              <Money
+                minor={t.direction === "inflow" || (t.counterAccountId && !t.categoryId) ? t.amountMinor : -t.amountMinor}
+                tone={t.direction === "inflow" ? "positive" : "default"}
+              />
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
               <LocalDate date={t.date} options={{ weekday: "long", day: "numeric", month: "long" }} />

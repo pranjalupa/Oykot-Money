@@ -42,14 +42,12 @@ export type TransactionTab = "outflow" | "inflow" | "person" | "move";
 const TAB_LABEL: Record<TransactionTab, string> = {
   outflow: "Spent",
   inflow: "Received",
-  person: "Lend / Borrow",
+  // One name for money with people, app-wide: the People section, the
+  // Person tab (UX audit F-08). "Lend / Borrow" also wrapped at phone width.
+  person: "Person",
   move: "Move",
 };
-/** What fits in a chip at phone width — "Lend / Borrow" wrapped to two lines. */
-const TAB_LABEL_SHORT: Record<TransactionTab, string> = {
-  ...TAB_LABEL,
-  person: "People",
-};
+const TAB_LABEL_SHORT: Record<TransactionTab, string> = TAB_LABEL;
 type PersonMode = "gave" | "got";
 
 const SPEND_GROUPS = [

@@ -89,8 +89,8 @@ export function TransactionDialog({
         <DialogHeader>
           <DialogTitle className="font-heading">{title}</DialogTitle>
           <DialogDescription>
-            Spent, Received and Lend / Borrow all count in this month&rsquo;s
-            budget. Moving money between your own accounts doesn&rsquo;t.
+            Everything here counts in this month&rsquo;s budget, except moving
+            money between your own accounts.
           </DialogDescription>
         </DialogHeader>
 

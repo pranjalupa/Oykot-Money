@@ -2,7 +2,9 @@
 
 import { CartesianGrid, Line, LineChart, Tooltip, XAxis, YAxis } from "recharts";
 import { ChartContainer } from "@/components/ui/chart";
-import { TooltipBox, X_AXIS } from "@/components/charts/chart-card";
+import { TooltipBox, X_AXIS, Y_AXIS } from "@/components/charts/chart-card";
+import { useCurrency } from "@/components/currency-provider";
+import { formatCompact } from "@/lib/money";
 
 export type LinePoint = {
   label: string;
@@ -18,8 +20,8 @@ export type LinePoint = {
  * A plain line chart. Used for anything cumulative — spending against pace,
  * net worth across months.
  *
- * There's no y-axis: the takeaway under the card and the tooltip carry the
- * numbers, and an axis of rupee amounts costs more room than it earns.
+ * A light compact value axis (`Y_AXIS`) says how much; the tooltip gives the
+ * exact figure for any one point.
  */
 export function LineTrend({
   data,
@@ -39,6 +41,7 @@ export function LineTrend({
   fromZero?: boolean;
   height?: number;
 }) {
+  const currency = useCurrency();
   const hasReference = data.some((d) => d.reference !== undefined);
 
   return (
@@ -48,10 +51,10 @@ export function LineTrend({
       className={height ? "aspect-auto w-full" : "aspect-auto h-[170px] w-full sm:h-[220px]"}
       style={height ? { height } : undefined}
     >
-      <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 8 }}>
+      <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
         <CartesianGrid vertical={false} strokeDasharray="3 3" />
         <XAxis dataKey="label" {...X_AXIS} interval="preserveStartEnd" minTickGap={32} />
-        <YAxis hide domain={fromZero ? [0, "auto"] : ["auto", "auto"]} />
+        <YAxis {...Y_AXIS} domain={fromZero ? [0, "auto"] : ["auto", "auto"]} tickFormatter={(v: number) => formatCompact(v, currency)} />
         {/* Pinned to the top edge: a tooltip that follows the touch point
             sits under the thumb reading it. */}
         <Tooltip

@@ -68,7 +68,9 @@ export function formatCompact(
       ? [[10_000_000, "Cr"], [100_000, "L"], [1_000, "K"]]
       : [[1_000_000_000, "B"], [1_000_000, "M"], [1_000, "K"]];
   for (const [size, unit] of steps) {
-    if (major >= size) return `${sign}${sym}${(major / size).toFixed(1)}${unit}`;
+    // One decimal only when it says something: ₹80K and ₹5.1L, never ₹80.0K
+    // beside ₹5.1L on the same screen.
+    if (major >= size) return `${sign}${sym}${Number((major / size).toFixed(1))}${unit}`;
   }
   return `${sign}${sym}${Math.round(major)}`;
 }

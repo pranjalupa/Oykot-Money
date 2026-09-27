@@ -132,6 +132,25 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   Teams and sharing are still out — don't build toward them without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
+- 2026-09-27 — **UX audit's eight minor findings fixed** (F-05 to F-12). Cosmetic F-13 to F-16
+  still open. Demo data is **left seeded** on Pranjal's account at his request —
+  `npx tsx scripts/demo-data.mts remove` when done.
+  - **One name for money with people: People.** Money's section (was Settlements), the Add
+    tab **Person** (was Lend / Borrow), the quick action (was Settle), Settings' link. "Settle
+    up" stays: it's an action. The `#settlements` anchor and `people-manager` names are
+    unchanged. Supersedes the Settlements naming below.
+  - `formatCompact` drops a trailing .0 (₹80K beside ₹5.1L, not ₹80.0K). The Daily figure
+    is whole units, **rounded down**: a safe amount never rounds up.
+  - **Charts have a value axis again** (`Y_AXIS`, three compact ticks) and the budget line
+    says its amount. Reverses "no y-axis" from 2026-09-12: shape without a scale failed the
+    audit. Still no caption sentences.
+  - Money's "Cash" stat → **In accounts** (an account is called Cash too).
+  - Phone header: theme only. **Sign out moved to Settings** (labelled, phones only).
+  - Quick actions: **Budget and People only**, with visible hints. Add and Money duplicated
+    the tab bar. The landing's phone mock still draws four tiles: its hero demo taps "Add".
+  - Moves between your own accounts show **no sign** in lists and the phone sheet.
+  - Landing comparison is against **"a bank-sync app"**, so each cell is true by
+    definition. Setup time and a competitor price range are gone: nothing backed them.
 - 2026-09-27 — **UX audit's four major findings fixed** (heuristic audit, screenshots of every
   screen with demo data, since removed). The rest are minor and still open.
   - **Add dialog intro no longer contradicts itself**: it said money with a person "doesn't

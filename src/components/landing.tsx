@@ -28,7 +28,7 @@ import { PricingTable } from "@/components/pricing-table";
 import { buttonVariants } from "@/components/ui/button";
 import { CURRENCIES } from "@/lib/currency";
 import { LEGAL } from "@/lib/legal";
-import { PRICES, TRIAL, TRIAL_DAYS, formatPrice, type PriceCurrency } from "@/lib/pricing";
+import { TRIAL, TRIAL_DAYS, type PriceCurrency } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
 
 /**
@@ -69,7 +69,7 @@ export function Landing({ currency }: { currency: PriceCurrency }) {
         <HowItWorks currency={currency} />
         <Privacy />
         <Features currency={currency} />
-        <Comparison currency={currency} />
+        <Comparison />
         <Pricing currency={currency} />
         <Faq currency={currency} />
         <FinalCta currency={currency} />
@@ -576,12 +576,15 @@ function Features({ currency }: { currency: PriceCurrency }) {
 
 /* -------------------------------------------------------------------------- */
 
-function Comparison({ currency }: { currency: PriceCurrency }) {
+/* Against "a bank-sync app", not "a typical budget app": every cell in that
+   column is then true by definition. Setup time and a competitor price range
+   went, since nothing backed them (UX audit F-12). Add a row only if it can
+   be checked. */
+function Comparison() {
   const rows: { label: string; us: React.ReactNode; them: React.ReactNode }[] = [
     { label: "Bank login required", us: <Never />, them: "Yes" },
+    { label: "What it can see", us: "Only what you log", them: "Every transaction" },
     { label: "Daily safe-to-spend", us: <Yes />, them: <Sometimes /> },
-    { label: "Setup time", us: "2 minutes", them: "30+ minutes" },
-    { label: "Price", us: `${formatPrice(PRICES[currency].monthly, currency)}/mo`, them: "$8 to $15/mo" },
   ];
   return (
     <section className="mx-auto w-full max-w-4xl px-4 py-24 sm:px-6 lg:py-32">
@@ -589,7 +592,7 @@ function Comparison({ currency }: { currency: PriceCurrency }) {
       <div data-lp-reveal className="mt-12 rounded-[1.75rem] bg-muted p-2">
         <div className="overflow-hidden rounded-[1.4rem] border border-border bg-card">
           <table className="w-full text-left text-sm sm:text-base">
-            <caption className="sr-only">Oykot Money compared with a typical budget app</caption>
+            <caption className="sr-only">Oykot Money compared with a bank-sync budget app</caption>
             <thead>
               <tr className="border-b border-border">
                 <th scope="col" className="px-4 py-4 sm:px-6">
@@ -601,7 +604,7 @@ function Comparison({ currency }: { currency: PriceCurrency }) {
                   </span>
                 </th>
                 <th scope="col" className="px-4 py-4 font-medium text-muted-foreground sm:px-6">
-                  Typical budget app
+                  A bank-sync app
                 </th>
               </tr>
             </thead>

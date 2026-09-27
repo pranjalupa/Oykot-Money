@@ -106,8 +106,11 @@ export function TransactionList({
               </span>
             </span>
 
+            {/* A move has no sign: the route and ⇄ already say which way, and
+                a minus read as spending money that only changed pockets
+                (UX audit F-11). */}
             <Money
-              minor={t.direction === "inflow" ? t.amountMinor : -t.amountMinor}
+              minor={isTransfer || t.direction === "inflow" ? t.amountMinor : -t.amountMinor}
               tone={isTransfer ? "muted" : t.direction === "inflow" ? "positive" : "default"}
               className="shrink-0 text-right text-sm font-semibold sm:w-28"
             />
