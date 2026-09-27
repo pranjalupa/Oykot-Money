@@ -34,6 +34,7 @@ Both are 7 days. They work differently because the rails do:
 | The ask | From day 6 the app asks them to set up UPI Autopay | None: the card's already there |
 | First charge | When the trial ends: the subscription is created with `start_at` = trial end | When the trial ends: set on the Polar products |
 | Walk away | Skip Autopay; nothing is ever charged | Cancel in Settings before day 7; nothing is charged |
+| The ₹5 | Setting up Autopay for a future start makes Razorpay take a ₹5 authorisation and refund it. The app says so wherever it says "nothing is charged" (`AUTOPAY_CHECK` in `lib/pricing.ts`) | None |
 
 The rules live in `TRIAL` in `lib/pricing.ts`. A user's region comes from
 their profile; a card-region user who hasn't checked out is `pending`, which

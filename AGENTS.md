@@ -139,8 +139,12 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   authorisation** (refunded; it's how a future `start_at` sets up the mandate), webhook set our
   row to `trialing`, Razorpay shows *Authenticated*, next due = trial end. Pranjal's own row
   stays `complimentary` — never test payments on it.
-  - Open: the ₹5 isn't explained on our side before checkout; SMS names the merchant
-    "Designabit" (the Razorpay account's billing label), not Oykot Money.
+  - **The ₹5 is now said before checkout** (`AUTOPAY_CHECK`): the pricing button caption,
+    the day-6 trial banner, both FAQs and the terms, each of which promised "nothing is
+    charged". Test mode now appends to the caption instead of replacing it.
+  - Open: customers see the merchant as "Designabit" (Razorpay's brand name). Changing it to
+    OykotStudio in Checkout Styling → Brand Name failed twice with "Something went wrong" in
+    test mode; likely needs the account's pending KYC clarification resolved first.
 - 2026-09-28 — **Domain: money.oykotstudio.com**, before payments so webhooks, Razorpay's
   website check and auth links all use the final address. GoDaddy DNS (`domaincontrol.com`):
   one CNAME `money` → `f138ba55d3b3b4ee.vercel-dns-017.com` (Vercel's per-project value);

@@ -35,6 +35,15 @@ export const TRIAL = {
   USD: { days: 7, card: true, autopayFromDay: null },
 } as const;
 
+/**
+ * The mandate check. Setting up UPI Autopay for a subscription that starts in
+ * the future (the trial's end) makes Razorpay take a small authorisation
+ * payment and refund it. Customers were told "nothing is charged" and then saw
+ * "Total ₹5" at checkout, so every place that says so now says this too.
+ * Rupees only; card trials (Polar) have no equivalent.
+ */
+export const AUTOPAY_CHECK = "₹5";
+
 /** Both regions run the same length; kept for the places that just need the number. */
 export const TRIAL_DAYS = 7;
 

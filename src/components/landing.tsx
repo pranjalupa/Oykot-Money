@@ -28,7 +28,7 @@ import { PricingTable } from "@/components/pricing-table";
 import { buttonVariants } from "@/components/ui/button";
 import { CURRENCIES } from "@/lib/currency";
 import { LEGAL } from "@/lib/legal";
-import { TRIAL, TRIAL_DAYS, type PriceCurrency } from "@/lib/pricing";
+import { AUTOPAY_CHECK, TRIAL, TRIAL_DAYS, type PriceCurrency } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
 
 /**
@@ -683,7 +683,7 @@ const faqFor = (currency: PriceCurrency) => [
     q: "What happens after the trial?",
     a: TRIAL[currency].card
       ? `Your card is charged when the ${TRIAL[currency].days} days are up. Cancel from Settings before then and you pay nothing.`
-      : `On day ${TRIAL.INR.autopayFromDay} we'll ask you to set up UPI Autopay. Set it up and your plan starts when the trial ends; skip it and nothing is ever charged.`,
+      : `On day ${TRIAL.INR.autopayFromDay} we'll ask you to set up UPI Autopay. Set it up and your plan starts when the trial ends (Razorpay takes a ${AUTOPAY_CHECK} check to set it up and refunds it); skip it and nothing is ever charged.`,
   },
 ];
 

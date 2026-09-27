@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Info } from "@phosphor-icons/react/dist/ssr";
 import type { AccessState } from "@/lib/access";
 import { cn } from "@/lib/utils";
+import { AUTOPAY_CHECK } from "@/lib/pricing";
 
 /**
  * One quiet line about where the account stands. Nothing shows once someone
@@ -33,7 +34,7 @@ export function TrialBanner({
     autopayDue || state === "expired" || state === "grace" || (daysLeft !== null && daysLeft <= 3);
 
   const message = autopayDue
-    ? `Your trial ends ${trialEnds}. Set up UPI Autopay so your budget carries on. Nothing is charged before then.`
+    ? `Your trial ends ${trialEnds}. Set up UPI Autopay so your budget carries on. Nothing is charged before then, apart from a ${AUTOPAY_CHECK} check that's refunded.`
     : state === "trial"
       ? `Free trial · ${daysLeft} day${daysLeft === 1 ? "" : "s"} left`
       : state === "pending"

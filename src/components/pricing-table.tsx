@@ -11,6 +11,7 @@ import {
   YEARLY_OFFER,
   formatPrice,
   TRIAL,
+  AUTOPAY_CHECK,
   twelveMonths,
   yearlyPerMonth,
   yearlyMonthsFree,
@@ -273,13 +274,18 @@ function PlanAction({
       : period === "yearly"
         ? "Pay for a year"
         : "Pay monthly";
-  const caption = testMode
-    ? "Test mode. No real money moves."
-    : startsTrial
+  // Test mode adds to the caption rather than replacing it: the ₹5 note is
+  // exactly what needs checking while testing.
+  const caption = [
+    startsTrial
       ? `${price} after ${rules.days} days. Cancel before then and pay nothing.`
       : setsUpAutopay
-        ? `First charge of ${price} on ${trialEnds ?? "the day your trial ends"}.`
-        : "Cancel any time from Settings.";
+        ? `First charge of ${price} on ${trialEnds ?? "the day your trial ends"}. Razorpay takes a ${AUTOPAY_CHECK} check to set up Autopay and refunds it.`
+        : "Cancel any time from Settings.",
+    testMode ? "Test mode: no real money moves." : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <>

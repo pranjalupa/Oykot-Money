@@ -5,7 +5,7 @@ import { PricingTable } from "@/components/pricing-table";
 import { PublicFooter, PublicHeader } from "@/components/public-chrome";
 import { getUser, getUserPrefs } from "@/lib/auth";
 import { getAccess } from "@/lib/access";
-import { priceCurrencyForCountry, TRIAL, TRIAL_DAYS, YEARLY_OFFER } from "@/lib/pricing";
+import { AUTOPAY_CHECK, priceCurrencyForCountry, TRIAL, TRIAL_DAYS, YEARLY_OFFER } from "@/lib/pricing";
 import { formatDay } from "@/lib/dates";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
 const FAQ = [
   {
     q: "How does the free trial work?",
-    a: `${TRIAL_DAYS} days, everything included. In India there's no card: on day ${TRIAL.INR.autopayFromDay} we'll ask you to set up UPI Autopay, and nothing is charged until the ${TRIAL_DAYS} days are up. Everywhere else a card starts the trial and is charged when it ends, unless you cancel before then.`,
+    a: `${TRIAL_DAYS} days, everything included. In India there's no card: on day ${TRIAL.INR.autopayFromDay} we'll ask you to set up UPI Autopay, and nothing is charged until the ${TRIAL_DAYS} days are up. (Razorpay takes a ${AUTOPAY_CHECK} check to set up Autopay and refunds it.) Everywhere else a card starts the trial and is charged when it ends, unless you cancel before then.`,
   },
   {
     q: "What if I don't continue?",
