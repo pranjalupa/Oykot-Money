@@ -77,7 +77,7 @@ export function DailyHero({
           {/* One sentence, not a row of competing figures. */}
           <p className="mt-3 text-sm text-muted-foreground">
             <Money minor={spentMinor} tone="default" className="font-semibold text-foreground" /> of{" "}
-            {money(budgetMinor)} spent
+            {money(budgetMinor)} spent on needs and wants
             <span aria-hidden className="mx-1.5">·</span>
             <Money
               minor={Math.abs(remainingMinor)}

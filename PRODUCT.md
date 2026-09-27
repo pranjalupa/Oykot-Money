@@ -124,7 +124,8 @@ when you've navigated away) — or a **year switcher** on the Yearly tab — plu
 Answers "can I spend this today?"
 
 - **Today** — **safe to spend today** as one big number, and one bar for how much of the
-  month's Needs + Wants budget is gone ("₹X spent of ₹Y · ₹Z left"). Pace lives in the chart
+  month's Needs + Wants budget is gone ("₹X of ₹Y spent on needs and wants · ₹Z left" —
+  named, because Monthly's "out" also counts Investments). Pace lives in the chart
   below.
 - **Spending pace** — a line of spending so far against a dashed line to your budget at
   month's end. Assumed fixed costs count from day one. Daily's only chart: the transactions
@@ -137,7 +138,8 @@ Answers "how is this month going against the plan?"
 
 - **Empty state** when nothing is budgeted: *Set your budget* (goes to Needs) and
   *Copy last month*.
-- **Income · Expenses · Saved this month** — each against its budget.
+- **Saved this month** — one figure, with income in and money out under it, and a bar for the
+  share of income kept (the same bar as Yearly). Budget against spending is the split below.
 - **Your income split** — a donut of the month's income (received, or budgeted until any
   arrives) split into Needs, Wants, Investments and Not spent, with the income total in the
   middle. Beside it, a row per group: share spent against its target (red when over), with
@@ -218,7 +220,8 @@ Was the separate People page until 2026-09-13; `/people` redirects here.
 - **Target split** — a pointer to the Monthly tab, where the split is now edited.
 - **Repeats every month** — every recurring rule, with pause/resume and remove.
 - **Categories** — all categories by group: drag to reorder, edit (name, group, parent,
-  icon), assume-spent toggle (Needs only), retire/restore, delete. Retired ones are hidden
+  icon), assume-spent toggle (Needs only), retire/restore, delete — each a word beside its
+  icon, not an icon alone. Retired ones are hidden
   behind a toggle.
 - **Money and settlements** — links to Money and its Settlements section.
 - **Billing** — trial or plan status, a link to pricing, and a note that payments aren't live.

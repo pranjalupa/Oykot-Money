@@ -18,6 +18,14 @@ type Props = Omit<React.ComponentProps<"button">, "aria-label"> & {
    */
   label: string;
   tone?: "default" | "active" | "danger";
+  /**
+   * A short visible word beside the icon, for actions an icon can't name on
+   * its own (Retire, Assume spent). `label` must start with it, so the
+   * accessible name contains what's on screen.
+   */
+  text?: string;
+  /** Show `label` as a tooltip. Defaults to on for icon-only buttons only. */
+  tooltip?: boolean;
 };
 
 const TONES = {
@@ -35,28 +43,30 @@ const TONES = {
  */
 export const IconButton = forwardRef<HTMLButtonElement, Props>(
   function IconButton(
-    { label, tone = "default", className, children, ...props },
+    { label, tone = "default", text, tooltip = !text, className, children, ...props },
     ref,
   ) {
+    const button = (
+      <button
+        ref={ref}
+        type="button"
+        aria-label={label}
+        className={cn(
+          "flex shrink-0 items-center justify-center rounded-md transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:pointer-events-none disabled:opacity-30",
+          text ? "h-11 gap-1.5 px-3 text-xs font-medium sm:h-8 sm:px-2" : "size-11 sm:size-8",
+          TONES[tone],
+          className,
+        )}
+        {...props}
+      >
+        {children}
+        {text && <span aria-hidden>{text}</span>}
+      </button>
+    );
+    if (!tooltip) return button;
     return (
       <Tooltip>
-        <TooltipTrigger
-          render={
-            <button
-              ref={ref}
-              type="button"
-              aria-label={label}
-              className={cn(
-                "flex size-11 shrink-0 items-center justify-center rounded-md sm:size-8 transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:pointer-events-none disabled:opacity-30",
-                TONES[tone],
-                className,
-              )}
-              {...props}
-            >
-              {children}
-            </button>
-          }
-        />
+        <TooltipTrigger render={button} />
         <TooltipContent className="max-[640px]:hidden">{label}</TooltipContent>
       </Tooltip>
     );

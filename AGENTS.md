@@ -132,6 +132,20 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   Teams and sharing are still out — don't build toward them without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
+- 2026-09-27 — **UX audit's four major findings fixed** (heuristic audit, screenshots of every
+  screen with demo data, since removed). The rest are minor and still open.
+  - **Add dialog intro no longer contradicts itself**: it said money with a person "doesn't
+    touch the budget" above a Lend / Borrow tab saying it counts. Now: all three tabs count,
+    moves between your own accounts don't.
+  - **Daily says what its "spent" covers**: "spent on needs and wants". Monthly's "out"
+    includes Investments, so the same month showed ₹49,803 and ₹65,803 with no reason given.
+  - **Monthly's hero bar is share of income kept**, like Yearly's. It showed budget used
+    (85%) under "Saved this month", which read as 85% saved. **A hero bar measures its
+    figure** — never a second quantity.
+  - **Settings category actions carry words** (Assume spent · Edit · Retire · Delete).
+    `IconButton` takes `text` (visible word; `label` must start with it, for WCAG 2.5.3)
+    and `tooltip`. "Assume spent" moves safe-to-spend and pricing sells it — an unlabelled ⟳
+    hid it.
 - 2026-09-24 — **The public site is always light**; the bento's dark-mode card is gone.
   - `ThemeProvider` passes next-themes a `forcedTheme="light"` when signed out (every page
     a signed-out visitor can reach is public: landing, pricing, auth, legal) and on

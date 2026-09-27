@@ -89,8 +89,8 @@ export function TransactionDialog({
         <DialogHeader>
           <DialogTitle className="font-heading">{title}</DialogTitle>
           <DialogDescription>
-            Spent and Received count toward a category. Money with a person, or
-            between your own accounts, doesn&rsquo;t touch the budget.
+            Spent, Received and Lend / Borrow all count in this month&rsquo;s
+            budget. Moving money between your own accounts doesn&rsquo;t.
           </DialogDescription>
         </DialogHeader>
 

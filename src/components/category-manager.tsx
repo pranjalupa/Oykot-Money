@@ -202,11 +202,11 @@ function CategoryRow({ cat }: { cat: Cat }) {
         <RowActions label={cat.name}>
           {canAssume && (
             <IconButton
-              label={
-                cat.assumeSpent
-                  ? `Stop assuming ${cat.name} is spent each month`
-                  : `Assume ${cat.name} is spent each month`
-              }
+              // A word, not just ⟳: this one changes the safe-to-spend
+              // number, and an unlabelled icon hid it (UX audit F-04).
+              text="Assume spent"
+              label={`Assume spent: count ${cat.name}'s budget as spent in months you log nothing to it`}
+              tooltip
               tone={cat.assumeSpent ? "active" : "default"}
               onClick={toggleAssumeSpent}
               disabled={pending}
@@ -220,6 +220,7 @@ function CategoryRow({ cat }: { cat: Cat }) {
 
           <IconButton
             label={cat.archived ? `Restore ${cat.name}` : `Retire ${cat.name}`}
+            text={cat.archived ? "Restore" : "Retire"}
             onClick={toggleArchive}
             disabled={pending}
           >
@@ -253,7 +254,7 @@ function EditCategoryDialog({ cat }: { cat: Cat }) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
         render={
-          <IconButton label={`Edit ${cat.name}`}>
+          <IconButton label={`Edit ${cat.name}`} text="Edit">
             <PencilSimple size={14} weight="bold" />
           </IconButton>
         }
@@ -383,6 +384,7 @@ export function DeleteCategoryButton({
     <>
       <IconButton
         label={`Delete ${cat.name}`}
+        text={redirectTo ? undefined : "Delete"}
         tone="danger"
         onClick={openConfirm}
         disabled={disabled}

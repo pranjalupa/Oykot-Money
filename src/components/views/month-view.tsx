@@ -76,8 +76,10 @@ export async function MonthView({ month }: { month: string }) {
         </div>
       )}
 
-      {/* What the month came to, with the two figures that made it underneath
-          and the bar showing how much of the budget went. */}
+      {/* What the month came to, with the two figures that made it underneath.
+          The bar is the share of income kept, the same as Yearly: it sits under
+          a savings figure, and showing budget used there read as "85% saved"
+          (UX audit F-03). Budget against spending is the income split below. */}
       <PeriodHero
         label="Saved this month"
         amountMinor={summary.actualSaved}
@@ -89,16 +91,11 @@ export async function MonthView({ month }: { month: string }) {
           </>
         }
         progress={
-          summary.plannedExpense > 0
+          summary.actualIncome > 0
             ? {
-                percent: percentOf(summary.actualExpense, summary.plannedExpense),
-                over: summary.actualExpense > summary.plannedExpense,
-                note: (
-                  <>
-                    {percentOf(summary.actualExpense, summary.plannedExpense)}% of the{" "}
-                    <Money minor={summary.plannedExpense} tone="muted" /> budget
-                  </>
-                ),
+                percent: percentOf(summary.actualSaved, summary.actualIncome),
+                over: summary.actualSaved < 0,
+                note: <>{percentOf(summary.actualSaved, summary.actualIncome)}% of income kept</>,
               }
             : undefined
         }
