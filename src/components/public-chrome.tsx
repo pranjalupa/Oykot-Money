@@ -5,7 +5,7 @@ import { LEGAL } from "@/lib/legal";
 import { LogoMark, Wordmark } from "@/components/logo";
 
 /** The signed-out header on pricing and the legal pages — the landing nav's twin. */
-export function PublicHeader() {
+export function PublicHeader({ onPricing = false }: { onPricing?: boolean }) {
   return (
     <header className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
       <Link href="/" className="flex items-center gap-2.5" aria-label="Oykot Money, home">
@@ -13,9 +13,13 @@ export function PublicHeader() {
         <Wordmark height={17} />
       </Link>
       <nav aria-label="Main" className="flex shrink-0 items-center gap-1 text-sm whitespace-nowrap sm:gap-1.5">
-        <Link href="/pricing" className="lp-nav-link rounded-full px-3 py-2">
-          Pricing
-        </Link>
+        {/* Not on /pricing, and not on phones: three links left Start free 3px
+            from the edge at 375px (UX audit F-16). The footer links it. */}
+        {!onPricing && (
+          <Link href="/pricing" className="lp-nav-link rounded-full px-3 py-2 max-sm:hidden">
+            Pricing
+          </Link>
+        )}
         <Link href="/login" className="lp-nav-link rounded-full px-3 py-2">
           Sign in
         </Link>

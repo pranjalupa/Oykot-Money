@@ -63,7 +63,7 @@ export default async function PricingPage({
 
   return (
     <div className="min-h-svh">
-      {!user && <PublicHeader />}
+      {!user && <PublicHeader onPricing />}
       <main className="mx-auto w-full max-w-5xl px-4 py-12 sm:px-6 sm:py-16">
         {trial === "ended" && (
           <p className="mx-auto mb-8 flex max-w-md items-start gap-2 rounded-lg bg-muted px-4 py-3 text-sm">

@@ -99,7 +99,7 @@ export default async function GroupPage({
       </section>
 
       <p className="text-center text-xs text-muted-foreground">
-        Tap any planned figure to change it.
+        Tap or click any budget to change it.
       </p>
     </div>
   );

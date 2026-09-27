@@ -132,8 +132,13 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   Teams and sharing are still out — don't build toward them without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
-- 2026-09-27 — **UX audit's eight minor findings fixed** (F-05 to F-12). Cosmetic F-13 to F-16
-  still open. Demo data is **left seeded** on Pranjal's account at his request —
+- 2026-09-27 — **UX audit's cosmetic findings fixed** (F-13 to F-16), so all 16 are done.
+  Category delete moved from the header to a labelled "Delete category" at the page foot.
+  Settings' internal links use → rather than the external-link icon. Budget figures on
+  group pages are full contrast at the table's size; "untouched" became "with no budget or
+  spending". The public header drops Pricing on /pricing and on phones (the landing nav
+  already did), since it pushed Start free to 3px from the edge.
+- 2026-09-27 — **UX audit's eight minor findings fixed** (F-05 to F-12). Demo data is **left seeded** on Pranjal's account at his request —
   `npx tsx scripts/demo-data.mts remove` when done.
   - **One name for money with people: People.** Money's section (was Settlements), the Add
     tab **Person** (was Lend / Borrow), the quick action (was Settle), Settings' link. "Settle

@@ -171,7 +171,7 @@ Answers "how did the year go?"
   - Remaining turns red when a line is over.
   - A **Total** row at the bottom.
   - Categories with nothing budgeted and nothing spent are hidden behind
-    *Show N untouched categories*.
+    *Show N more with no budget or spending*.
   - Assumed amounts show muted with a repeat mark.
   - Each row opens the category.
 - **Add category**, optionally as a sub-category of an existing one.

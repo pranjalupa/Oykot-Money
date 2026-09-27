@@ -118,12 +118,6 @@ export default async function CategoryPage({
               defaultCategoryId={id}
             />
           </div>
-          {!cat.systemKey && (
-            <DeleteCategoryButton
-              cat={{ id: cat.id, name: cat.name }}
-              redirectTo={`/${cat.groupKey}?month=${month}`}
-            />
-          )}
         </div>
       </header>
 
@@ -169,6 +163,17 @@ export default async function CategoryPage({
           }
         />
       </section>
+
+      {/* At the foot, in words: a bare trash icon beside Add in the header was
+          one slip from the page's main action (UX audit F-13). */}
+      {!cat.systemKey && (
+        <div className="flex justify-end">
+          <DeleteCategoryButton
+            cat={{ id: cat.id, name: cat.name }}
+            redirectTo={`/${cat.groupKey}?month=${month}`}
+          />
+        </div>
+      )}
     </div>
   );
 }

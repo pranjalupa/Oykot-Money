@@ -145,8 +145,8 @@ export function CategoryList({
             className="text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground"
           >
             {showIdle
-              ? `Hide ${idleCount} untouched`
-              : `Show ${idleCount} untouched categor${idleCount === 1 ? "y" : "ies"}`}
+              ? `Hide ${idleCount} with no budget or spending`
+              : `Show ${idleCount} more with no budget or spending`}
           </button>
         </div>
       )}

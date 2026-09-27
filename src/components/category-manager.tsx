@@ -383,8 +383,8 @@ export function DeleteCategoryButton({
   return (
     <>
       <IconButton
-        label={`Delete ${cat.name}`}
-        text={redirectTo ? undefined : "Delete"}
+        label={redirectTo ? `Delete category ${cat.name}` : `Delete ${cat.name}`}
+        text={redirectTo ? "Delete category" : "Delete"}
         tone="danger"
         onClick={openConfirm}
         disabled={disabled}

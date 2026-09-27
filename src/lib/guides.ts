@@ -40,7 +40,7 @@ export const GUIDES = {
     steps: [
       "Click an amount with the pencil to set this month's budget for that category.",
       "Tap a row to see its transactions and six-month trend.",
-      "Categories with nothing planned or spent are tucked behind Show untouched.",
+      "Categories with nothing planned or spent are tucked behind Show more.",
     ],
   },
   money: {

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowSquareOut, SignOut } from "@phosphor-icons/react/dist/ssr";
+import { ArrowRight, SignOut } from "@phosphor-icons/react/dist/ssr";
 import { signOut } from "@/app/auth/actions";
 import { Button } from "@/components/ui/button";
 import { CategoryManager } from "@/components/category-manager";
@@ -113,7 +113,7 @@ export default async function SettingsPage() {
               className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium underline underline-offset-4"
             >
               See plans
-              <ArrowSquareOut size={14} weight="bold" />
+              <ArrowRight size={14} weight="bold" />
             </Link>
           )
         )}
@@ -129,7 +129,7 @@ export default async function SettingsPage() {
           className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium underline underline-offset-4"
         >
           Open Monthly
-          <ArrowSquareOut size={14} weight="bold" />
+          <ArrowRight size={14} weight="bold" />
         </Link>
       </section>
 
@@ -164,14 +164,14 @@ export default async function SettingsPage() {
             className="inline-flex items-center gap-1.5 text-sm font-medium underline underline-offset-4"
           >
             Money
-            <ArrowSquareOut size={14} weight="bold" />
+            <ArrowRight size={14} weight="bold" />
           </Link>
           <Link
             href="/money#settlements"
             className="inline-flex items-center gap-1.5 text-sm font-medium underline underline-offset-4"
           >
             People
-            <ArrowSquareOut size={14} weight="bold" />
+            <ArrowRight size={14} weight="bold" />
           </Link>
         </div>
       </section>

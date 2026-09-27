@@ -57,7 +57,7 @@ export function PlannedSheet({
         className={cn(
           // Sits above the whole-row link, and tall enough to hit on a phone:
           // a 20px strip inside a row that navigates is a coin toss.
-          "relative z-10 -my-2 inline-flex min-h-11 items-center gap-1 rounded py-2 text-[13px] text-muted-foreground sm:my-0 sm:min-h-0 sm:py-0.5 sm:text-xs",
+          "relative z-10 -my-2 inline-flex min-h-11 items-center gap-1 rounded py-2 text-[13px] text-foreground sm:my-0 sm:min-h-0 sm:py-0.5 sm:text-xs",
           pending && "opacity-50",
         )}
       >
@@ -158,13 +158,15 @@ export function PlannedInput({
           requestAnimationFrame(() => inputRef.current?.select());
         }}
         // A pencil and a dashed underline, always visible: a plain number
-        // gave no hint it could be changed.
+        // gave no hint it could be changed. Full contrast and the Spent
+        // column's size: the one figure you can edit was the palest on the
+        // row (UX audit F-15).
         className={cn(
-          "tabular group/edit inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+          "tabular group/edit inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-sm text-foreground transition-colors hover:bg-muted",
           pending && "opacity-50",
         )}
-        title="Edit planned amount"
-        aria-label={`Edit planned amount, currently ${plannedMinor > 0 ? formatMoney(plannedMinor, { currency }) : "not set"}`}
+        title="Edit budget"
+        aria-label={`Edit budget, currently ${plannedMinor > 0 ? formatMoney(plannedMinor, { currency }) : "not set"}`}
       >
         <span className="border-b border-dashed border-muted-foreground/50 group-hover/edit:border-foreground/60">
           {plannedMinor > 0 ? formatMoney(plannedMinor, { currency }) : "set budget"}
