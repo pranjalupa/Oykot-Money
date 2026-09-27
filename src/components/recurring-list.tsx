@@ -66,8 +66,9 @@ export function RecurringList({ rules }: { rules: RecurringRow[] }) {
 }
 
 /**
- * One repeat, laid out like the category and transaction rows: name over its
- * schedule on the left, amount over the account on the right. The actions are
+ * One repeat: name over "30th of each month · account" on the left, the amount
+ * alone on the right. Inside Settings' padded card there's less width than on
+ * Home, and an account column there cut names to "G…" at 375px. The actions are
  * words (Edit · Pause · Remove), folded behind "⋯" on phones. As icons beside
  * the amount they squeezed the name to nothing at 375px, and Pause was the
  * same ⟳ glyph as the repeat marker, filled or not.
@@ -123,20 +124,15 @@ function Row({ rule }: { rule: RecurringRow }) {
           )}
         </p>
         <p className="mt-1 truncate text-[13px] text-muted-foreground sm:mt-0 sm:text-xs">
-          Every month on the {ordinal(rule.dayOfMonth)}
+          {ordinal(rule.dayOfMonth)} of each month · {rule.accountName}
         </p>
       </div>
 
-      <div className={cn("flex max-w-[40%] shrink-0 flex-col items-end", !rule.active && "opacity-55")}>
-        <Money
-          minor={rule.direction === "inflow" ? rule.amountMinor : -rule.amountMinor}
-          tone={rule.direction === "inflow" ? "positive" : "default"}
-          className="tabular text-[15px] font-semibold sm:text-sm"
-        />
-        <span className="mt-1 max-w-full truncate text-[13px] text-muted-foreground sm:mt-0 sm:text-xs">
-          {rule.accountName}
-        </span>
-      </div>
+      <Money
+        minor={rule.direction === "inflow" ? rule.amountMinor : -rule.amountMinor}
+        tone={rule.direction === "inflow" ? "positive" : "default"}
+        className={cn("tabular shrink-0 text-[15px] font-semibold sm:text-sm", !rule.active && "opacity-55")}
+      />
 
       <RowActions label={label}>
         <EditRecurringDialog rule={rule} label={label} />
