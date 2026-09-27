@@ -80,7 +80,7 @@ export function BudgetSummary({
   );
 }
 
-type TrendPoint = { month: string; budgetedMinor: number; spentMinor: number; assumed?: boolean };
+type TrendPoint = { month: string; budgetedMinor: number; spentMinor: number };
 
 /** Six months: is this month normal? Past months soft, this one solid. */
 export function PeriodTrend({
@@ -106,7 +106,7 @@ export function PeriodTrend({
       title={title}
       table={{
         head: ["Month", "Budgeted", isIncome ? "Received" : "Spent"],
-        rows: points.map((p) => [formatMonthShort(p.month, locale), money(p.budgetedMinor), `${money(p.spentMinor)}${p.assumed ? " (assumed)" : ""}`]),
+        rows: points.map((p) => [formatMonthShort(p.month, locale), money(p.budgetedMinor), money(p.spentMinor)]),
       }}
     >
       {any ? (
@@ -117,7 +117,6 @@ export function PeriodTrend({
             highlight: i === points.length - 1,
             extra: [
               { label: "budgeted", value: money(p.budgetedMinor) },
-              ...(p.assumed ? [{ label: "", value: "assumed" }] : []),
             ],
           }))}
           color={color}

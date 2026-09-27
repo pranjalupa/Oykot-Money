@@ -132,6 +132,15 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   Teams and sharing are still out — don't build toward them without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
+- 2026-09-28 — **Assume spent removed; safe-to-spend sets aside repeats still due instead.**
+  Pranjal's call: it and "Repeat every month" did one job two ways and users couldn't pick.
+  - `getDailyView` subtracts active Needs/Wants outflow repeats due after today and not yet
+    posted this month (`upcomingRepeats`, same filters as generation). Current month only.
+  - **Told on the screen, not in a note:** Daily shows "₹X set aside for Rent on the 28th",
+    linking to Settings → Repeats; the repeat checkbox hint and the Repeats section each say it
+    once; pricing's feature line changed. No one-time notice: no account had the switch on.
+  - All assumption maths gone (month summary, Yearly, category trend, pace chart, markers).
+    The `assume_spent` column stays, unused; drop it in the next migration.
 - 2026-09-28 — **Retiring a category no longer rewrites past months.** `getMonthSummary`
   dropped retired categories from every month, so their spending left old months' totals
   (Yearly, which reads transactions, still counted it). Now a retired category shows, marked

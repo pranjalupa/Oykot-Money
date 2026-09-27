@@ -46,6 +46,8 @@ export async function DailyView({ month }: { month: string }) {
         budgetMinor={daily.dailyBudget}
         spentMinor={daily.dailySpent}
         remainingMinor={daily.remaining}
+        upcoming={daily.upcoming}
+        upcomingMinor={daily.upcomingMinor}
         safePerDayMinor={daily.safePerDay}
         daysLeft={daily.daysLeft}
         isCurrentMonth={daily.isCurrentMonth}
@@ -58,7 +60,6 @@ export async function DailyView({ month }: { month: string }) {
         month={month}
         days={daily.days}
         budgetMinor={daily.dailyBudget}
-        spentMinor={daily.dailySpent}
         throughDay={throughDay}
       />
 

@@ -99,7 +99,8 @@ export async function ensureMonthPlan(userId: string, month: string) {
  * And only once a rule's day has come. It used to post the whole month on the
  * first visit, so a bill due on the 30th sat in the list from the 1st, dated
  * ahead and counted as spent (Pranjal's call, 2026-09-28). To reserve a fixed
- * cost before it's paid, a category has Assume spent.
+ * cost before it's paid, the Daily figure sets aside repeats still due
+ * (`upcomingRepeats` in lib/budget.ts).
  */
 export async function ensureRecurringForMonth(userId: string, month: string) {
   const { timeZone } = await getUserPrefs();

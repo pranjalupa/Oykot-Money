@@ -13,7 +13,7 @@ export type BarPoint = {
   color?: string;
   /** The current month, drawn solid while history sits back at 55%. */
   highlight?: boolean;
-  /** Extra tooltip rows: the budget behind the bar, an "assumed" flag. */
+  /** Extra tooltip rows, such as the budget behind the bar. */
   extra?: { label: string; value: string }[];
 };
 

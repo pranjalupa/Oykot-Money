@@ -427,8 +427,8 @@ export function TransactionFields({
           <span>
             Repeat every month
             <span className="block text-xs text-muted-foreground">
-              Rent, SIP, salary: added automatically on the same date each month.
-              Manage them in Settings.
+              Rent, SIP, salary: added on the same date each month. Until a bill
+              is due, its amount is kept out of safe to spend.
             </span>
           </span>
         </label>

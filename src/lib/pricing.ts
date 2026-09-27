@@ -110,7 +110,7 @@ export const PLAN_FEATURES = [
   "Daily safe-to-spend and spending-pace charts",
   "Monthly and yearly views with savings trends",
   "Lend, borrow and track who owes whom",
-  "Repeats and assume-spent for fixed bills",
+  "Monthly repeats, with bills set aside before they're due",
   "Net worth across accounts and assets, over time",
   "Your currency and date format",
   "Export everything, any time",

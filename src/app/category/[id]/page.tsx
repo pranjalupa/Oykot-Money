@@ -22,9 +22,8 @@ import {
   getCategoryTrend,
 } from "@/lib/budget";
 import { monthBounds } from "@/lib/targets";
-import { formatMoney } from "@/lib/money";
 import { Money } from "@/components/money";
-import { requireUser, getUserCurrency, getUserPrefs } from "@/lib/auth";
+import { requireUser, getUserPrefs } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -51,12 +50,11 @@ export default async function CategoryPage({
   const month = isValidMonth(monthParam) ? monthParam : currentMonthIn(timeZone);
   const { start, end } = monthBounds(month);
 
-  const [summary, txs, accounts, allCategories, currency, trend] = await Promise.all([
+  const [summary, txs, accounts, allCategories, trend] = await Promise.all([
     getMonthSummary(user.id, month),
     listTransactions(user.id, { from: start, to: end, categoryId: id }),
     listAccounts(user.id),
     listCategories(user.id),
-    getUserCurrency(),
     getCategoryTrend(user.id, id, month),
   ]);
 
@@ -68,7 +66,6 @@ export default async function CategoryPage({
 
   const planned = row?.plannedMinor ?? 0;
   const actual = row?.actualMinor ?? 0;
-  const assumed = (row?.assumedMinor ?? 0) > 0;
   const isIncome = cat.groupKey === "income";
 
   const byPerson = cat.systemKey
@@ -125,7 +122,6 @@ export default async function CategoryPage({
         spentMinor={actual}
         plannedMinor={planned}
         isIncome={isIncome}
-        footnote={assumed ? "includes assumed spend" : undefined}
       />
 
       <PeriodTrend title="Last six months" points={trend} color={groupColor(cat.groupKey)} isIncome={isIncome} />
@@ -156,11 +152,7 @@ export default async function CategoryPage({
           transactions={txs}
           accounts={accounts}
           categories={allCategories}
-          emptyNote={
-            assumed
-              ? `Nothing logged. The ${formatMoney(actual, { currency })} above is the budgeted amount, counted automatically. Add a transaction and the real figure replaces it.`
-              : "Nothing in this category this month."
-          }
+          emptyNote="Nothing in this category this month."
         />
       </section>
 

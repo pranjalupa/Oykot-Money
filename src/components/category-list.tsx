@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CaretRight, Repeat } from "@phosphor-icons/react";
+import { CaretRight } from "@phosphor-icons/react";
 import { Money } from "@/components/money";
 import { CategoryIcon } from "@/components/category-icon";
 import { PlannedInput, PlannedSheet } from "@/components/planned-input";
@@ -179,8 +179,6 @@ function Row({
   const idle = cat.plannedMinor === 0 && cat.actualMinor === 0;
   // A rolled-up child's plan lives on the parent, so don't offer to edit it.
   const editablePlan = !nested || cat.budgetsSeparately;
-  // Every rupee here came from the assumption rather than the ledger.
-  const assumed = cat.assumedMinor > 0 && cat.assumedMinor === cat.actualMinor;
   const router = useRouter();
   const href = `/category/${cat.id}?month=${month}`;
 
@@ -218,14 +216,6 @@ function Row({
             </Link>
             {/* Shown in months where it still has a budget or spending. */}
             {cat.archived && <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">Retired</span>}
-            {assumed && (
-              <Repeat
-                size={11}
-                weight="bold"
-                aria-label="Assumed spent, no transaction logged"
-                className="shrink-0 text-muted-foreground"
-              />
-            )}
           </div>
         </td>
 
@@ -245,7 +235,6 @@ function Row({
           <Money
             minor={cat.actualMinor}
             tone={cat.actualMinor ? "default" : "muted"}
-            className={cn(assumed && "text-muted-foreground")}
           />
           {/* On phones the Remaining column is hidden; it rides under Spent. */}
           <div className="text-[11px] sm:hidden">
@@ -313,7 +302,6 @@ function MobileRow({
   const nested = depth > 0;
   const idle = cat.plannedMinor === 0 && cat.actualMinor === 0;
   const editablePlan = !nested || cat.budgetsSeparately;
-  const assumed = cat.assumedMinor > 0 && cat.assumedMinor === cat.actualMinor;
 
   return (
     <>
@@ -329,7 +317,6 @@ function MobileRow({
           <p className={cn("flex min-w-0 items-center gap-1.5 text-[15px]", idle ? "text-muted-foreground" : "font-medium")}>
             <span className="truncate">{cat.name}</span>
             {cat.archived && <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">Retired</span>}
-            {assumed && <Repeat size={11} weight="bold" aria-label="Assumed spent" className="shrink-0 text-muted-foreground" />}
           </p>
           <p className="mt-1 truncate text-[13px] text-muted-foreground">
             <Money minor={cat.actualMinor} tone="muted" /> {isIncome ? "received" : "spent"}

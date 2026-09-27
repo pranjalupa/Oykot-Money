@@ -6,6 +6,15 @@ import { LineTrend } from "@/components/charts/line-trend";
 import { useCurrency, useLocale } from "@/components/currency-provider";
 import { formatMoney, MINOR_PER_UNIT } from "@/lib/money";
 import { formatDay } from "@/lib/dates";
+import Link from "next/link";
+import { Repeat } from "@phosphor-icons/react";
+
+type Upcoming = { name: string; amountMinor: number; day: number };
+const ordinal = (n: number) => {
+  const s = ["th", "st", "nd", "rd"];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+};
 
 type Day = { date: string; totalMinor: number };
 const iso = (month: string, day: number) => `${month}-${String(day).padStart(2, "0")}`;
@@ -24,13 +33,19 @@ export function DailyHero({
   budgetMinor,
   spentMinor,
   remainingMinor,
+  upcoming,
+  upcomingMinor,
   safePerDayMinor,
   isCurrentMonth,
 }: {
   month: string;
   budgetMinor: number;
   spentMinor: number;
+  /** Already net of `upcomingMinor`. */
   remainingMinor: number;
+  /** Repeats still to post this month, set aside before the daily figure. */
+  upcoming: Upcoming[];
+  upcomingMinor: number;
   safePerDayMinor: number;
   daysLeft: number;
   isCurrentMonth: boolean;
@@ -91,6 +106,27 @@ export function DailyHero({
             />{" "}
             {over ? "over" : "left"}
           </p>
+          {/* Says where the gap between "spent of budget" and "left" went, and
+              that it happens by itself: this is the whole explanation of the
+              repeats-set-aside rule (it replaced Assume spent), so it has to
+              be on the screen, not in a help page. */}
+          {upcoming.length > 0 && (
+            <Link
+              href="/settings#repeats"
+              className="mt-2 flex items-start gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+            >
+              <Repeat size={14} weight="bold" className="mt-0.5 shrink-0" />
+              <span>
+                <Money minor={upcomingMinor} tone="default" className="font-semibold text-foreground" /> set
+                aside for{" "}
+                {upcoming.length === 1
+                  ? `${upcoming[0].name} on the ${ordinal(upcoming[0].day)}`
+                  : upcoming.length === 2
+                    ? `${upcoming[0].name} and ${upcoming[1].name}, still to come`
+                    : `${upcoming[0].name}, ${upcoming[1].name} and ${upcoming.length - 2} more, still to come`}
+              </span>
+            </Link>
+          )}
         </>
       ) : (
         <p className="mt-3 text-sm text-muted-foreground">No Needs or Wants budget set for this month.</p>
@@ -100,8 +136,7 @@ export function DailyHero({
 }
 
 /**
- * Spending so far against the budget's even pace. Fixed costs counted as
- * assumed-spent have no date, so they're counted from day one.
+ * Spending so far against the budget's even pace.
  *
  * Daily's only chart: the transaction list underneath already breaks the
  * month down day by day, so what a chart can add is the shape — whether the
@@ -111,13 +146,11 @@ export function PaceCard({
   month,
   days,
   budgetMinor,
-  spentMinor,
   throughDay,
 }: {
   month: string;
   days: Day[];
   budgetMinor: number;
-  spentMinor: number;
   throughDay: number;
 }) {
   const currency = useCurrency();
@@ -136,9 +169,8 @@ export function PaceCard({
   }
 
   const byDate = new Map(days.map((d) => [d.date, d.totalMinor]));
-  const assumed = Math.max(0, spentMinor - days.reduce((s, d) => s + d.totalMinor, 0));
   const cumulative: number[] = [];
-  for (let d = 1; d <= last; d++) cumulative.push((cumulative[d - 2] ?? assumed) + (byDate.get(iso(month, d)) ?? 0));
+  for (let d = 1; d <= last; d++) cumulative.push((cumulative[d - 2] ?? 0) + (byDate.get(iso(month, d)) ?? 0));
   const data = cumulative.map((total, i) => ({
     label: String(i + 1),
     title: formatDay(iso(month, i + 1), locale),

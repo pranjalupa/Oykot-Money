@@ -38,14 +38,6 @@ export type CategoryRow = {
   budgetsSeparately: boolean;
   plannedMinor: number;
   actualMinor: number;
-  /**
-   * How much of `actualMinor` is assumed rather than transacted (see
-   * `categories.assumeSpent`). Non-zero means "nobody logged this, we took the
-   * budgeted figure" — the UI marks those so an assumption never passes for a
-   * real receipt.
-   */
-  assumedMinor: number;
-  assumeSpent: boolean;
   /** Retired, but shown because it has a budget or transactions this month. */
   archived: boolean;
   children: CategoryRow[];
@@ -55,8 +47,6 @@ export type GroupSummary = {
   groupKey: GroupKey;
   plannedMinor: number;
   actualMinor: number;
-  /** Part of `actualMinor` that came from assumptions, not transactions. */
-  assumedMinor: number;
   targetPercent: number;
   plannedPercent: number;
   actualPercent: number;
@@ -100,7 +90,6 @@ export async function getMonthSummary(userId: string, month: string) {
       icon: categories.icon,
       parentId: categories.parentId,
       budgetsSeparately: categories.budgetsSeparately,
-      assumeSpent: categories.assumeSpent,
       archived: categories.archived,
       plannedMinor: budgetLines.plannedMinor,
     })
@@ -130,12 +119,6 @@ export async function getMonthSummary(userId: string, month: string) {
   for (const c of cats) {
     const plannedMinor = Number(c.plannedMinor ?? 0);
     const transacted = actuals.get(c.id) ?? 0;
-    // The assumption is a fallback, never a top-up: one real transaction this
-    // month and the ledger speaks for itself. Applied against the category's
-    // OWN budget line, before children roll up, so a parent can't assume an
-    // amount that includes its children's plans.
-    const assumedMinor =
-      c.assumeSpent && !c.archived && transacted === 0 && plannedMinor > 0 ? plannedMinor : 0;
 
     byId.set(c.id, {
       id: c.id,
@@ -144,11 +127,9 @@ export async function getMonthSummary(userId: string, month: string) {
       icon: c.icon,
       parentId: c.parentId,
       budgetsSeparately: c.budgetsSeparately,
-      assumeSpent: c.assumeSpent,
       archived: c.archived,
       plannedMinor,
-      actualMinor: transacted + assumedMinor,
-      assumedMinor,
+      actualMinor: transacted,
       children: [],
     });
   }
@@ -165,7 +146,6 @@ export async function getMonthSummary(userId: string, month: string) {
   for (const parent of roots) {
     for (const child of parent.children) {
       parent.actualMinor += child.actualMinor;
-      parent.assumedMinor += child.assumedMinor;
       if (!child.budgetsSeparately) parent.plannedMinor += child.plannedMinor;
     }
   }
@@ -179,7 +159,6 @@ export async function getMonthSummary(userId: string, month: string) {
       groupKey: key,
       plannedMinor: inGroup.reduce((s, r) => s + r.plannedMinor, 0),
       actualMinor: inGroup.reduce((s, r) => s + r.actualMinor, 0),
-      assumedMinor: inGroup.reduce((s, r) => s + r.assumedMinor, 0),
       targetPercent: targets[key] ?? 0,
       plannedPercent: 0,
       actualPercent: 0,
@@ -349,6 +328,12 @@ export async function listTransactions(
  * Spending per day for a month, plus a "safe to spend" figure: what's left of
  * the Needs+Wants plan divided by the days remaining. Investments are excluded
  * — that money is meant to leave.
+ *
+ * Repeats due later this month come off first. Rent on the 28th hasn't been
+ * paid on the 1st, but it isn't free money either; without this the daily
+ * figure ran high all month and fell off a cliff on the 28th. This replaced
+ * the per-category "Assume spent" switch (2026-09-28): same job, nothing to
+ * set up, and it knows the real amount and day.
  */
 export async function getDailyView(
   userId: string,
@@ -388,12 +373,19 @@ export async function getDailyView(
     ? Math.max(lastDay - dayOfMonthIn(timeZone) + 1, 1)
     : lastDay;
 
-  const remaining = dailyBudget - dailySpent;
+  // Only for the current month: a past month is settled, and a future one
+  // hasn't started, so every repeat in it would count as "coming up".
+  const upcoming = isCurrentMonth ? await upcomingRepeats(userId, month, lastDay, dayOfMonthIn(timeZone)) : [];
+  const upcomingMinor = upcoming.reduce((s, u) => s + u.amountMinor, 0);
+
+  const remaining = dailyBudget - dailySpent - upcomingMinor;
 
   return {
     days: perDay.map((d) => ({ date: d.date, totalMinor: Number(d.total ?? 0) })),
     dailyBudget,
     dailySpent,
+    upcoming,
+    upcomingMinor,
     remaining,
     daysLeft,
     safePerDay: remaining > 0 ? Math.floor(remaining / daysLeft) : 0,
@@ -401,73 +393,40 @@ export async function getDailyView(
   };
 }
 
+/**
+ * Repeats in Needs or Wants still to post this month: active, not yet run for
+ * this month, due after today. The same filters generation uses, so anything
+ * listed here is exactly what will post (lib/month-setup.ts).
+ */
+async function upcomingRepeats(userId: string, month: string, lastDay: number, today: number) {
+  const rules = await db
+    .select({
+      name: sql<string>`coalesce(${recurringRules.merchant}, ${categories.name})`,
+      amountMinor: recurringRules.amountMinor,
+      dayOfMonth: recurringRules.dayOfMonth,
+    })
+    .from(recurringRules)
+    .innerJoin(categories, eq(categories.id, recurringRules.categoryId))
+    .where(
+      and(
+        eq(recurringRules.userId, userId),
+        eq(recurringRules.active, true),
+        eq(recurringRules.direction, "outflow"),
+        inArray(categories.groupKey, ["needs", "wants"]),
+        eq(categories.archived, false),
+        sql`(${recurringRules.lastRunMonth} is null or ${recurringRules.lastRunMonth} <> ${month})`,
+        sql`not exists (select 1 from ${accounts} a where a.id = ${recurringRules.accountId} and a.archived)`,
+      ),
+    );
+  return rules
+    .map((r) => ({ name: r.name, amountMinor: Number(r.amountMinor), day: Math.min(Math.max(r.dayOfMonth, 1), lastDay) }))
+    .filter((r) => r.day > today)
+    .sort((a, b) => a.day - b.day);
+}
+
 /* -------------------------------------------------------------------------- */
 /* Yearly view                                                                 */
 /* -------------------------------------------------------------------------- */
-
-/**
- * Total assumed-spent Needs per month for a year — the budgeted amount of every
- * `assumeSpent` category that saw no transaction that month.
- *
- * Two queries rather than a join: the budget lines, then the (month, category)
- * pairs that actually have transactions, subtracted in memory. A left join with
- * a date-truncated ON clause reads worse and buys nothing at twelve months.
- */
-async function assumedNeedsByMonth(
-  userId: string,
-  year: number,
-  months: string[],
-) {
-  const lines = await db
-    .select({
-      month: budgetLines.month,
-      categoryId: budgetLines.categoryId,
-      plannedMinor: budgetLines.plannedMinor,
-    })
-    .from(budgetLines)
-    .innerJoin(categories, eq(categories.id, budgetLines.categoryId))
-    .where(
-      and(
-        eq(budgetLines.userId, userId),
-        eq(categories.assumeSpent, true),
-        eq(categories.archived, false),
-        eq(categories.groupKey, "needs"),
-        inArray(budgetLines.month, months),
-      ),
-    );
-
-  if (!lines.length) return new Map<string, number>();
-
-  const transacted = await db
-    .select({
-      month: sql<string>`to_char(${transactions.date}, 'YYYY-MM')`.as("month"),
-      categoryId: transactions.categoryId,
-    })
-    .from(transactions)
-    .where(
-      and(
-        eq(transactions.userId, userId),
-        gte(transactions.date, `${year}-01-01`),
-        lte(transactions.date, `${year}-12-31`),
-        inArray(
-          transactions.categoryId,
-          lines.map((l) => l.categoryId),
-        ),
-      ),
-    )
-    .groupBy(sql`to_char(${transactions.date}, 'YYYY-MM')`, transactions.categoryId);
-
-  const hasReal = new Set(transacted.map((t) => `${t.month}:${t.categoryId}`));
-
-  const out = new Map<string, number>();
-  for (const line of lines) {
-    if (hasReal.has(`${line.month}:${line.categoryId}`)) continue;
-    const planned = Number(line.plannedMinor ?? 0);
-    if (planned <= 0) continue;
-    out.set(line.month, (out.get(line.month) ?? 0) + planned);
-  }
-  return out;
-}
 
 export async function getYearSummary(userId: string, year: number) {
   const rows = await db
@@ -492,15 +451,10 @@ export async function getYearSummary(userId: string, year: number) {
     (_, i) => `${year}-${String(i + 1).padStart(2, "0")}`,
   );
 
-  // Assumed fixed costs, month by month, so the year agrees with what the month
-  // view shows. Same rule as `getMonthSummary`: a real transaction in that month
-  // wins, and the assumption only fills the silence.
-  const assumedByMonth = await assumedNeedsByMonth(userId, year, months);
-
   const byMonth = months.map((month) => {
     const pick = (g: GroupKey) =>
       Number(rows.find((r) => r.month === month && r.groupKey === g)?.total ?? 0);
-    const needs = pick("needs") + (assumedByMonth.get(month) ?? 0);
+    const needs = pick("needs");
     const wants = pick("wants");
     const investments = pick("investments");
     const income = pick("income");
@@ -796,15 +750,13 @@ export type TrendPoint = {
   month: string;
   budgetedMinor: number;
   spentMinor: number;
-  /** Spent came from assume-spent, not transactions. */
-  assumed: boolean;
 };
 
 /**
  * Budgeted against spent for one category over the last `count` months,
  * ending at `endMonth`. Follows the same rules as the month view: children's
  * spending rolls up, only children that don't budget separately roll their
- * budget up, and assume-spent fills a month with no transactions.
+ * budget up.
  *
  * Two grouped queries rather than `getMonthSummary` six times over.
  */
@@ -817,7 +769,7 @@ export async function getCategoryTrend(
   const months = Array.from({ length: count }, (_, i) => shiftMonth(endMonth, i - count + 1));
 
   const [self] = await db
-    .select({ assumeSpent: categories.assumeSpent })
+    .select({ id: categories.id })
     .from(categories)
     .where(and(eq(categories.id, categoryId), eq(categories.userId, userId)))
     .limit(1);
@@ -866,14 +818,7 @@ export async function getCategoryTrend(
 
   return months.map((month) => {
     const budgetedMinor = budgetBy.get(month) ?? 0;
-    const transacted = spentBy.get(month) ?? 0;
-    const assumed = self.assumeSpent && transacted === 0 && budgetedMinor > 0;
-    return {
-      month,
-      budgetedMinor,
-      spentMinor: assumed ? budgetedMinor : transacted,
-      assumed,
-    };
+    return { month, budgetedMinor, spentMinor: spentBy.get(month) ?? 0 };
   });
 }
 
@@ -926,8 +871,8 @@ export async function getNetWorthHistory(userId: string, count = 12) {
 
 /**
  * Budgeted against spent for a whole group, month by month — the group page's
- * trend. Uses the month summary for each month so roll-ups and assume-spent
- * behave exactly as they do everywhere else; six months is six light queries.
+ * trend. Uses the month summary for each month so roll-ups behave exactly as
+ * they do everywhere else; six months is six light queries.
  */
 export async function getGroupTrend(
   userId: string,

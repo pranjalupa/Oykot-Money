@@ -20,7 +20,7 @@ type Props = Omit<React.ComponentProps<"button">, "aria-label"> & {
   tone?: "default" | "active" | "danger";
   /**
    * A short visible word beside the icon, for actions an icon can't name on
-   * its own (Retire, Assume spent). `label` must start with it, so the
+   * its own (Retire, Pause). `label` must start with it, so the
    * accessible name contains what's on screen.
    */
   text?: string;

@@ -7,7 +7,6 @@ import {
   ArrowCounterClockwise,
   Lock,
   PencilSimple,
-  Repeat,
   Trash,
   Warning,
 } from "@phosphor-icons/react";
@@ -15,7 +14,6 @@ import { toast } from "sonner";
 import {
   updateCategory,
   setCategoryArchived,
-  setCategoryAssumeSpent,
   reorderCategories,
   deleteCategory,
   categoryImpact,
@@ -48,7 +46,6 @@ type Cat = {
   parentId: string | null;
   archived: boolean;
   budgetsSeparately: boolean;
-  assumeSpent: boolean;
   /** Set on the four locked loan categories (lib/loan-categories.ts). */
   systemKey: string | null;
 };
@@ -133,34 +130,6 @@ function CategoryRow({ cat }: { cat: Cat }) {
     });
   }
 
-  function toggleAssumeSpent() {
-    start(async () => {
-      const fd = new FormData();
-      fd.set("id", cat.id);
-      fd.set("assumeSpent", String(!cat.assumeSpent));
-      const res = await setCategoryAssumeSpent(fd);
-      if (!res.ok) {
-        toast.error(res.error);
-        return;
-      }
-      toast.success(
-        cat.assumeSpent
-          ? `${cat.name} counts only what you log`
-          : `${cat.name} counts as spent every month`,
-      );
-    });
-  }
-
-  // Needs only: assuming a Want was spent would quietly inflate discretionary
-  // spending, and assuming income arrived is just wrong. A child that rolls its
-  // plan up into its parent is excluded too — it has no plan of its own to
-  // assume, so it would add spending against a budget of zero and read as
-  // permanently overspent.
-  const canAssume =
-    cat.groupKey === "needs" &&
-    !cat.archived &&
-    (!cat.parentId || cat.budgetsSeparately);
-
   return (
     <SortableRow
       id={cat.id}
@@ -182,11 +151,6 @@ function CategoryRow({ cat }: { cat: Cat }) {
         {cat.archived && (
           <span className="ml-2 text-xs text-muted-foreground">retired</span>
         )}
-        {cat.assumeSpent && !cat.archived && (
-          <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
-            assumed
-          </span>
-        )}
       </span>
 
       {cat.systemKey ? (
@@ -200,22 +164,6 @@ function CategoryRow({ cat }: { cat: Cat }) {
         </span>
       ) : (
         <RowActions label={cat.name}>
-          {canAssume && (
-            <IconButton
-              // A word, not just ⟳: this one changes the safe-to-spend
-              // number, and an unlabelled icon hid it (UX audit F-04).
-              text="Assume spent"
-              label={`Assume spent: count ${cat.name}'s budget as spent in months you log nothing to it`}
-              tooltip
-              tone={cat.assumeSpent ? "active" : "default"}
-              onClick={toggleAssumeSpent}
-              disabled={pending}
-              aria-pressed={cat.assumeSpent}
-            >
-              <Repeat size={14} weight="bold" />
-            </IconButton>
-          )}
-
           <EditCategoryDialog cat={cat} />
 
           <IconButton

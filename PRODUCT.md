@@ -38,8 +38,8 @@ against these.
 
 1. **Plan against actual, like the sheet.** Every screen answers "what did I plan, what
    happened, what's left". The spreadsheet mental model is the product's backbone.
-2. **Assumed money never looks like real money.** Anything the app infers rather than
-   records (assumed-spent Needs) is visibly marked.
+2. **Inferred money never looks like real money.** Anything the app infers rather than
+   records (repeats set aside before they're due) is shown as such, never as spent.
 3. **History is never silently rewritten.** Deleting something with transactions either keeps
    the money (categories) or is refused (accounts, people). Archiving is always available.
 4. **Moving your own money isn't spending.** A transfer between two of your own accounts
@@ -63,7 +63,7 @@ The words the product uses, and what they mean. The code follows these too.
 | **Budgeted** | What you plan to spend (or receive) in a category this month. |
 | **Spent** / **Received** | What actually happened. "Received" is used for Income. |
 | **Remaining** | Budgeted minus Spent. Negative (shown in red) means over budget. |
-| **Assumed** | A Needs amount counted as spent without a transaction. See §6.6. |
+| **Set aside** | A repeat in Needs or Wants still due this month, kept out of safe to spend until it posts. See §6.6. |
 | **Target split** | The percentage of income you *aim* to put in each spend group (e.g. 50/30/20). |
 | **Account** | A place **your** money sits — bank, cash, UPI wallet, credit card. |
 | **Asset** | Something you own with a value you type in — SIP, PF, emergency fund. |
@@ -126,10 +126,11 @@ Answers "can I spend this today?"
 
 - **Today** — **safe to spend today** as one big number, and one bar for how much of the
   month's Needs + Wants budget is gone ("₹X of ₹Y spent on needs and wants · ₹Z left" —
-  named, because Monthly's "out" also counts Investments). Pace lives in the chart
-  below.
+  named, because Monthly's "out" also counts Investments). Under it, when any repeat is still
+  due: *"₹A set aside for Rent on the 28th"*, linking to Settings → Repeats. "Left" is already
+  net of that. Pace lives in the chart below.
 - **Spending pace** — a line of spending so far against a dashed line to your budget at
-  month's end. Assumed fixed costs count from day one. Daily's only chart: the transactions
+  month's end. Daily's only chart: the transactions
   below already break the month down day by day.
 - **Transactions** — everything logged this month (up to 300), each editable or deletable,
   with **search** (merchant, category, account, amount) and filters for type and category.
@@ -172,15 +173,12 @@ Answers "how did the year go?"
   - A **Total** row at the bottom.
   - Categories with nothing budgeted and nothing spent are hidden behind
     *Show N more with no budget or spending*.
-  - Assumed amounts show muted with a repeat mark.
   - Each row opens the category.
 - **Add category**, optionally as a sub-category of an existing one.
 
 ### 5.3 Category detail — `/category/[id]`
 The category's budgeted, spent and remaining for the month with a progress bar, then every
-transaction in it that month, with an **Add** button. If the whole figure is assumed, the empty
-list explains: *"The ₹X above is the budgeted amount, counted automatically. Add a
-transaction and the real figure replaces it."*
+transaction in it that month, with an **Add** button.
 
 The same **budget summary** and **Last six months** chart as the group pages.
 
@@ -222,7 +220,7 @@ until 2026-09-27: one name now, People, with **Person** as the Add tab (the anch
 - **Target split** — a pointer to the Monthly tab, where the split is now edited.
 - **Repeats every month** — every recurring rule, with pause/resume and remove.
 - **Categories** — all categories by group: drag to reorder, edit (name, group, parent,
-  icon), assume-spent toggle (Needs only), retire/restore, delete — each a word beside its
+  icon), retire/restore, delete — each a word beside its
   icon, not an icon alone. Retired ones are hidden
   behind a toggle.
 - **Money and people** — links to Money and its People section.
@@ -354,7 +352,7 @@ start-from-the-person flow follows Khatabook ("You gave / You got") and Splitwis
 Tick *Repeat every month* when adding a transaction. From then on:
 - It's added **on its day**, the next time you open the app — there's no background
   scheduler, and nothing posts ahead of its date (until 2026-09-28 the whole month posted on
-  the first visit). To reserve a fixed cost before it's paid, use *Assume spent* (§6.6).
+  the first visit). Until it's due, it's set aside from safe to spend (§6.6).
 - **Only the current month** is filled: browsing back won't invent history, browsing forward
   won't pre-spend.
 - It lands on the same day each month; a day past the month's end is moved to the last day
@@ -367,19 +365,15 @@ Tick *Repeat every month* when adding a transaction. From then on:
 - Not offered on the Person tab: Lent out vs Paid back depends on the balance at the time.
 - A repeat never posts into an archived account or person, or a retired category.
 
-### 6.6 Assume spent (fixed Needs)
-For costs you know in advance — rent, an EMI, a gym membership.
-- Switch it on per category in **Settings → Categories** (*Assume spent*).
-- The category's budgeted amount counts as **spent**, with no transaction needed.
-- A real transaction that month **replaces** the assumption rather than adding to it:
-  rent budgeted at ₹15,000 that actually goes out at ₹15,400 shows ₹15,400.
-- **Needs only.** Not available on a sub-category that rolls its budget into its parent,
-  since it has no budget of its own.
-- Nothing is written to your transactions. Turning it off restores exactly what you logged.
-- Shown muted with a repeat mark, and affects Daily's safe-to-spend and the Yearly totals.
-- Best kept for **fixed** amounts. Turning it on for groceries shows them fully spent on
-  the 1st of the month, which makes safe-to-spend too pessimistic early on and hides real
-  overspending.
+### 6.6 Repeats set aside before they're due
+Replaced *Assume spent* (a per-category switch) on 2026-09-28: the two did the same job for
+fixed costs and users couldn't tell which to use. Nobody had Assume spent on when it went.
+- On the current month, **safe to spend** subtracts every active repeat in Needs or Wants
+  that is still due later this month (not yet posted, day after today).
+- Nothing is written to transactions until the day comes (§6.5); spent figures stay real.
+- Daily says so under the hero, with the amount and what it's for, linking to the repeats.
+- The Add form's repeat hint and Settings → Repeats both say it in one sentence.
+- Only repeats count. A bill that varies (electricity) is logged when paid.
 
 ### 6.7 Target split
 The split is a goal; the budget is what you actually set. The app shows both so you can see
@@ -432,13 +426,13 @@ relabels amounts; nothing is converted.**
 
 | Figure | How it's worked out |
 |---|---|
-| **Spent** (category) | Sum of the month's transactions in the category, **or** its budget if assumed and nothing was logged. A parent includes its sub-categories. |
+| **Spent** (category) | Sum of the month's transactions in the category. A parent includes its sub-categories. |
 | **Budgeted** (parent) | Its own amount, plus sub-categories that don't budget separately. |
 | **Remaining** | Budgeted − Spent. For Income, receiving more than planned is good. |
 | **Saved this month** | Income − (Needs + Wants + Investments). |
 | **Planned % / Actual %** | A group's budgeted (or spent) amount as a share of budgeted (or received) income. |
 | **Left in plan** (Daily) | (Needs + Wants budgeted) − (Needs + Wants spent). Investments excluded — that money is meant to leave. |
-| **Safe to spend / day** | Left in plan ÷ days left in the month, counting today. For a past or future month, the whole month's length. Zero once the plan is used up. |
+| **Safe to spend / day** | (Left in plan − repeats set aside, §6.6) ÷ days left in the month, counting today. For a past or future month, the whole month's length. Zero once the plan is used up. |
 | **Spending account balance** | Opening balance + money in − money out, including transfers. |
 | **Person balance** | The sum of transfers to and from them. Positive = they owe you. |
 | **Asset balance** | The value you last entered. No returns or cost basis. |
@@ -452,7 +446,7 @@ Eleven tables, all per user.
 
 | Table | Holds |
 |---|---|
-| `categories` | Name, group, optional parent, icon, order, retired, budgets-separately, assume-spent |
+| `categories` | Name, group, optional parent, icon, order, retired, budgets-separately (assume_spent: unused column, drop next migration) |
 | `budget_lines` | One budgeted amount per category per month |
 | `group_targets` | Target split — one default and optional per-month overrides |
 | `transactions` | Date, amount, type, account, destination, category, merchant, note, source (manual or recurring) |
