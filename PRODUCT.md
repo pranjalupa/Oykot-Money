@@ -481,8 +481,9 @@ tables as a second layer; anonymous access is revoked.
 ## 10. Design
 
 **Mobile first.** On phones (below 640px) there are no tables and nothing depends on hover:
-dialogs open as bottom sheets; category tables are two-line rows whose budget opens a sheet with
-a large number field; transactions sit under day headers and a tap opens Edit / Delete; charts are
+dialogs open as bottom sheets; category tables are two-line rows in two columns (name over spent on the left, left-to-spend
+over the budget on the right, one figure per line) whose budget opens a sheet with a large
+number field; transactions sit under day headers and a tap opens Edit / Delete; charts are
 170px tall with the tooltip pinned to the top, and their numbers open from *See all numbers*;
 row actions fold behind a ⋯ button. From 640px up the desktop layouts (tables, date column,
 inline icons, Chart / Table switch) are unchanged.

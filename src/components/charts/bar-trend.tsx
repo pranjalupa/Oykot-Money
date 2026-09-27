@@ -79,9 +79,19 @@ export function BarTrend({
             y={reference}
             stroke="var(--muted-foreground)"
             strokeDasharray="4 4"
+            // A halo in the card's colour: the label sits over the tallest
+            // bars, and without one it read as part of them.
             label={
               referenceLabel
-                ? { value: `${referenceLabel} ${formatCompact(reference, currency)}`, position: "insideTopRight", fill: "var(--muted-foreground)", fontSize: 11 }
+                ? {
+                    value: `${referenceLabel} ${formatCompact(reference, currency)}`,
+                    position: "insideTopRight",
+                    fill: "var(--muted-foreground)",
+                    fontSize: 11,
+                    stroke: "var(--card)",
+                    strokeWidth: 4,
+                    paintOrder: "stroke",
+                  }
                 : undefined
             }
           />

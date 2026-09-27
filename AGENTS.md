@@ -132,6 +132,11 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   Teams and sharing are still out — don't build toward them without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
+- 2026-09-27 — **Phone category rows rethought, at Pranjal's call ("too cramped").** Two columns,
+  one figure per line: name / "₹3,949 spent" on the left, "₹551 left" / "Budget ₹4,500 ✎" on
+  the right; Total follows the same shape. Icons stay (he likes them) at 40px. The budget line
+  is muted again with no dashed underline: brightening it (F-15) made it compete with "left".
+  The chart's budget label got a card-coloured halo, since it sits over the tallest bars.
 - 2026-09-27 — **UX audit's cosmetic findings fixed** (F-13 to F-16), so all 16 are done.
   Category delete moved from the header to a labelled "Delete category" at the page foot.
   Settings' internal links use → rather than the external-link icon. Budget figures on
