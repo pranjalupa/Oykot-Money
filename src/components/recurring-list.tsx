@@ -57,7 +57,9 @@ export function RecurringList({ rules }: { rules: RecurringRow[] }) {
   }
 
   return (
-    <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border">
+    // Phones: edge to edge in the card, like Home's lists. Inset and boxed,
+    // it left names ~110px at 375px.
+    <ul className="-mx-5 divide-y divide-border overflow-hidden border-y border-border sm:mx-0 sm:rounded-lg sm:border">
       {rules.map((r) => (
         <Row key={r.id} rule={r} />
       ))}
@@ -66,7 +68,7 @@ export function RecurringList({ rules }: { rules: RecurringRow[] }) {
 }
 
 /**
- * One repeat: name over "30th of each month · account" on the left, the amount
+ * One repeat: name over "30th · account" on the left, the amount
  * alone on the right. Inside Settings' padded card there's less width than on
  * Home, and an account column there cut names to "G…" at 375px. The actions are
  * words (Edit · Pause · Remove), folded behind "⋯" on phones. As icons beside
@@ -102,7 +104,7 @@ function Row({ rule }: { rule: RecurringRow }) {
   return (
     <li
       className={cn(
-        "flex flex-wrap items-center gap-3 bg-card px-3 py-3.5 sm:py-2.5",
+        "flex flex-wrap items-center gap-3 bg-card px-5 py-3.5 sm:px-3 sm:py-2.5",
         pending && "opacity-40",
       )}
     >
@@ -124,7 +126,8 @@ function Row({ rule }: { rule: RecurringRow }) {
           )}
         </p>
         <p className="mt-1 truncate text-[13px] text-muted-foreground sm:mt-0 sm:text-xs">
-          {ordinal(rule.dayOfMonth)} of each month · {rule.accountName}
+          {/* The section says "every month"; the row only needs which day. */}
+          {ordinal(rule.dayOfMonth)} · {rule.accountName}
         </p>
       </div>
 
