@@ -132,6 +132,15 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   Teams and sharing are still out — don't build toward them without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
+- 2026-09-28 — **Razorpay works end to end in test mode.** Plans: monthly `plan_ThCcb8IkoqE6rV`
+  (₹99), yearly `plan_ThCdSzLJyuAggM` (₹799). Webhook → `money.oykotstudio.com/api/webhooks/razorpay`,
+  7 events. Six env vars in Vercel Production (two as Secret). Test account
+  `pranjalupa+test@gmail.com` bought yearly inside its trial: Razorpay took the **₹5
+  authorisation** (refunded; it's how a future `start_at` sets up the mandate), webhook set our
+  row to `trialing`, Razorpay shows *Authenticated*, next due = trial end. Pranjal's own row
+  stays `complimentary` — never test payments on it.
+  - Open: the ₹5 isn't explained on our side before checkout; SMS names the merchant
+    "Designabit" (the Razorpay account's billing label), not Oykot Money.
 - 2026-09-28 — **Domain: money.oykotstudio.com**, before payments so webhooks, Razorpay's
   website check and auth links all use the final address. GoDaddy DNS (`domaincontrol.com`):
   one CNAME `money` → `f138ba55d3b3b4ee.vercel-dns-017.com` (Vercel's per-project value);
@@ -653,10 +662,9 @@ Annotation tool (owner-only) on again since 2026-09-18 (`ANNOTATIONS_ENABLED`). 
 live since 2026-09-14.
 **Not built yet:** statement import or any automated entry (deliberately deferred; see the
 `merchant_rules` note above).
-Landing page live at `/` for signed-out visitors (2026-09-24). Payments built in test mode
-(monthly, yearly, lifetime) with cancel in Settings; untested end to end until Pranjal
-creates the provider accounts (`docs/payments-setup.md`).
-**Next:** provider accounts and a real test payment per currency. Turn on
+Landing page live at `/` for signed-out visitors (2026-09-24). Payments: **Razorpay tested end
+to end in test mode (2026-09-28)**; Polar not set up yet (`docs/payments-setup.md`).
+**Next:** Polar sandbox, then live keys and a real payment per currency. Turn on
 `ACCESS_ENFORCED` only after that. Legal pages are drafts.
 **Lint, typecheck and build:** clean.
 
