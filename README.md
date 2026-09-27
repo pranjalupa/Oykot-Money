@@ -1,7 +1,7 @@
 # Oykot Money
 
 Budgeting on the 50/30/20 idea — set a budget for each category every month, log what
-actually happens, and see what's left. Live at https://oykot-money.vercel.app.
+actually happens, and see what's left. Live at https://money.oykotstudio.com.
 
 - **What it does** — [`PRODUCT.md`](PRODUCT.md): screens, rules, calculations, known gaps,
   and the plan for going paid.

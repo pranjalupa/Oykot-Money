@@ -132,6 +132,12 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   Teams and sharing are still out — don't build toward them without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
+- 2026-09-28 — **Domain: money.oykotstudio.com**, before payments so webhooks, Razorpay's
+  website check and auth links all use the final address. GoDaddy DNS (`domaincontrol.com`):
+  one CNAME `money` → `f138ba55d3b3b4ee.vercel-dns-017.com` (Vercel's per-project value);
+  root `oykotstudio.com` is parked and untouched. Nothing in `src/` names a host (auth
+  builds URLs from the request), so only docs changed. `oykot-money.vercel.app` still works.
+  Supabase URL Configuration needs the new Site URL + `https://money.oykotstudio.com/**`.
 - 2026-09-28 — **Payments go live Razorpay-first**, sandbox/test mode, at Pranjal's call.
   `docs/payments-setup.md` was missing `subscription.authenticated` from the Razorpay
   webhook events, though the handler maps it to `trialing`: it's the day-6 Autopay approval,
@@ -639,7 +645,7 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   first chart rebuild) archived to `docs/decisions/2026-09.md`.
 
 ## Status
-Fully workable and deployed at https://oykot-money.vercel.app. Home (Daily/Monthly/Yearly
+Fully workable and deployed at https://money.oykotstudio.com (also oykot-money.vercel.app). Home (Daily/Monthly/Yearly
 tabs) / group pages / category detail / Money / People / Settings all read and write against
 Supabase, with auth and per-user isolation. Archiving, deleting, drag reordering and the
 icon grid are wired everywhere they apply. Six charts total, all plain Recharts forms.

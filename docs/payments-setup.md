@@ -59,7 +59,7 @@ only (the trial banner and pricing page). There's no email yet.
 3. **API keys** — Settings → API Keys → *Generate Test Key*. You get a key id
    and a secret; the secret is shown once.
 4. **Webhook** — Settings → Webhooks → Add:
-   - URL: `https://oykot-money.vercel.app/api/webhooks/razorpay`
+   - URL: `https://money.oykotstudio.com/api/webhooks/razorpay`
    - Secret: invent a long random string (this is *yours*, not Razorpay's).
    - Events: `subscription.authenticated`, `subscription.activated`,
      `subscription.charged`, `subscription.pending`, `subscription.halted`,
@@ -103,7 +103,7 @@ once in sandbox now, once in production when you go live.
    `checkouts:write`, `customers:read`, `subscriptions:read` and
    `webhooks:read`. Copy it once; it isn't shown again.
 4. **Webhook** — Settings → Webhooks → Add Endpoint:
-   - URL: `https://oykot-money.vercel.app/api/webhooks/polar`
+   - URL: `https://money.oykotstudio.com/api/webhooks/polar`
    - Format: **Raw** (not Discord or Slack)
    - Events: `subscription.created`, `subscription.active`,
      `subscription.updated`, `subscription.canceled`, `subscription.uncanceled`,
@@ -132,7 +132,7 @@ POLAR_PRODUCT_MONTHLY=…
 POLAR_PRODUCT_YEARLY=…
 POLAR_SERVER=sandbox                # "production" only when going live
 
-NEXT_PUBLIC_SITE_URL=https://oykot-money.vercel.app
+NEXT_PUBLIC_SITE_URL=https://money.oykotstudio.com
 ```
 
 `ACCESS_ENFORCED` stays **off** until all of this works. Turning it on before

@@ -22,7 +22,7 @@ plan against actual, category by category — but adds what a sheet can't: a dai
 
 | | |
 |---|---|
-| **Live at** | https://oykot-money.vercel.app |
+| **Live at** | https://money.oykotstudio.com (oykot-money.vercel.app still works) |
 | **Who it's for** | Pranjal first; open signup means anyone can create an account |
 | **Currency** | One per user, chosen at signup — ₹, $, €, £, A$, CA$, S$ or AED. Changeable in Settings; amounts are never converted |
 | **Dates** | In the user's regional format ("3 Sept" / "Sep 3"), and "today" in their own timezone |
