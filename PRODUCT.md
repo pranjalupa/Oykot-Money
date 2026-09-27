@@ -221,8 +221,8 @@ until 2026-09-27: one name now, People, with **Person** as the Add tab (the anch
 - **Repeats every month** — every recurring rule, with pause/resume and remove.
 - **Categories** — all categories by group: drag to reorder, edit (name, group, parent,
   icon), retire/restore, delete — each a word beside its
-  icon, not an icon alone. Retired ones are hidden
-  behind a toggle.
+  icon, not an icon alone. Retired ones are hidden behind a toggle, which opens
+  them in their own *Retired* section below the groups, each marked with its old group.
 - **Money and people** — links to Money and its People section.
 - **Billing** — trial or plan status, a link to pricing, and a note that payments aren't live.
 - **Your data** — download transactions (CSV) or everything (JSON), and **delete your account**

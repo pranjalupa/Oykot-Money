@@ -52,13 +52,16 @@ type Cat = {
 
 export function CategoryManager({ categories }: { categories: Cat[] }) {
   const [showArchived, setShowArchived] = useState(false);
-  const visible = categories.filter((c) => showArchived || !c.archived);
-  const archivedCount = categories.filter((c) => c.archived).length;
+  // Retired ones get their own section under the toggle rather than rejoining
+  // their groups: mixed back in, they read as live categories at a glance.
+  const active = categories.filter((c) => !c.archived);
+  const retired = categories.filter((c) => c.archived);
+  const archivedCount = retired.length;
 
   return (
     <div className="flex flex-col gap-4">
       {GROUP_KEYS.map((g) => {
-        const inGroup = visible.filter((c) => c.groupKey === g);
+        const inGroup = active.filter((c) => c.groupKey === g);
         if (!inGroup.length) return null;
 
         return (
@@ -81,6 +84,18 @@ export function CategoryManager({ categories }: { categories: Cat[] }) {
             ? "Hide retired categories"
             : `Show ${archivedCount} retired categor${archivedCount === 1 ? "y" : "ies"}`}
         </button>
+      )}
+
+      {showArchived && archivedCount > 0 && (
+        <div>
+          <p className="mb-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+            Retired
+          </p>
+          <p className="mb-2 text-xs text-muted-foreground">
+            Not offered for new transactions. Past ones still count. Restore to use one again.
+          </p>
+          <SortableGroup cats={retired} />
+        </div>
       )}
     </div>
   );
@@ -148,8 +163,10 @@ function CategoryRow({ cat }: { cat: Cat }) {
       <span className="min-w-0 flex-1 truncate text-sm">
         {cat.parentId && <span aria-hidden className="text-muted-foreground">↳ </span>}
         {cat.name}
+        {/* In the Retired section the heading says retired; the row says
+            which group it came from, since no group heading does. */}
         {cat.archived && (
-          <span className="ml-2 text-xs text-muted-foreground">retired</span>
+          <span className="ml-2 text-xs text-muted-foreground">{GROUP_META[cat.groupKey].label}</span>
         )}
       </span>
 
