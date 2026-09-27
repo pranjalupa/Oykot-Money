@@ -136,8 +136,8 @@ export default async function SettingsPage() {
       <section id="repeats" className="scroll-mt-20 rounded-xl border border-border bg-card p-5">
         <h2 className="font-heading text-lg font-bold">Repeats every month</h2>
         <p className="mt-0.5 mb-4 text-sm text-muted-foreground">
-          Added automatically when you open the month. Pausing stops future
-          ones; removing a repeat leaves the transactions it already made.
+          Each is added on its day, the next time you open the app. Pausing
+          stops future ones; removing one keeps what it already added.
         </p>
         <RecurringList rules={recurring} />
       </section>

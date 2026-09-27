@@ -496,6 +496,7 @@ export const transactions = pgTable(
  *
  * Only ever generates for the current month. Browsing back to March shouldn't
  * invent transactions that never happened.
+ * And only once the rule's day has arrived, never ahead of it.
  */
 export const recurringRules = pgTable(
   "recurring_rules",

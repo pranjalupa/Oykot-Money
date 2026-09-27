@@ -352,7 +352,9 @@ start-from-the-person flow follows Khatabook ("You gave / You got") and Splitwis
 
 ### 6.5 Recurring transactions
 Tick *Repeat every month* when adding a transaction. From then on:
-- It's added **when you open the current month** — there's no background scheduler.
+- It's added **on its day**, the next time you open the app — there's no background
+  scheduler, and nothing posts ahead of its date (until 2026-09-28 the whole month posted on
+  the first visit). To reserve a fixed cost before it's paid, use *Assume spent* (§6.6).
 - **Only the current month** is filled: browsing back won't invent history, browsing forward
   won't pre-spend.
 - It lands on the same day each month; a day past the month's end is moved to the last day

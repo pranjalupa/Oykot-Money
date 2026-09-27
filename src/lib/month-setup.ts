@@ -10,7 +10,7 @@ import {
   transactions,
 } from "@/db/schema";
 import { daysInMonth, isValidMonth } from "@/lib/targets";
-import { currentMonthIn } from "@/lib/dates";
+import { currentMonthIn, todayIn } from "@/lib/dates";
 import { getUserPrefs } from "@/lib/auth";
 
 /**
@@ -88,10 +88,16 @@ export async function ensureMonthPlan(userId: string, month: string) {
  * Deliberately only fills the CURRENT month: browsing back to March shouldn't
  * invent transactions that never happened, and browsing forward shouldn't
  * pre-spend money you haven't spent.
+ *
+ * And only once a rule's day has come. It used to post the whole month on the
+ * first visit, so a bill due on the 30th sat in the list from the 1st, dated
+ * ahead and counted as spent (Pranjal's call, 2026-09-28). To reserve a fixed
+ * cost before it's paid, a category has Assume spent.
  */
 export async function ensureRecurringForMonth(userId: string, month: string) {
   const { timeZone } = await getUserPrefs();
   if (month !== currentMonthIn(timeZone)) return 0;
+  const today = Number(todayIn(timeZone).slice(8, 10));
 
   const due = await db
     .select()
@@ -116,6 +122,8 @@ export async function ensureRecurringForMonth(userId: string, month: string) {
   for (const rule of due) {
     // The 31st still lands in February — clamp rather than skip the month.
     const day = Math.min(Math.max(rule.dayOfMonth, 1), lastDay);
+    // Not due yet: leave it unclaimed, and a later visit on or after its day posts it.
+    if (day > today) continue;
     const date = `${month}-${String(day).padStart(2, "0")}`;
 
     // Claim the month first. If another concurrent request already moved it,

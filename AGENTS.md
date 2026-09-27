@@ -145,8 +145,10 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
     repeats lived, with nothing pointing there.
   - Quick-action hints wrap instead of truncating (they cut off at 375px).
   - Demo data now has seven repeats (`scripts/demo-data.mts repeats` adds them alone).
-  - **Open question for Pranjal:** repeats post the whole month on first open, so a bill
-    due on the 30th appears (and counts as spent) days early.
+  - **Repeats post on their day, never ahead** (Pranjal's call). They used to post the whole
+    month on the first visit: a bill due on the 30th sat in the list from the 1st, counted as
+    spent. A rule not yet due stays unclaimed (`lastRunMonth` untouched) and posts on a later
+    visit. Assume spent is the way to reserve a fixed cost early.
 - 2026-09-27 — **Phone category rows rethought, at Pranjal's call ("too cramped").** Two columns,
   one figure per line: name / "₹3,949 spent" on the left, "₹551 left" / "Budget ₹4,500 ✎" on
   the right; Total follows the same shape. Icons stay (he likes them) at 40px. The budget line
