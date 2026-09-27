@@ -418,7 +418,10 @@ export function TransactionFields({
         />
       </div>
 
-      {showRepeat && (
+      {/* Not for money with a person: whether it's Lent out or Paid back
+          depends on their balance at the time, and a repeat would freeze
+          this month's answer into every month after. */}
+      {showRepeat && tab !== "person" && (
         <label className="flex items-start gap-2.5 rounded-md bg-muted/60 p-3 text-sm">
           <input type="checkbox" name="recurring" className="mt-0.5 size-4 accent-primary" />
           <span>

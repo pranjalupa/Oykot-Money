@@ -10,7 +10,7 @@ import { Target, HandCoins } from "@phosphor-icons/react/dist/ssr";
  * now visible instead of a title attribute nobody on a phone can see.
  */
 const ACTIONS = [
-  { href: "/needs", label: "Budget", icon: Target, hint: "Set this month's plan" },
+  { href: "/needs", label: "Budget", icon: Target, hint: "Plan this month" },
   { href: "/money#settlements", label: "People", icon: HandCoins, hint: "Who owes whom" },
 ] as const;
 
@@ -28,7 +28,8 @@ export function QuickActions() {
           </span>
           <span className="min-w-0">
             <span className="block text-sm font-medium">{label}</span>
-            <span className="block truncate text-xs text-muted-foreground">{hint}</span>
+            {/* Wraps rather than truncates: at 375px a tile has ~90px for it. */}
+            <span className="block text-xs leading-snug text-muted-foreground">{hint}</span>
           </span>
         </Link>
       ))}

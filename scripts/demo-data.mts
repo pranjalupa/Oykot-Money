@@ -4,13 +4,15 @@
  *
  *   npx tsx scripts/demo-data.mts seed   [email]
  *   npx tsx scripts/demo-data.mts remove [email]
+ *   npx tsx scripts/demo-data.mts repeats [email]   (just the repeats, onto a seeded account)
  *
  * Covers the last 12 months up to today: this month's budget and income,
  * everyday spending in the starter categories, two people (a loan you made and
  * one you took, both through the locked categories), two assets and net worth
  * history. Everything is tagged so `remove` takes out exactly that:
  * transactions source='demo', budget lines / people note='demo', assets named
- * "(demo)", and snapshots only for months that had none.
+ * "(demo)", snapshots only for months that had none, repeats with note='demo'
+ * (and anything they generated: source='recurring', note='demo').
  */
 import { readFileSync } from "node:fs";
 import postgres from "postgres";
@@ -35,6 +37,35 @@ const HISTORY = MONTHS.slice(0, -1);
 const lastDay = (m: string) => new Date(Date.UTC(+m.slice(0, 4), +m.slice(5, 7), 0)).getUTCDate();
 const date = (m: string, d: number) => `${m}-${String(Math.min(d, lastDay(m))).padStart(2, "0")}`;
 
+/**
+ * Monthly repeats, the way the Add form's "Repeat every month" saves them.
+ * Most are marked as already run this month, since the seed already has those
+ * payments. Cloud storage hasn't run yet and is due on the 30th, so the next
+ * page load shows generation happening; the gym is paused.
+ */
+async function seedRepeats(uid: string) {
+  const [{ n }] = await sql`select count(*)::int n from recurring_rules where user_id = ${uid} and note = ${TAG}`;
+  if (n) throw new Error(`Demo repeats are already there (${n}).`);
+  const [bank] = await sql`select id from accounts where user_id = ${uid} and kind = 'spending' and not archived and subtype = 'bank' order by sort_order limit 1`;
+  const cat = async (re: string, group: string) =>
+    (await sql`select id from categories where user_id = ${uid} and group_key = ${group} and not archived and system_key is null and name ~* ${re} limit 1`)[0]?.id ?? null;
+  const last = addMonths(thisMonth, -1);
+  const rules = [
+    { merchant: "Employer", dir: "inflow", amount: 8000000, day: 1, cat: await cat("^salary$", "income"), run: thisMonth, active: true },
+    { merchant: "Landlord", dir: "outflow", amount: 2200000, day: 1, cat: await cat("^rent$", "needs"), run: thisMonth, active: true },
+    { merchant: "SIP — Nifty 50 index", dir: "outflow", amount: 1000000, day: 5, cat: await cat("^investments$", "investments"), run: thisMonth, active: true },
+    { merchant: "Electricity + Wi-Fi", dir: "outflow", amount: 400000, day: 8, cat: await cat("bills|utilit", "needs"), run: thisMonth, active: true },
+    { merchant: "Netflix + Spotify", dir: "outflow", amount: 150000, day: 12, cat: await cat("subscri", "wants"), run: thisMonth, active: true },
+    { merchant: "Cloud storage", dir: "outflow", amount: 13000, day: 30, cat: await cat("subscri", "wants"), run: last, active: true },
+    { merchant: "Gym membership", dir: "outflow", amount: 150000, day: 3, cat: await cat("health", "needs"), run: last, active: false },
+  ];
+  for (const r of rules) {
+    await sql`insert into recurring_rules (user_id, amount_minor, direction, account_id, category_id, merchant, note, day_of_month, active, last_run_month)
+              values (${uid}, ${r.amount}, ${r.dir}, ${bank.id}, ${r.cat}, ${r.merchant}, ${TAG}, ${r.day}, ${r.active}, ${r.run})`;
+  }
+  return rules.length;
+}
+
 try {
   const [user] = await sql`select id from auth.users where lower(email) = ${email.toLowerCase()}`;
   if (!user) throw new Error(`No account for ${email}`);
@@ -42,15 +73,18 @@ try {
 
   if (mode === "remove") {
     const out = await sql.begin(async (tx) => {
-      const t = await tx`delete from transactions where user_id = ${uid} and source = ${TAG} returning id`;
+      const t = await tx`delete from transactions where user_id = ${uid} and (source = ${TAG} or (source = 'recurring' and note = ${TAG})) returning id`;
+      const r = await tx`delete from recurring_rules where user_id = ${uid} and note = ${TAG} returning id`;
       const b = await tx`delete from budget_lines where user_id = ${uid} and note = ${TAG} returning id`;
       const s = await tx`delete from net_worth_snapshots where user_id = ${uid} and month = any(${HISTORY}) returning id`;
       const l = await tx`delete from accounts where user_id = ${uid} and person_id in (select id from people where user_id = ${uid} and note = ${TAG}) returning id`;
       const p = await tx`delete from people where user_id = ${uid} and note = ${TAG} returning id`;
       const a = await tx`delete from accounts where user_id = ${uid} and kind = 'asset' and name like ${"%(" + TAG + ")"} returning id`;
-      return { transactions: t.length, budgetLines: b.length, snapshots: s.length, people: p.length, ledgers: l.length, assets: a.length };
+      return { transactions: t.length, repeats: r.length, budgetLines: b.length, snapshots: s.length, people: p.length, ledgers: l.length, assets: a.length };
     });
     console.log({ removed: out });
+  } else if (mode === "repeats") {
+    console.log({ added: { repeats: await seedRepeats(uid) } });
   } else if (mode === "seed") {
     const [{ n: already }] = await sql`select count(*)::int n from transactions where user_id = ${uid} and source = ${TAG}`;
     if (already) throw new Error(`Demo data is already there (${already} transactions). Run remove first.`);
@@ -196,13 +230,15 @@ try {
       snapshots += r.length;
     }
 
+    const repeats = await seedRepeats(uid);
+
     console.log({
-      added: { transactions: txs.filter((t) => t.date <= today).length, budgetLines, people: 2, assets: 2, snapshots },
+      added: { transactions: txs.filter((t) => t.date <= today).length, repeats, budgetLines, people: 2, assets: 2, snapshots },
       months: `${MONTHS[0]} → ${today}`,
       remove: "npx tsx scripts/demo-data.mts remove",
     });
   } else {
-    throw new Error("Use: seed | remove");
+    throw new Error("Use: seed | remove | repeats");
   }
 } catch (e) {
   console.error((e as Error).message);

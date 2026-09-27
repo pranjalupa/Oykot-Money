@@ -11,8 +11,9 @@ import type { TransactionRow } from "@/lib/budget";
 /**
  * Transactions, newest first.
  *
- * Phones: grouped under day headers, each row just icon · name · amount, and
- * tapping a row opens its sheet (details, Edit, Delete).
+ * Phones: grouped under day headers, each row in two columns like the category
+ * rows, one fact per line: name over category on the left, amount over account
+ * on the right. Tapping a row opens its sheet (details, Edit, Delete).
  * From sm up: no headers — the date is its own column before the amount, with
  * Edit and Delete inline.
  */
@@ -55,6 +56,9 @@ export function TransactionList({
           : t.counterAccountId
             ? `${t.categoryName ?? "Uncategorised"} · ${route}`
             : `${t.categoryName ?? "Uncategorised"} · ${t.accountName}`;
+        // Phones split the detail line across the two columns.
+        const phoneLeft = t.categoryName ?? (isTransfer ? "Move" : "Uncategorised");
+        const phoneRight = t.counterAccountId ? route : t.accountName;
         const newDay = i === 0 || transactions[i - 1].date !== t.date;
 
         return [
@@ -68,22 +72,22 @@ export function TransactionList({
           ),
           <li
             key={t.id}
-            className="group relative flex min-h-[64px] items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/50 active:bg-muted/60 sm:min-h-0 sm:gap-4 sm:active:bg-transparent"
+            className="group relative flex min-h-[72px] items-center gap-3 px-4 py-4 transition-colors hover:bg-muted/50 active:bg-muted/60 sm:min-h-0 sm:gap-4 sm:py-3 sm:active:bg-transparent"
           >
             {isTransfer ? (
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground sm:size-8 sm:rounded-md">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground sm:size-8 sm:rounded-md">
                 <ArrowsLeftRight size={16} weight="duotone" />
               </span>
             ) : (
               <CategoryIcon
                 name={t.categoryIcon}
-                className="size-9 shrink-0 rounded-lg bg-muted text-muted-foreground sm:size-8 sm:rounded-md"
+                className="size-10 shrink-0 rounded-xl bg-muted text-muted-foreground sm:size-8 sm:rounded-md"
               />
             )}
 
             <div className="min-w-0 flex-1">
-              <p className="flex items-center gap-1.5 truncate text-sm font-medium">
-                {label}
+              <p className="flex items-center gap-1.5 text-[15px] font-medium sm:text-sm">
+                <span className="truncate">{label}</span>
                 {t.source === "recurring" && (
                   <Repeat
                     size={12}
@@ -93,7 +97,10 @@ export function TransactionList({
                   />
                 )}
               </p>
-              <p className="truncate text-xs text-muted-foreground">{detail}</p>
+              <p className="mt-1 truncate text-[13px] text-muted-foreground sm:mt-0 sm:text-xs">
+                <span className="sm:hidden">{phoneLeft}</span>
+                <span className="max-sm:hidden">{detail}</span>
+              </p>
             </div>
 
             {/* Desktop columns: date, amount, actions — fixed widths so they line up. */}
@@ -109,11 +116,14 @@ export function TransactionList({
             {/* A move has no sign: the route and ⇄ already say which way, and
                 a minus read as spending money that only changed pockets
                 (UX audit F-11). */}
-            <Money
-              minor={isTransfer || t.direction === "inflow" ? t.amountMinor : -t.amountMinor}
-              tone={isTransfer ? "muted" : t.direction === "inflow" ? "positive" : "default"}
-              className="shrink-0 text-right text-sm font-semibold sm:w-28"
-            />
+            <div className="flex max-w-[45%] shrink-0 flex-col items-end sm:w-28 sm:max-w-none">
+              <Money
+                minor={isTransfer || t.direction === "inflow" ? t.amountMinor : -t.amountMinor}
+                tone={isTransfer ? "muted" : t.direction === "inflow" ? "positive" : "default"}
+                className="text-right text-[15px] font-semibold sm:text-sm"
+              />
+              <span className="mt-1 max-w-full truncate text-[13px] text-muted-foreground sm:hidden">{phoneRight}</span>
+            </div>
 
             <div className="hidden shrink-0 items-center gap-0.5 pl-1 sm:flex">
               <EditTransactionDialog transaction={t} accounts={accounts} categories={categories} />

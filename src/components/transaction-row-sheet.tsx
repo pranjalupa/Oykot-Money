@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { PencilSimple, Trash } from "@phosphor-icons/react";
+import Link from "next/link";
+import { ArrowRight, PencilSimple, Repeat, Trash } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Money } from "@/components/money";
@@ -59,6 +60,18 @@ export function TransactionRowSheet({
               <LocalDate date={t.date} options={{ weekday: "long", day: "numeric", month: "long" }} />
             </p>
             <p className="mt-0.5 text-sm text-muted-foreground">{detail}</p>
+            {/* Repeats only lived in Settings, with nothing pointing there. */}
+            {t.source === "recurring" && (
+              <Link
+                href="/settings#repeats"
+                className="mt-3 flex min-h-11 items-center gap-2 text-sm font-medium"
+                onClick={() => setSheet(false)}
+              >
+                <Repeat size={16} weight="bold" className="text-muted-foreground" />
+                Added by a monthly repeat
+                <ArrowRight size={14} weight="bold" className="ml-auto text-muted-foreground" />
+              </Link>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-2">
             <Button

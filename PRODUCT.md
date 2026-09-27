@@ -358,14 +358,16 @@ Tick *Repeat every month* when adding a transaction. From then on:
 - It lands on the same day each month; a day past the month's end is moved to the last day
   (the 31st → 28/29 February).
 - It's **never added twice**, even if the page loads twice at once.
-- Added transactions carry a repeat mark in the list.
-- Manage in Settings: edit the amount, day or label, pause, resume, or remove. Removing stops
-  future ones and keeps the ones already added.
+- Added transactions carry a repeat mark in the list; on phones their sheet links to
+  **Settings → Repeats** (`/settings#repeats`).
+- Manage in Settings: edit the amount, day or label, pause, resume, or remove (which asks
+  first). Removing stops future ones and keeps the ones already added.
+- Not offered on the Person tab: Lent out vs Paid back depends on the balance at the time.
 - A repeat never posts into an archived account or person, or a retired category.
 
 ### 6.6 Assume spent (fixed Needs)
 For costs you know in advance — rent, an EMI, a gym membership.
-- Switch it on per category in **Settings → Categories** (the repeat icon).
+- Switch it on per category in **Settings → Categories** (*Assume spent*).
 - The category's budgeted amount counts as **spent**, with no transaction needed.
 - A real transaction that month **replaces** the assumption rather than adding to it:
   rent budgeted at ₹15,000 that actually goes out at ₹15,400 shows ₹15,400.

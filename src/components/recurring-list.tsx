@@ -1,9 +1,10 @@
 "use client";
 
 import { useActionState, useState, useTransition } from "react";
-import { PencilSimple, Repeat, Trash, Warning } from "@phosphor-icons/react";
+import { Pause, PencilSimple, Play, Trash, Warning } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { IconButton } from "@/components/icon-button";
+import { RowActions } from "@/components/row-actions";
 import {
   setRecurringActive,
   deleteRecurringRule,
@@ -64,8 +65,16 @@ export function RecurringList({ rules }: { rules: RecurringRow[] }) {
   );
 }
 
+/**
+ * One repeat, laid out like the category and transaction rows: name over its
+ * schedule on the left, amount over the account on the right. The actions are
+ * words (Edit · Pause · Remove), folded behind "⋯" on phones. As icons beside
+ * the amount they squeezed the name to nothing at 375px, and Pause was the
+ * same ⟳ glyph as the repeat marker, filled or not.
+ */
 function Row({ rule }: { rule: RecurringRow }) {
   const [pending, start] = useTransition();
+  const [confirming, setConfirming] = useState(false);
 
   function toggle() {
     start(async () => {
@@ -82,6 +91,7 @@ function Row({ rule }: { rule: RecurringRow }) {
       const fd = new FormData();
       fd.set("id", rule.id);
       await deleteRecurringRule(fd);
+      setConfirming(false);
       toast.success("Repeat removed");
     });
   }
@@ -91,51 +101,84 @@ function Row({ rule }: { rule: RecurringRow }) {
   return (
     <li
       className={cn(
-        "flex items-center gap-3 bg-card px-3 py-2.5",
-        !rule.active && "opacity-55",
+        "flex flex-wrap items-center gap-3 bg-card px-3 py-3.5 sm:py-2.5",
         pending && "opacity-40",
       )}
     >
       <CategoryIcon
         name={rule.categoryIcon}
-        className="size-7 shrink-0 rounded-md bg-muted text-muted-foreground"
+        className={cn(
+          "size-10 shrink-0 rounded-xl bg-muted text-muted-foreground sm:size-8 sm:rounded-md",
+          !rule.active && "opacity-55",
+        )}
       />
 
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium">{label}</p>
-        <p className="truncate text-xs text-muted-foreground">
-          {ordinal(rule.dayOfMonth)} of each month · {rule.accountName}
-          {!rule.active && " · paused"}
+      <div className={cn("min-w-0 flex-1", !rule.active && "opacity-55")}>
+        <p className="flex items-center gap-2 text-[15px] font-medium sm:text-sm">
+          <span className="truncate">{label}</span>
+          {!rule.active && (
+            <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+              Paused
+            </span>
+          )}
+        </p>
+        <p className="mt-1 truncate text-[13px] text-muted-foreground sm:mt-0 sm:text-xs">
+          Every month on the {ordinal(rule.dayOfMonth)}
         </p>
       </div>
 
-      <span
-        className={cn(
-          "tabular shrink-0 text-sm font-semibold",
-          rule.direction === "inflow" && "text-positive",
-        )}
-      >
-        <Money minor={rule.direction === "inflow" ? rule.amountMinor : -rule.amountMinor} />
-      </span>
+      <div className={cn("flex max-w-[40%] shrink-0 flex-col items-end", !rule.active && "opacity-55")}>
+        <Money
+          minor={rule.direction === "inflow" ? rule.amountMinor : -rule.amountMinor}
+          tone={rule.direction === "inflow" ? "positive" : "default"}
+          className="tabular text-[15px] font-semibold sm:text-sm"
+        />
+        <span className="mt-1 max-w-full truncate text-[13px] text-muted-foreground sm:mt-0 sm:text-xs">
+          {rule.accountName}
+        </span>
+      </div>
 
-      <EditRecurringDialog rule={rule} label={label} />
+      <RowActions label={label}>
+        <EditRecurringDialog rule={rule} label={label} />
+        <IconButton
+          label={rule.active ? `Pause ${label}` : `Resume ${label}`}
+          text={rule.active ? "Pause" : "Resume"}
+          onClick={toggle}
+          disabled={pending}
+        >
+          {rule.active ? <Pause size={14} weight="bold" /> : <Play size={14} weight="bold" />}
+        </IconButton>
+        <IconButton
+          label={`Remove repeat for ${label}`}
+          text="Remove"
+          tone="danger"
+          onClick={() => setConfirming(true)}
+          disabled={pending}
+        >
+          <Trash size={14} weight="bold" />
+        </IconButton>
+      </RowActions>
 
-      <IconButton
-        label={rule.active ? `Pause ${label}` : `Resume ${label}`}
-        onClick={toggle}
-        disabled={pending}
-      >
-        <Repeat size={14} weight={rule.active ? "fill" : "regular"} />
-      </IconButton>
-
-      <IconButton
-        label={`Remove repeat for ${label}. Past transactions stay`}
-        tone="danger"
-        onClick={remove}
-        disabled={pending}
-      >
-        <Trash size={14} weight="bold" />
-      </IconButton>
+      {/* It deleted on one tap before, with no way back. */}
+      <Dialog open={confirming} onOpenChange={setConfirming}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-heading">Remove this repeat?</DialogTitle>
+            <DialogDescription>
+              {label} stops being added from next month. The transactions it
+              already added stay. To stop it for a while instead, pause it.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-2">
+            <Button type="button" variant="outline" onClick={() => setConfirming(false)} disabled={pending}>
+              Keep it
+            </Button>
+            <Button type="button" variant="destructive" onClick={remove} disabled={pending}>
+              {pending ? "Removing…" : "Remove"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </li>
   );
 }
@@ -162,7 +205,7 @@ function EditRecurringDialog({ rule, label }: { rule: RecurringRow; label: strin
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
         render={
-          <IconButton label={`Edit repeat for ${label}`}>
+          <IconButton label={`Edit repeat for ${label}`} text="Edit">
             <PencilSimple size={14} weight="bold" />
           </IconButton>
         }

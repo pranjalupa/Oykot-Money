@@ -200,7 +200,7 @@ export async function createTransaction(
 
   // "Repeat monthly" saves a template alongside the transaction. It's marked
   // as already run for this month, so today's entry isn't duplicated.
-  if (formData.get("recurring") === "on") {
+  if (formData.get("recurring") === "on" && !withPerson) {
     await db.insert(recurringRules).values({
       userId: user.id,
       amountMinor: tx.amountMinor,

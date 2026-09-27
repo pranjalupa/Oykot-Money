@@ -132,6 +132,21 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   Teams and sharing are still out — don't build toward them without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
+- 2026-09-28 — **Phone transaction rows match the category rows; repeats flow fixed.**
+  - Transactions on phones: name over category on the left, amount over account (or the
+    route, for moves) on the right. Icons 40px. Desktop unchanged.
+  - **Settings → Repeats was broken on phones**: three 44px icons beside the amount squeezed
+    the name to zero width. Now the same two columns, with Edit · Pause · Remove as words
+    behind "⋯". Pause had been the ⟳ repeat glyph, filled or not.
+  - **Removing a repeat asks first** (it deleted on one tap).
+  - **No repeat on the Person tab**, refused server-side too: the rule freezes one locked
+    category, but Lent out vs Paid back depends on the balance at the time.
+  - A repeated transaction's phone sheet links to `/settings#repeats`, the only place
+    repeats lived, with nothing pointing there.
+  - Quick-action hints wrap instead of truncating (they cut off at 375px).
+  - Demo data now has seven repeats (`scripts/demo-data.mts repeats` adds them alone).
+  - **Open question for Pranjal:** repeats post the whole month on first open, so a bill
+    due on the 30th appears (and counts as spent) days early.
 - 2026-09-27 — **Phone category rows rethought, at Pranjal's call ("too cramped").** Two columns,
   one figure per line: name / "₹3,949 spent" on the left, "₹551 left" / "Budget ₹4,500 ✎" on
   the right; Total follows the same shape. Icons stay (he likes them) at 40px. The budget line
