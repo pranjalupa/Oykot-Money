@@ -69,14 +69,23 @@ export function CategoryList({
         {shown.map((cat) => (
           <MobileRow key={cat.id} cat={cat} groupKey={groupKey} month={month} depth={0} />
         ))}
-        <li className="flex items-baseline justify-between gap-3 bg-muted/40 px-4 py-3 text-sm">
-          <span className="font-medium">Total</span>
-          <span className="text-right">
-            <Remaining planned={totals.planned} actual={totals.actual} isIncome={isIncome} words />
-            <span className="block text-xs text-muted-foreground">
-              <Money minor={totals.actual} /> of <Money minor={totals.planned} />
-            </span>
-          </span>
+        {/* Same two columns as the rows, text aligned with their names. */}
+        <li className="flex gap-3 bg-muted/40 px-4 py-4">
+          <span aria-hidden className="w-10 shrink-0" />
+          <div className="min-w-0 flex-1">
+            <p className="text-[15px] font-semibold">Total</p>
+            <p className="mt-1 text-[13px] text-muted-foreground">
+              <Money minor={totals.actual} tone="muted" /> {isIncome ? "received" : "spent"}
+            </p>
+          </div>
+          <div className="shrink-0 text-right">
+            <p className="text-[15px]">
+              <Remaining planned={totals.planned} actual={totals.actual} isIncome={isIncome} words />
+            </p>
+            <p className="mt-1 text-[13px] text-muted-foreground">
+              Budget <Money minor={totals.planned} tone="muted" />
+            </p>
+          </div>
         </li>
       </ul>
 
@@ -279,10 +288,13 @@ function Row({
 }
 
 /**
- * One category on a phone:
- *   [icon] Rent                       ₹7,000 left
- *          ₹3,000 spent · Budget ₹10,000 ✎
- * The row opens the category; the budget line opens the budget sheet.
+ * One category on a phone, in two columns with one figure per line:
+ *   [icon] Rent                 ₹7,000 left
+ *          ₹3,000 spent    Budget ₹10,000 ✎
+ * Spent reads down the left, what's left and the plan down the right. The old
+ * single line ("₹3,000 spent · Budget ₹10,000 ✎") put three figures and a
+ * pencil side by side and read as cramped. The row opens the category; the
+ * budget opens the budget sheet.
  */
 function MobileRow({
   cat,
@@ -303,33 +315,32 @@ function MobileRow({
 
   return (
     <>
-      <li className={cn("relative flex min-h-[64px] items-start gap-3 px-4 py-3.5 active:bg-muted/60", nested && "bg-muted/20")}>
+      <li className={cn("relative flex min-h-[72px] items-center gap-3 px-4 py-4 active:bg-muted/60", nested && "bg-muted/20")}>
         {/* The whole row is the link; the budget button sits above it. */}
         <Link href={`/category/${cat.id}?month=${month}`} aria-label={`Open ${cat.name}`} className="absolute inset-0 rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none focus-visible:-outline-offset-2" />
         {nested ? (
-          <span aria-hidden className="w-9 shrink-0" />
+          <span aria-hidden className="w-10 shrink-0" />
         ) : (
-          <CategoryIcon name={cat.icon} className="size-9 shrink-0 rounded-lg bg-muted text-muted-foreground" />
+          <CategoryIcon name={cat.icon} className="size-10 shrink-0 rounded-xl bg-muted text-muted-foreground" />
         )}
         <div className="min-w-0 flex-1">
-          <div className="flex items-baseline justify-between gap-3">
-            <p className={cn("flex min-w-0 items-center gap-1.5 truncate text-[15px]", idle ? "text-muted-foreground" : "font-medium")}>
-              <span className="truncate">{cat.name}</span>
-              {assumed && <Repeat size={11} weight="bold" aria-label="Assumed spent" className="shrink-0 text-muted-foreground" />}
-            </p>
-            <span className="shrink-0 text-sm">
-              <Remaining planned={cat.plannedMinor} actual={cat.actualMinor} isIncome={isIncome} words />
-            </span>
-          </div>
-          <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[13px] text-muted-foreground">
-            <span>
-              <Money minor={cat.actualMinor} tone="muted" /> {isIncome ? "received" : "spent"}
-            </span>
-            <span aria-hidden>·</span>
+          <p className={cn("flex min-w-0 items-center gap-1.5 text-[15px]", idle ? "text-muted-foreground" : "font-medium")}>
+            <span className="truncate">{cat.name}</span>
+            {assumed && <Repeat size={11} weight="bold" aria-label="Assumed spent" className="shrink-0 text-muted-foreground" />}
+          </p>
+          <p className="mt-1 truncate text-[13px] text-muted-foreground">
+            <Money minor={cat.actualMinor} tone="muted" /> {isIncome ? "received" : "spent"}
+          </p>
+        </div>
+        <div className="flex shrink-0 flex-col items-end">
+          <p className="text-[15px]">
+            <Remaining planned={cat.plannedMinor} actual={cat.actualMinor} isIncome={isIncome} words />
+          </p>
+          <div className="mt-1 text-[13px] text-muted-foreground">
             {editablePlan ? (
               <PlannedSheet categoryId={cat.id} categoryName={cat.name} month={month} plannedMinor={cat.plannedMinor} />
             ) : (
-              <span>budget rolls into parent</span>
+              <span>Rolls into parent</span>
             )}
           </div>
         </div>

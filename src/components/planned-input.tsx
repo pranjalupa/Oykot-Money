@@ -57,14 +57,14 @@ export function PlannedSheet({
         className={cn(
           // Sits above the whole-row link, and tall enough to hit on a phone:
           // a 20px strip inside a row that navigates is a coin toss.
-          "relative z-10 -my-2 inline-flex min-h-11 items-center gap-1 rounded py-2 text-[13px] text-foreground sm:my-0 sm:min-h-0 sm:py-0.5 sm:text-xs",
+          // Secondary to the amount left above it, so muted; the pencil is the
+          // affordance. It had a dashed underline too, one signal too many.
+          "relative z-10 -my-3 inline-flex min-h-11 items-center gap-1 rounded py-3 text-[13px] text-muted-foreground sm:my-0 sm:min-h-0 sm:py-0.5 sm:text-xs",
           pending && "opacity-50",
         )}
       >
-        <span className="border-b border-dashed border-muted-foreground/50">
-          {plannedMinor > 0 ? `Budget ${formatMoney(plannedMinor, { currency })}` : "Set budget"}
-        </span>
-        <PencilSimple size={13} weight="bold" aria-hidden className="opacity-70 sm:size-3" />
+        <span>{plannedMinor > 0 ? `Budget ${formatMoney(plannedMinor, { currency })}` : "Set budget"}</span>
+        <PencilSimple size={13} weight="bold" aria-hidden className="text-foreground/70 sm:size-3" />
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
