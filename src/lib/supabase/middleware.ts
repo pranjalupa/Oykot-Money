@@ -8,6 +8,8 @@ const PUBLIC_PATHS = [
   "/auth",
   "/pricing",
   "/legal",
+  "/about",
+  "/contact",
   // Payment providers call these server-to-server with no cookie. Gating them
   // behind the session turns every webhook into a 307 to /login, which the
   // provider reads as a failure and retries until it gives up. They carry

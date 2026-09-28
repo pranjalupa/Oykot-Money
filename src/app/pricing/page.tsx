@@ -40,9 +40,9 @@ const FAQ = [
 export default async function PricingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ trial?: string }>;
+  searchParams: Promise<{ trial?: string; currency?: string }>;
 }) {
-  const [{ trial }, user, h] = await Promise.all([searchParams, getUser(), headers()]);
+  const [{ trial, currency: asked }, user, h] = await Promise.all([searchParams, getUser(), headers()]);
   const [access, prefs] = user ? await Promise.all([getAccess(), getUserPrefs()]) : [null, null];
   const viewer = !access
     ? "guest"
@@ -55,7 +55,12 @@ export default async function PricingPage({
           : "trial";
   // Signed in, prices follow the region their trial follows (their profile),
   // not wherever their connection happens to be today.
-  const currency = access?.priceCurrency ?? priceCurrencyForCountry(h.get("x-vercel-ip-country"));
+  // A guest can ask for a currency (`?currency=inr`): Razorpay's reviewer needs
+  // rupee prices whatever country their connection says. Signed in, the
+  // profile still wins.
+  const guestCurrency =
+    asked?.toUpperCase() === "INR" ? "INR" : asked?.toUpperCase() === "USD" ? "USD" : priceCurrencyForCountry(h.get("x-vercel-ip-country"));
+  const currency = access?.priceCurrency ?? guestCurrency;
   const trialEnds =
     access?.state === "trial"
       ? formatDay(access.trialEndsAt.toISOString(), prefs?.locale ?? "en-IN", { day: "numeric", month: "long" })

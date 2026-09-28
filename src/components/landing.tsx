@@ -27,7 +27,6 @@ import { FaqList } from "@/components/faq-list";
 import { PricingTable } from "@/components/pricing-table";
 import { buttonVariants } from "@/components/ui/button";
 import { CURRENCIES } from "@/lib/currency";
-import { LEGAL } from "@/lib/legal";
 import { AUTOPAY_CHECK, TRIAL, TRIAL_DAYS, type PriceCurrency } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
 
@@ -743,7 +742,9 @@ function Footer() {
           <Link href="/legal/privacy" className="hover:text-foreground">Privacy</Link>
           <Link href="/legal/terms" className="hover:text-foreground">Terms</Link>
           <Link href="/legal/refunds" className="hover:text-foreground">Refunds</Link>
-          <a href={`mailto:${LEGAL.email}`} className="hover:text-foreground">Contact</a>
+          <Link href="/legal/shipping" className="hover:text-foreground">Shipping</Link>
+          <Link href="/about" className="hover:text-foreground">About</Link>
+          <Link href="/contact" className="hover:text-foreground">Contact</Link>
         </nav>
       </div>
     </footer>

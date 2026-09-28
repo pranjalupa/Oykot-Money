@@ -132,6 +132,13 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   Teams and sharing are still out — don't build toward them without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
+- 2026-09-28 — **Razorpay activation review: About, Contact, Shipping pages** (`/about`,
+  `/contact`, `/legal/shipping`), public in the middleware and linked from both footers.
+  Razorpay asked for an About page and INR pricing; the account is Pranjal **as an
+  individual**, contact is **email only** (his call). `/pricing?currency=inr` forces rupees for
+  guests, since a reviewer's IP may not be Indian. `LEGAL.lastUpdated` → 28 September 2026
+  (terms changed today for the ₹5). Website on the Razorpay application was a Framer URL;
+  switching it to money.oykotstudio.com.
 - 2026-09-28 — **Razorpay works end to end in test mode.** Plans: monthly `plan_ThCcb8IkoqE6rV`
   (₹99), yearly `plan_ThCdSzLJyuAggM` (₹799). Webhook → `money.oykotstudio.com/api/webhooks/razorpay`,
   7 events. Six env vars in Vercel Production (two as Secret). Test account

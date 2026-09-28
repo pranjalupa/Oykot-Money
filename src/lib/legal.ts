@@ -4,5 +4,5 @@ export const LEGAL = {
   controller: "Pranjal Upadhyay",
   email: "pranjalupa@gmail.com",
   location: "Delhi, India",
-  lastUpdated: "11 September 2026",
+  lastUpdated: "28 September 2026",
 } as const;
