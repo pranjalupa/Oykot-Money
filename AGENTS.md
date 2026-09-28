@@ -132,6 +132,11 @@ Visual reference (light/dark, web/mobile toggles): `docs/design-tokens.html`.
   Teams and sharing are still out — don't build toward them without being asked.
 
 ## Decisions & Updates (newest first — add new entries at top)
+- 2026-09-28 — **This Razorpay account is for Oykot Money only** (Pranjal's call). The KYC
+  was first filed as *professional services* (Designabit/Oykot Studio design work) with
+  Razorpay-generated policy pages; all locked "Under review". Pranjal asked Razorpay to use our
+  own policy pages and recategorise as a software subscription. Oykot Studio may sell
+  services later: declare them to Razorpay (or use a separate account) before taking any.
 - 2026-09-28 — **Razorpay activation review: About, Contact, Shipping pages** (`/about`,
   `/contact`, `/legal/shipping`), public in the middleware and linked from both footers.
   Razorpay asked for an About page and INR pricing; the account is Pranjal **as an
